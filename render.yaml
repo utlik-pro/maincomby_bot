@@ -1,0 +1,34 @@
+services:
+  # Telegram Bot Service
+  - type: web
+    name: maincomby-bot
+    env: python
+    region: frankfurt  # Ближайший к Беларуси
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.main
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: BOT_TOKEN
+        sync: false  # Будет задано в UI
+      - key: ADMIN_IDS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: maincomby-db
+          property: connectionString
+      - key: TIMEZONE
+        value: Europe/Minsk
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+
+databases:
+  # PostgreSQL Database
+  - name: maincomby-db
+    plan: free
+    databaseName: maincomby_bot
+    user: maincomby_user
+    region: frankfurt
