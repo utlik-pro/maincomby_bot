@@ -9,7 +9,7 @@ services:
     startCommand: python -m app.main
     envVars:
       - key: PYTHON_VERSION
-        value: 3.13.0
+        value: 3.12.7
       - key: BOT_TOKEN
         sync: false  # Будет задано в UI
       - key: ADMIN_IDS
