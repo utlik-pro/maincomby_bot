@@ -1,6 +1,6 @@
 services:
   # Telegram Bot Service
-  - type: web
+  - type: background_worker
     name: maincomby-bot
     env: python
     region: frankfurt  # Ближайший к Беларуси
