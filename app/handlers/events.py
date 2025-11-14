@@ -71,6 +71,40 @@ async def get_or_create_user(
     return user
 
 
+async def notify_admins_about_registration(
+    bot: Bot,
+    user: User,
+    event: Event,
+    first_name: str,
+    last_name: str,
+    phone_number: str
+):
+    """Отправляет уведомление всем администраторам о новой регистрации."""
+    settings = load_settings()
+
+    username_display = f"@{user.username}" if user.username else "нет username"
+
+    notification = (
+        f"🔔 <b>НОВАЯ РЕГИСТРАЦИЯ!</b>\n\n"
+        f"📋 <b>Мероприятие:</b> {event.title}\n"
+        f"📅 <b>Дата:</b> {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n\n"
+        f"👤 <b>Участник:</b>\n"
+        f"  • Имя: {first_name} {last_name}\n"
+        f"  • Телефон: {phone_number}\n"
+        f"  • Username: {username_display}\n"
+        f"  • User ID: {user.tg_user_id}\n\n"
+        f"Используйте /event_stats {event.id} для просмотра всех участников"
+    )
+
+    # Отправляем уведомление каждому администратору
+    for admin_id in settings.admin_ids:
+        try:
+            await bot.send_message(admin_id, notification, parse_mode="HTML")
+            logger.info(f"Уведомление о регистрации отправлено администратору {admin_id}")
+        except Exception as e:
+            logger.error(f"Не удалось отправить уведомление администратору {admin_id}: {e}")
+
+
 async def get_nearest_event(session: AsyncSession) -> Event | None:
     """Получает ближайшее активное мероприятие."""
     result = await session.execute(
@@ -95,6 +129,7 @@ def format_event_message(event: Event, registered_count: int = 0) -> str:
     if event.description:
         message += f"{event.description}\n\n"
 
+    message += f"🏙 <b>Город:</b> {event.city}\n"
     message += f"🗓 <b>Дата:</b> {event.event_date.strftime('%d.%m.%Y')}\n"
     message += f"🕙 <b>Время:</b> {event.event_date.strftime('%H:%M')}\n"
 
@@ -118,7 +153,7 @@ def format_event_message(event: Event, registered_count: int = 0) -> str:
 
 
 @router.message(CommandStart())
-async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot):
+async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, state: FSMContext):
     """Обрабатывает команду /start (с параметрами и без)."""
     logger.info(f"Получена команда /start от пользователя {message.from_user.id}")
 
@@ -145,10 +180,19 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot):
             referrer=referrer,
         )
 
-        # Получаем ближайшее мероприятие
-        event = await get_nearest_event(session)
+        # Проверяем, есть ли активные мероприятия
+        result = await session.execute(
+            select(Event)
+            .where(
+                and_(
+                    Event.is_active == True,
+                    Event.event_date > datetime.utcnow()
+                )
+            )
+        )
+        events = result.scalars().all()
 
-        if not event:
+        if not events:
             await message.answer(
                 "Привет! 👋\n\n"
                 "Пока нет активных мероприятий, но скоро они появятся. "
@@ -156,49 +200,129 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot):
             )
             return
 
-        # Получаем количество зарегистрированных
+        # Предлагаем выбрать город
+        await state.set_state(RegistrationStates.selecting_city)
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏙 Минск", callback_data="select_city_minsk")],
+            [InlineKeyboardButton(text="🏰 Гродно", callback_data="select_city_grodno")],
+            [InlineKeyboardButton(text="🌍 Оба города", callback_data="select_city_both")],
+        ])
+
+        await message.answer(
+            "Привет! 👋\n\n"
+            "Рады видеть тебя в боте ИИшницы!\n\n"
+            "В каком городе ты хочешь посетить мероприятия?",
+            reply_markup=keyboard
+        )
+
+
+@router.callback_query(F.data.in_(["select_city_minsk", "select_city_grodno", "select_city_both"]), RegistrationStates.selecting_city)
+async def callback_select_city(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Обрабатывает выбор города пользователем и показывает доступные мероприятия."""
+    # Определяем выбранный город
+    if callback.data == "select_city_minsk":
+        selected_cities = ["Минск"]
+        city_text = "Минске"
+    elif callback.data == "select_city_grodno":
+        selected_cities = ["Гродно"]
+        city_text = "Гродно"
+    else:  # select_city_both
+        selected_cities = ["Минск", "Гродно"]
+        city_text = "обоих городах"
+
+    await callback.answer()
+    await state.clear()  # Очищаем состояние
+
+    async with get_session() as session:
+        # Получаем пользователя
         result = await session.execute(
-            select(EventRegistration).where(
+            select(User).where(User.tg_user_id == callback.from_user.id)
+        )
+        user = result.scalar_one_or_none()
+
+        # Получаем активные мероприятия в выбранных городах
+        result = await session.execute(
+            select(Event)
+            .where(
                 and_(
-                    EventRegistration.event_id == event.id,
-                    EventRegistration.status == "registered"
+                    Event.is_active == True,
+                    Event.event_date > datetime.utcnow(),
+                    Event.city.in_(selected_cities)
                 )
             )
+            .order_by(Event.event_date)
         )
-        registered_count = len(result.scalars().all())
+        events = result.scalars().all()
 
-        # Проверяем, зарегистрирован ли уже пользователь
-        result = await session.execute(
-            select(EventRegistration).where(
-                and_(
-                    EventRegistration.event_id == event.id,
-                    EventRegistration.user_id == user.id,
-                    EventRegistration.status == "registered"
-                )
+        if not events:
+            await callback.message.answer(
+                f"К сожалению, в {city_text} пока нет запланированных мероприятий.\n\n"
+                "Следи за обновлениями!"
             )
-        )
-        is_registered = result.scalar_one_or_none() is not None
+            return
 
-        # Формируем сообщение и кнопки
-        event_message = format_event_message(event, registered_count)
+        # Группируем мероприятия по городам
+        events_by_city = {}
+        for event in events:
+            if event.city not in events_by_city:
+                events_by_city[event.city] = []
+            events_by_city[event.city].append(event)
 
-        if is_registered:
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="✅ Я иду!", callback_data="already_registered")],
-                [InlineKeyboardButton(text="❌ Отменить регистрацию", callback_data=f"unregister_{event.id}")],
-            ])
-            event_message += "\n<b>✅ Вы уже зарегистрированы на это мероприятие!</b>"
-        else:
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="😎 Иду!", callback_data=f"register_{event.id}")],
-            ])
+        # Отправляем информацию о каждом мероприятии
+        intro_message = f"Отлично! Вот мероприятия в {city_text}:\n"
+        await callback.message.answer(intro_message)
 
-        if event.location_url:
-            keyboard.inline_keyboard.append([
-                InlineKeyboardButton(text="📍 Показать на карте", url=event.location_url)
-            ])
+        for city in selected_cities:
+            if city not in events_by_city:
+                continue
 
-        await message.answer(event_message, parse_mode="HTML", reply_markup=keyboard)
+            for event in events_by_city[city]:
+                # Получаем количество зарегистрированных
+                result = await session.execute(
+                    select(EventRegistration).where(
+                        and_(
+                            EventRegistration.event_id == event.id,
+                            EventRegistration.status == "registered"
+                        )
+                    )
+                )
+                registered_count = len(result.scalars().all())
+
+                # Проверяем, зарегистрирован ли уже пользователь
+                is_registered = False
+                if user:
+                    result = await session.execute(
+                        select(EventRegistration).where(
+                            and_(
+                                EventRegistration.event_id == event.id,
+                                EventRegistration.user_id == user.id,
+                                EventRegistration.status == "registered"
+                            )
+                        )
+                    )
+                    is_registered = result.scalar_one_or_none() is not None
+
+                # Формируем сообщение и кнопки
+                event_message = format_event_message(event, registered_count)
+
+                if is_registered:
+                    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="✅ Я иду!", callback_data="already_registered")],
+                        [InlineKeyboardButton(text="❌ Отменить регистрацию", callback_data=f"unregister_{event.id}")],
+                    ])
+                    event_message += "\n<b>✅ Вы уже зарегистрированы на это мероприятие!</b>"
+                else:
+                    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="😎 Иду!", callback_data=f"register_{event.id}")],
+                    ])
+
+                if event.location_url:
+                    keyboard.inline_keyboard.append([
+                        InlineKeyboardButton(text="📍 Показать на карте", url=event.location_url)
+                    ])
+
+                await callback.message.answer(event_message, parse_mode="HTML", reply_markup=keyboard)
 
 
 @router.callback_query(F.data.regexp(r"^register_(\d+)$"))
@@ -508,6 +632,16 @@ async def finalize_registration(message: Message, state: FSMContext, phone_numbe
         logger.info(
             f"Пользователь {user.tg_user_id} ({first_name} {last_name}, {phone_number}) "
             f"зарегистрирован на мероприятие {event.id}"
+        )
+
+        # Уведомление администраторам о новой регистрации
+        await notify_admins_about_registration(
+            bot=message.bot,
+            user=user,
+            event=event,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=phone_number
         )
 
 

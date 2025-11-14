@@ -4,7 +4,7 @@ from datetime import datetime
 
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from loguru import logger
@@ -43,6 +43,7 @@ class CreateEventStates(StatesGroup):
     title = State()
     description = State()
     event_date = State()
+    city = State()
     location = State()
     location_url = State()
     speakers = State()
@@ -60,7 +61,7 @@ async def cmd_create_event_start(message: Message, state: FSMContext):
     await state.set_state(CreateEventStates.title)
     await message.answer(
         "Создание нового мероприятия.\n\n"
-        "Шаг 1/8: Введите название мероприятия:"
+        "Шаг 1/9: Введите название мероприятия:"
     )
 
 
@@ -69,7 +70,7 @@ async def cmd_create_event_title(message: Message, state: FSMContext):
     """Сохраняет название мероприятия."""
     await state.update_data(title=message.text)
     await state.set_state(CreateEventStates.description)
-    await message.answer("Шаг 2/8: Введите описание мероприятия (или отправьте '-' чтобы пропустить):")
+    await message.answer("Шаг 2/9: Введите описание мероприятия (или отправьте '-' чтобы пропустить):")
 
 
 @router.message(CreateEventStates.description)
@@ -79,7 +80,7 @@ async def cmd_create_event_description(message: Message, state: FSMContext):
     await state.update_data(description=description)
     await state.set_state(CreateEventStates.event_date)
     await message.answer(
-        "Шаг 3/8: Введите дату и время мероприятия в формате:\n"
+        "Шаг 3/9: Введите дату и время мероприятия в формате:\n"
         "ДД.ММ.ГГГГ ЧЧ:ММ\n\n"
         "Например: 25.12.2025 19:00"
     )
@@ -91,8 +92,18 @@ async def cmd_create_event_date(message: Message, state: FSMContext):
     try:
         event_date = datetime.strptime(message.text, "%d.%m.%Y %H:%M")
         await state.update_data(event_date=event_date)
-        await state.set_state(CreateEventStates.location)
-        await message.answer("Шаг 4/8: Введите место проведения (или '-' чтобы пропустить):")
+        await state.set_state(CreateEventStates.city)
+
+        # Создаем кнопки для выбора города
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏙 Минск", callback_data="city_minsk")],
+            [InlineKeyboardButton(text="🏰 Гродно", callback_data="city_grodno")],
+        ])
+
+        await message.answer(
+            "Шаг 4/9: Выберите город проведения мероприятия:",
+            reply_markup=keyboard
+        )
     except ValueError:
         await message.answer(
             "Неверный формат даты. Попробуйте еще раз.\n"
@@ -101,13 +112,24 @@ async def cmd_create_event_date(message: Message, state: FSMContext):
         )
 
 
+@router.callback_query(F.data.in_(["city_minsk", "city_grodno"]), CreateEventStates.city)
+async def callback_select_city(callback: CallbackQuery, state: FSMContext):
+    """Обрабатывает выбор города."""
+    city = "Минск" if callback.data == "city_minsk" else "Гродно"
+    await state.update_data(city=city)
+    await state.set_state(CreateEventStates.location)
+
+    await callback.answer()
+    await callback.message.answer(f"Выбран город: {city}\n\nШаг 5/9: Введите место проведения (адрес) или '-' чтобы пропустить:")
+
+
 @router.message(CreateEventStates.location)
 async def cmd_create_event_location(message: Message, state: FSMContext):
     """Сохраняет место проведения."""
     location = message.text if message.text != "-" else None
     await state.update_data(location=location)
     await state.set_state(CreateEventStates.location_url)
-    await message.answer("Шаг 5/8: Введите ссылку на карту (Google Maps, Yandex Maps) или '-' чтобы пропустить:")
+    await message.answer("Шаг 6/9: Введите ссылку на карту (Google Maps, Yandex Maps) или '-' чтобы пропустить:")
 
 
 @router.message(CreateEventStates.location_url)
@@ -116,7 +138,7 @@ async def cmd_create_event_location_url(message: Message, state: FSMContext):
     location_url = message.text if message.text != "-" else None
     await state.update_data(location_url=location_url)
     await state.set_state(CreateEventStates.speakers)
-    await message.answer("Шаг 6/8: Введите информацию о спикерах (или '-' чтобы пропустить):")
+    await message.answer("Шаг 7/9: Введите информацию о спикерах (или '-' чтобы пропустить):")
 
 
 @router.message(CreateEventStates.speakers)
@@ -125,7 +147,7 @@ async def cmd_create_event_speakers(message: Message, state: FSMContext):
     speakers = message.text if message.text != "-" else None
     await state.update_data(speakers=speakers)
     await state.set_state(CreateEventStates.max_participants)
-    await message.answer("Шаг 7/8: Введите максимальное количество участников (число или '-' для неограниченного):")
+    await message.answer("Шаг 8/9: Введите максимальное количество участников (число или '-' для неограниченного):")
 
 
 @router.message(CreateEventStates.max_participants)
@@ -143,7 +165,7 @@ async def cmd_create_event_max_participants(message: Message, state: FSMContext)
     await state.update_data(max_participants=max_participants)
     await state.set_state(CreateEventStates.registration_deadline)
     await message.answer(
-        "Шаг 8/8: Введите дедлайн регистрации в формате:\n"
+        "Шаг 9/9: Введите дедлайн регистрации в формате:\n"
         "ДД.ММ.ГГГГ\n\n"
         "Или отправьте '-' чтобы пропустить.\n"
         "Например: 24.12.2025"
@@ -178,6 +200,7 @@ async def cmd_create_event_deadline(message: Message, state: FSMContext):
                 title=data["title"],
                 description=data.get("description"),
                 event_date=data["event_date"],
+                city=data["city"],
                 location=data.get("location"),
                 location_url=data.get("location_url"),
                 speakers=data.get("speakers"),
@@ -229,6 +252,7 @@ async def cmd_list_events(message: Message):
         for event in events:
             status = "✅ Активно" if event.is_active else "❌ Неактивно"
             response += f"<b>ID {event.id}:</b> {event.title}\n"
+            response += f"Город: {event.city}\n"
             response += f"Статус: {status}\n"
             response += f"Дата: {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n"
 
@@ -289,6 +313,7 @@ async def cmd_event_stats(message: Message):
 
             response = f"<b>📊 Статистика мероприятия:</b>\n\n"
             response += f"<b>{event.title}</b>\n"
+            response += f"🏙 Город: {event.city}\n"
             response += f"📅 Дата: {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n\n"
             response += f"✅ Зарегистрировано: {len(registered_list)}\n"
             response += f"❌ Отменено: {cancelled_count}\n"
@@ -339,7 +364,7 @@ async def cmd_event_stats(message: Message):
             response += f"Активных: {active_events}\n\n"
             response += f"Всего регистраций: {total_registrations}\n"
             response += f"Активных: {active_registrations}\n\n"
-            response += "Используйте /event_stats <ID> для статистики конкретного мероприятия."
+            response += "Используйте /event_stats &lt;ID&gt; для статистики конкретного мероприятия."
 
             await message.answer(response, parse_mode="HTML")
 
@@ -533,3 +558,166 @@ async def cmd_security_logs(message: Message):
             response += f"<b>Дата:</b> {log.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
 
         await message.answer(response, parse_mode="HTML")
+
+
+@router.message(Command("list_admins"))
+async def cmd_list_admins(message: Message):
+    """Показывает список администраторов."""
+    if not await is_admin(message.from_user.id):
+        await message.reply("Только администраторы могут просматривать список администраторов.")
+        return
+
+    settings = load_settings()
+
+    if not settings.admin_ids:
+        await message.answer("Список администраторов пуст.")
+        return
+
+    response = "<b>👥 Список администраторов:</b>\n\n"
+
+    for idx, admin_id in enumerate(settings.admin_ids, 1):
+        response += f"{idx}. User ID: <code>{admin_id}</code>\n"
+
+    response += f"\n<b>Всего администраторов:</b> {len(settings.admin_ids)}\n\n"
+    response += "Для добавления администратора используйте:\n/add_admin <user_id>\n\n"
+    response += "Для удаления администратора используйте:\n/remove_admin <user_id>"
+
+    await message.answer(response, parse_mode="HTML")
+
+
+@router.message(Command("add_admin"))
+async def cmd_add_admin(message: Message):
+    """Добавляет нового администратора."""
+    if not await is_admin(message.from_user.id):
+        await message.reply("Только администраторы могут добавлять других администраторов.")
+        return
+
+    # Формат: /add_admin 123456789
+    args = message.text.split()[1:] if message.text else []
+
+    if not args or not args[0].isdigit():
+        await message.answer(
+            "Использование: /add_admin <user_id>\n\n"
+            "Пример: /add_admin 123456789\n\n"
+            "Чтобы узнать User ID человека, попросите его написать боту команду /start, "
+            "и проверьте логи или базу данных."
+        )
+        return
+
+    new_admin_id = int(args[0])
+    settings = load_settings()
+
+    if new_admin_id in settings.admin_ids:
+        await message.answer(f"Пользователь {new_admin_id} уже является администратором.")
+        return
+
+    # Читаем текущий .env файл
+    import os
+    env_path = os.path.join(os.getcwd(), ".env")
+
+    try:
+        with open(env_path, "r") as f:
+            env_lines = f.readlines()
+
+        # Обновляем ADMIN_IDS
+        new_admin_ids = settings.admin_ids + [new_admin_id]
+        new_admin_ids_str = ",".join(map(str, new_admin_ids))
+
+        updated_lines = []
+        admin_ids_updated = False
+
+        for line in env_lines:
+            if line.startswith("ADMIN_IDS="):
+                updated_lines.append(f"ADMIN_IDS={new_admin_ids_str}\n")
+                admin_ids_updated = True
+            else:
+                updated_lines.append(line)
+
+        # Если ADMIN_IDS не был найден, добавляем
+        if not admin_ids_updated:
+            updated_lines.append(f"ADMIN_IDS={new_admin_ids_str}\n")
+
+        # Записываем обратно
+        with open(env_path, "w") as f:
+            f.writelines(updated_lines)
+
+        await message.answer(
+            f"✅ Администратор добавлен!\n\n"
+            f"User ID: <code>{new_admin_id}</code>\n\n"
+            f"⚠️ <b>Важно:</b> Для применения изменений необходимо перезапустить бота.\n"
+            f"Администратор получит доступ ко всем командам после перезапуска.",
+            parse_mode="HTML"
+        )
+
+        logger.info(f"Администратор {message.from_user.id} добавил нового администратора {new_admin_id}")
+
+    except Exception as e:
+        logger.error(f"Ошибка при добавлении администратора: {e}")
+        await message.answer(f"❌ Ошибка при добавлении администратора: {e}")
+
+
+@router.message(Command("remove_admin"))
+async def cmd_remove_admin(message: Message):
+    """Удаляет администратора."""
+    if not await is_admin(message.from_user.id):
+        await message.reply("Только администраторы могут удалять других администраторов.")
+        return
+
+    # Формат: /remove_admin 123456789
+    args = message.text.split()[1:] if message.text else []
+
+    if not args or not args[0].isdigit():
+        await message.answer("Использование: /remove_admin <user_id>\n\nПример: /remove_admin 123456789")
+        return
+
+    remove_admin_id = int(args[0])
+    settings = load_settings()
+
+    if remove_admin_id not in settings.admin_ids:
+        await message.answer(f"Пользователь {remove_admin_id} не является администратором.")
+        return
+
+    if remove_admin_id == message.from_user.id:
+        await message.answer("❌ Вы не можете удалить сами себя из администраторов.")
+        return
+
+    if len(settings.admin_ids) == 1:
+        await message.answer("❌ Нельзя удалить последнего администратора.")
+        return
+
+    # Читаем текущий .env файл
+    import os
+    env_path = os.path.join(os.getcwd(), ".env")
+
+    try:
+        with open(env_path, "r") as f:
+            env_lines = f.readlines()
+
+        # Обновляем ADMIN_IDS
+        new_admin_ids = [aid for aid in settings.admin_ids if aid != remove_admin_id]
+        new_admin_ids_str = ",".join(map(str, new_admin_ids))
+
+        updated_lines = []
+
+        for line in env_lines:
+            if line.startswith("ADMIN_IDS="):
+                updated_lines.append(f"ADMIN_IDS={new_admin_ids_str}\n")
+            else:
+                updated_lines.append(line)
+
+        # Записываем обратно
+        with open(env_path, "w") as f:
+            f.writelines(updated_lines)
+
+        await message.answer(
+            f"✅ Администратор удален!\n\n"
+            f"User ID: <code>{remove_admin_id}</code>\n\n"
+            f"⚠️ <b>Важно:</b> Для применения изменений необходимо перезапустить бота.",
+            parse_mode="HTML"
+        )
+
+        logger.info(f"Администратор {message.from_user.id} удалил администратора {remove_admin_id}")
+
+    except Exception as e:
+        logger.error(f"Ошибка при удалении администратора: {e}")
+        await message.answer(f"❌ Ошибка при удалении администратора: {e}")

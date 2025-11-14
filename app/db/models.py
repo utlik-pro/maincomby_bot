@@ -126,7 +126,8 @@ class Event(Base):
     title: Mapped[str] = mapped_column(String(256), index=True)  # Название мероприятия
     description: Mapped[Optional[str]] = mapped_column(String(4096), nullable=True)  # Описание
     event_date: Mapped[datetime] = mapped_column(DateTime, index=True)  # Дата и время
-    location: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Место проведения
+    city: Mapped[str] = mapped_column(String(64), index=True, default="Минск")  # Город проведения
+    location: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Место проведения (адрес)
     location_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Ссылка на карты
     speakers: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)  # Спикеры (JSON или текст)
     max_participants: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Макс. участников
