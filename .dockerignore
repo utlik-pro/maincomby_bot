@@ -1,44 +1,10 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-dist/
-build/
-.venv/
-venv/
-env/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
-
-# Git
-.git/
-.gitignore
-
-# Environment
-.env.example
-
-# Database (будет в volume)
+.env
+.git
+__pycache__
+*.pyc
+.venv
+venv
+node_modules
 bot.db
-*.db
-
-# Logs
-*.log
-
-# Documentation
 *.md
-!README.md
-
-# Other
-.taskmaster/
-.claude/
-.mcp.json
-Procfile
-railway.json
+.gitignore

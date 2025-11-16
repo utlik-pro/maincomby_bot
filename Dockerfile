@@ -18,7 +18,6 @@ RUN mkdir -p /app/data
 
 # Переменные окружения
 ENV PYTHONUNBUFFERED=1
-ENV DATABASE_URL=sqlite+aiosqlite:///./data/bot.db
 
 # Запускаем бота
 CMD ["python", "-m", "app.main"]

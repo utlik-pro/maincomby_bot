@@ -21,7 +21,7 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    load_dotenv(override=True)  # Принудительно перезагружаем .env
+    load_dotenv(override=False)  # Environment variables take precedence over .env file
     bot_token = os.getenv("BOT_TOKEN", "").strip()
     if not bot_token:
         raise RuntimeError("BOT_TOKEN is required in environment")
