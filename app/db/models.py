@@ -38,6 +38,8 @@ class User(Base):
     profile: Mapped[Optional["UserProfile"]] = relationship(back_populates="user", uselist=False)
     matches_as_user1: Mapped[list["Match"]] = relationship(foreign_keys="[Match.user1_id]", back_populates="user1")
     matches_as_user2: Mapped[list["Match"]] = relationship(foreign_keys="[Match.user2_id]", back_populates="user2")
+    swipes_made: Mapped[list["Swipe"]] = relationship(foreign_keys="[Swipe.swiper_id]", back_populates="swiper")
+    swipes_received: Mapped[list["Swipe"]] = relationship(foreign_keys="[Swipe.swiped_id]", back_populates="swiped")
 
 
 class Post(Base):
@@ -194,8 +196,6 @@ class UserProfile(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user: Mapped[User] = relationship(back_populates="profile")
-    swipes_made: Mapped[list["Swipe"]] = relationship(foreign_keys="[Swipe.swiper_id]", back_populates="swiper")
-    swipes_received: Mapped[list["Swipe"]] = relationship(foreign_keys="[Swipe.swiped_id]", back_populates="swiped")
 
 
 class Match(Base):
@@ -222,7 +222,7 @@ class Swipe(Base):
     action: Mapped[str] = mapped_column(String(16), index=True)  # like, skip
     swiped_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    swiper: Mapped[UserProfile] = relationship(foreign_keys=[swiper_id], back_populates="swipes_made")
-    swiped: Mapped[UserProfile] = relationship(foreign_keys=[swiped_id], back_populates="swipes_received")
+    swiper: Mapped[User] = relationship(foreign_keys=[swiper_id], back_populates="swipes_made")
+    swiped: Mapped[User] = relationship(foreign_keys=[swiped_id], back_populates="swipes_received")
 
 
