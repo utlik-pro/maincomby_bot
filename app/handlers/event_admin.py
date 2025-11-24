@@ -1220,7 +1220,7 @@ async def cmd_registration_timeline(message: Message):
 async def cmd_moderate_profiles(message: Message):
     """Показать профили на модерации."""
     if not await is_admin(message.from_user.id):
-        await message.reply("Только администраторы могут модерировать профили.")
+        await message.bot.send_message(message.chat.id, "Только администраторы могут модерировать профили.")
         return
 
     async with get_session() as session:
@@ -1233,10 +1233,10 @@ async def cmd_moderate_profiles(message: Message):
         profiles = result.scalars().all()
 
         if not profiles:
-            await message.answer("✅ Нет профилей на модерации.")
+            await message.bot.send_message(message.chat.id, "✅ Нет профилей на модерации.")
             return
 
-        await message.answer(f"📋 <b>Профилей на модерации: {len(profiles)}</b>\n\nОтправляю...", parse_mode="HTML")
+        await message.bot.send_message(message.chat.id, f"📋 <b>Профилей на модерации: {len(profiles)}</b>\n\nОтправляю...", parse_mode="HTML")
 
         # Показываем каждый профиль
         for profile in profiles:
@@ -1273,14 +1273,15 @@ async def cmd_moderate_profiles(message: Message):
 
             try:
                 if profile.photo_file_id:
-                    await message.answer_photo(
+                    await message.bot.send_photo(
+                        message.chat.id,
                         profile.photo_file_id,
                         caption=text,
                         reply_markup=keyboard,
                         parse_mode="HTML"
                     )
                 else:
-                    await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
+                    await message.bot.send_message(message.chat.id, text, reply_markup=keyboard, parse_mode="HTML")
             except Exception as e:
                 logger.error(f"Ошибка при отправке профиля на модерацию: {e}")
 
@@ -1507,7 +1508,7 @@ async def cmd_reject_profile(message: Message):
 async def cmd_matching_stats(message: Message):
     """Статистика по системе матчинга."""
     if not await is_admin(message.from_user.id):
-        await message.reply("Только администраторы могут просматривать статистику.")
+        await message.bot.send_message(message.chat.id, "Только администраторы могут просматривать статистику.")
         return
 
     async with get_session() as session:
@@ -1591,4 +1592,4 @@ async def cmd_matching_stats(message: Message):
             f"/reject_profile <id> - отклонить профиль"
         )
 
-        await message.answer(response, parse_mode="HTML")
+        await message.bot.send_message(message.chat.id, response, parse_mode="HTML")

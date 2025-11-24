@@ -259,29 +259,17 @@ async def main() -> None:
     async def callback_matching_stats(callback: CallbackQuery):
         """Вызов /matching_stats."""
         await callback.answer()
-        fake_msg = Message(
-            message_id=callback.message.message_id,
-            date=callback.message.date,
-            chat=callback.message.chat,
-            from_user=callback.from_user,
-            text="/matching_stats"
-        )
+        # Используем callback.message напрямую, она уже связана с bot
         from .handlers.event_admin import cmd_matching_stats
-        await cmd_matching_stats(fake_msg)
+        await cmd_matching_stats(callback.message)
 
     @dp.callback_query(F.data == "cmd_moderate_profiles")
     async def callback_moderate_profiles(callback: CallbackQuery):
         """Вызов /moderate_profiles."""
         await callback.answer()
-        fake_msg = Message(
-            message_id=callback.message.message_id,
-            date=callback.message.date,
-            chat=callback.message.chat,
-            from_user=callback.from_user,
-            text="/moderate_profiles"
-        )
+        # Используем callback.message напрямую, она уже связана с bot
         from .handlers.event_admin import cmd_moderate_profiles
-        await cmd_moderate_profiles(fake_msg)
+        await cmd_moderate_profiles(callback.message)
 
     @dp.message(F.text == "/help")
     async def cmd_help(message: Message):
