@@ -35,6 +35,9 @@ class User(Base):
     posts: Mapped[list[Post]] = relationship(back_populates="author")
     roles: Mapped[list[UserRole]] = relationship(back_populates="user")
     registrations: Mapped[list["EventRegistration"]] = relationship(back_populates="user")
+    profile: Mapped[Optional["UserProfile"]] = relationship(back_populates="user", uselist=False)
+    matches_as_user1: Mapped[list["Match"]] = relationship(foreign_keys="[Match.user1_id]", back_populates="user1")
+    matches_as_user2: Mapped[list["Match"]] = relationship(foreign_keys="[Match.user2_id]", back_populates="user2")
 
 
 class Post(Base):
@@ -149,6 +152,11 @@ class EventRegistration(Base):
     status: Mapped[str] = mapped_column(String(16), default="registered")  # registered, cancelled, attended
     notes: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Дополнительная информация
 
+    # Версионирование и подтверждение при изменении даты мероприятия
+    registration_version: Mapped[str] = mapped_column(String(16), default="new_date", index=True)  # old_date, new_date
+    confirmed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # Подтверждено ли участие
+    confirmation_requested_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Когда запрошено подтверждение
+
     event: Mapped[Event] = relationship(back_populates="registrations")
     user: Mapped[User] = relationship(back_populates="registrations")
 
@@ -165,5 +173,56 @@ class SecurityLog(Base):
     detection_reason: Mapped[str] = mapped_column(String(512))  # Почему было детектировано
     action_taken: Mapped[str] = mapped_column(String(128))  # Какое действие предприняли (mute, warn, etc)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class UserProfile(Base):
+    """Расширенный профиль пользователя для системы матчинга."""
+    __tablename__ = "user_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    bio: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # О себе
+    occupation: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)  # Чем занимается
+    looking_for: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Кого ищет
+    can_help_with: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Чем может помочь
+    needs_help_with: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # В чем нуждается
+    photo_file_id: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)  # ID фото в Telegram
+    city: Mapped[str] = mapped_column(String(64), index=True, default="Минск")  # Город
+    moderation_status: Mapped[str] = mapped_column(String(16), index=True, default="pending")  # pending, approved, rejected
+    is_visible: Mapped[bool] = mapped_column(Boolean, index=True, default=True)  # Виден ли профиль другим
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user: Mapped[User] = relationship(back_populates="profile")
+    swipes_made: Mapped[list["Swipe"]] = relationship(foreign_keys="[Swipe.swiper_id]", back_populates="swiper")
+    swipes_received: Mapped[list["Swipe"]] = relationship(foreign_keys="[Swipe.swiped_id]", back_populates="swiped")
+
+
+class Match(Base):
+    """Взаимный матч между двумя пользователями."""
+    __tablename__ = "matches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user1_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    user2_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    matched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    is_active: Mapped[bool] = mapped_column(Boolean, index=True, default=True)  # Активен ли матч
+
+    user1: Mapped[User] = relationship(foreign_keys=[user1_id], back_populates="matches_as_user1")
+    user2: Mapped[User] = relationship(foreign_keys=[user2_id], back_populates="matches_as_user2")
+
+
+class Swipe(Base):
+    """История свайпов (лайк/скип)."""
+    __tablename__ = "swipes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    swiper_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)  # Кто свайпнул
+    swiped_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)  # Кого свайпнули
+    action: Mapped[str] = mapped_column(String(16), index=True)  # like, skip
+    swiped_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    swiper: Mapped[UserProfile] = relationship(foreign_keys=[swiper_id], back_populates="swipes_made")
+    swiped: Mapped[UserProfile] = relationship(foreign_keys=[swiped_id], back_populates="swipes_received")
 
 
