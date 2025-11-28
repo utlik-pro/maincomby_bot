@@ -686,3 +686,405 @@ async def cmd_my_events(message: Message):
             response += "\n"
 
         await message.answer(response, parse_mode="HTML")
+
+
+@router.callback_query(F.data.regexp(r"^confirm_(\d+)_(\d+)$"))
+async def callback_confirm_attendance(callback: CallbackQuery):
+    """Обрабатывает подтверждение участия с новой датой."""
+    # Парсим callback data
+    parts = callback.data.split("_")
+    event_id = int(parts[1])
+    user_tg_id = int(parts[2])
+
+    # Проверяем, что подтверждает именно тот пользователь, кому отправлено
+    if callback.from_user.id != user_tg_id:
+        await callback.answer("Это сообщение предназначено не для вас.", show_alert=True)
+        return
+
+    async with get_session() as session:
+        # Получаем пользователя
+        result = await session.execute(
+            select(User).where(User.tg_user_id == user_tg_id)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            await callback.answer("Пользователь не найден в системе.", show_alert=True)
+            return
+
+        # Получаем регистрацию
+        result = await session.execute(
+            select(EventRegistration)
+            .where(
+                and_(
+                    EventRegistration.event_id == event_id,
+                    EventRegistration.user_id == user.id,
+                    EventRegistration.status == "registered"
+                )
+            )
+        )
+        registration = result.scalar_one_or_none()
+
+        if not registration:
+            await callback.answer("Регистрация не найдена.", show_alert=True)
+            return
+
+        # Проверяем, не подтверждена ли уже
+        if registration.confirmed:
+            await callback.answer("Вы уже подтвердили участие!", show_alert=False)
+            return
+
+        # Подтверждаем участие
+        registration.confirmed = True
+        await session.commit()
+
+        # Получаем информацию о мероприятии
+        result = await session.execute(
+            select(Event).where(Event.id == event_id)
+        )
+        event = result.scalar_one_or_none()
+
+        # Обновляем сообщение
+        try:
+            await callback.message.edit_text(
+                f"✅ <b>Участие подтверждено!</b>\n\n"
+                f"Вы подтвердили участие в мероприятии:\n"
+                f"<b>{event.title}</b>\n\n"
+                f"🏙 Город: {event.city}\n"
+                f"🗓 Дата: {event.event_date.strftime('%d.%m.%Y')}\n"
+                f"🕙 Время: {event.event_date.strftime('%H:%M')}\n"
+                + (f"📍 Место: {event.location}\n" if event.location else "")
+                + f"\nДо встречи! 🎉",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+
+        await callback.answer("✅ Участие подтверждено!", show_alert=False)
+        logger.info(f"User {user_tg_id} confirmed attendance for event {event_id}")
+
+        # Уведомляем админов о подтверждении
+        settings = load_settings()
+        notification = (
+            f"✅ <b>Подтверждение участия</b>\n\n"
+            f"<b>Мероприятие:</b> {event.title}\n"
+            f"<b>Участник:</b> {user.first_name} {user.last_name}\n"
+            f"<b>Username:</b> @{user.username or 'нет'}\n"
+            f"<b>Телефон:</b> {user.phone_number or 'нет'}\n\n"
+            f"Участник подтвердил участие с новой датой."
+        )
+
+        for admin_id in settings.admin_ids:
+            try:
+                await callback.bot.send_message(admin_id, notification, parse_mode="HTML")
+            except Exception as e:
+                logger.error(f"Failed to notify admin {admin_id}: {e}")
+
+
+@router.callback_query(F.data.regexp(r"^decline_(\d+)_(\d+)$"))
+async def callback_decline_attendance(callback: CallbackQuery):
+    """Обрабатывает отказ от участия."""
+    # Парсим callback data
+    parts = callback.data.split("_")
+    event_id = int(parts[1])
+    user_tg_id = int(parts[2])
+
+    # Проверяем, что отказывается именно тот пользователь, кому отправлено
+    if callback.from_user.id != user_tg_id:
+        await callback.answer("Это сообщение предназначено не для вас.", show_alert=True)
+        return
+
+    async with get_session() as session:
+        # Получаем пользователя
+        result = await session.execute(
+            select(User).where(User.tg_user_id == user_tg_id)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            await callback.answer("Пользователь не найден в системе.", show_alert=True)
+            return
+
+        # Получаем регистрацию
+        result = await session.execute(
+            select(EventRegistration)
+            .where(
+                and_(
+                    EventRegistration.event_id == event_id,
+                    EventRegistration.user_id == user.id
+                )
+            )
+        )
+        registration = result.scalar_one_or_none()
+
+        if not registration:
+            await callback.answer("Регистрация не найдена.", show_alert=True)
+            return
+
+        # Отменяем регистрацию
+        registration.status = "cancelled"
+        await session.commit()
+
+        # Получаем информацию о мероприятии
+        result = await session.execute(
+            select(Event).where(Event.id == event_id)
+        )
+        event = result.scalar_one_or_none()
+
+        # Обновляем сообщение
+        try:
+            await callback.message.edit_text(
+                f"❌ <b>Регистрация отменена</b>\n\n"
+                f"Вы отменили регистрацию на мероприятие:\n"
+                f"<b>{event.title}</b>\n\n"
+                f"Если передумаете, вы можете зарегистрироваться снова через команду /start",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+
+        await callback.answer("Регистрация отменена", show_alert=False)
+        logger.info(f"User {user_tg_id} declined attendance for event {event_id}")
+
+        # Уведомляем админов об отказе
+        settings = load_settings()
+        notification = (
+            f"❌ <b>Отказ от участия</b>\n\n"
+            f"<b>Мероприятие:</b> {event.title}\n"
+            f"<b>Участник:</b> {user.first_name} {user.last_name}\n"
+            f"<b>Username:</b> @{user.username or 'нет'}\n"
+            f"<b>Телефон:</b> {user.phone_number or 'нет'}\n\n"
+            f"Участник отказался от участия с новой датой."
+        )
+
+        for admin_id in settings.admin_ids:
+            try:
+                await callback.bot.send_message(admin_id, notification, parse_mode="HTML")
+            except Exception as e:
+                logger.error(f"Failed to notify admin {admin_id}: {e}")
+
+
+@router.callback_query(F.data.regexp(r"^attend_(\d+)_(\d+)$"))
+async def callback_attend_from_broadcast(callback: CallbackQuery):
+    """
+    Обработчик кнопки "✅ Буду!" из рассылки видео-кружка.
+    Подтверждает участие пользователя.
+    """
+    match = callback.data.split("_")
+    event_id = int(match[1])
+    user_tg_id = int(match[2])
+
+    async with get_session() as session:
+        # Получаем регистрацию
+        result = await session.execute(
+            select(EventRegistration, User, Event)
+            .join(User, EventRegistration.user_id == User.id)
+            .join(Event, EventRegistration.event_id == Event.id)
+            .where(
+                and_(
+                    EventRegistration.event_id == event_id,
+                    User.tg_user_id == user_tg_id
+                )
+            )
+        )
+        data = result.first()
+
+        if not data:
+            await callback.answer("❌ Регистрация не найдена", show_alert=True)
+            return
+
+        registration, user, event = data
+
+        # Обновляем подтверждение
+        registration.confirmed = True
+        registration.status = "registered"
+        await session.commit()
+
+    await callback.answer("✅ Спасибо! Ваше участие подтверждено")
+    await callback.message.edit_text(
+        f"✅ <b>Участие подтверждено</b>\n\n"
+        f"Мероприятие: {event.title}\n"
+        f"Дата: {event.event_date.strftime('%d.%m.%Y')}\n"
+        f"Место: {event.location}\n\n"
+        f"Ждём вас!",
+        parse_mode="HTML"
+    )
+
+    # Уведомляем администраторов
+    settings = load_settings()
+    notification = (
+        f"✅ <b>Подтверждение участия</b>\n\n"
+        f"<b>Мероприятие:</b> {event.title}\n"
+        f"<b>Участник:</b> {user.first_name} {user.last_name}\n"
+        f"<b>Username:</b> @{user.username or 'нет'}\n"
+        f"<b>Телефон:</b> {user.phone_number or 'нет'}\n\n"
+        f"Участник подтвердил своё участие через рассылку."
+    )
+
+    for admin_id in settings.admin_ids:
+        try:
+            await callback.bot.send_message(admin_id, notification, parse_mode="HTML")
+        except Exception as e:
+            logger.error(f"Failed to notify admin {admin_id}: {e}")
+
+
+@router.callback_query(F.data.regexp(r"^not_attend_(\d+)_(\d+)$"))
+async def callback_not_attend_from_broadcast(callback: CallbackQuery):
+    """
+    Обработчик кнопки "❌ Не смогу прийти" из рассылки видео-кружка.
+    Отменяет регистрацию пользователя.
+    """
+    match = callback.data.split("_")
+    event_id = int(match[1])
+    user_tg_id = int(match[2])
+
+    async with get_session() as session:
+        # Получаем регистрацию
+        result = await session.execute(
+            select(EventRegistration, User, Event)
+            .join(User, EventRegistration.user_id == User.id)
+            .join(Event, EventRegistration.event_id == Event.id)
+            .where(
+                and_(
+                    EventRegistration.event_id == event_id,
+                    User.tg_user_id == user_tg_id
+                )
+            )
+        )
+        data = result.first()
+
+        if not data:
+            await callback.answer("❌ Регистрация не найдена", show_alert=True)
+            return
+
+        registration, user, event = data
+
+        # Отменяем регистрацию
+        registration.status = "cancelled"
+        registration.confirmed = False
+        await session.commit()
+
+    await callback.answer("Участие отменено")
+    await callback.message.edit_text(
+        f"❌ <b>Участие отменено</b>\n\n"
+        f"Мероприятие: {event.title}\n\n"
+        f"Будем рады видеть вас на других мероприятиях!",
+        parse_mode="HTML"
+    )
+
+    # Уведомляем администраторов
+    settings = load_settings()
+    notification = (
+        f"❌ <b>Отказ от участия (через рассылку)</b>\n\n"
+        f"<b>Мероприятие:</b> {event.title}\n"
+        f"<b>Участник:</b> {user.first_name} {user.last_name}\n"
+        f"<b>Username:</b> @{user.username or 'нет'}\n"
+        f"<b>Телефон:</b> {user.phone_number or 'нет'}\n\n"
+        f"Участник отказался от участия через рассылку."
+    )
+
+    for admin_id in settings.admin_ids:
+        try:
+            await callback.bot.send_message(admin_id, notification, parse_mode="HTML")
+        except Exception as e:
+            logger.error(f"Failed to notify admin {admin_id}: {e}")
+
+
+@router.message(Command("checkin"))
+async def cmd_checkin(message: Message):
+    """
+    Самостоятельная отметка участника о приходе на мероприятие.
+
+    Проверяет:
+    1. Есть ли активная регистрация на сегодняшнее событие
+    2. Событие происходит сегодня (допуск ±4 часа)
+
+    Действия:
+    - Обновляет статус на 'attended'
+    - Отправляет подтверждение участнику
+    - Логирует успешный check-in
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import update
+
+    user_tg_id = message.from_user.id
+
+    async with get_session() as session:
+        # 1. Найти пользователя
+        user_result = await session.execute(
+            select(User).where(User.tg_user_id == user_tg_id)
+        )
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            await message.reply(
+                "❌ Вы не зарегистрированы в системе.\n"
+                "Пожалуйста, зарегистрируйтесь сначала через /start"
+            )
+            return
+
+        # 2. Найти активное событие на сегодня
+        today = datetime.utcnow()
+
+        # Расширенный диапазон (событие может начаться вечером и идти до ночи)
+        event_window_start = today - timedelta(hours=4)
+        event_window_end = today + timedelta(hours=8)
+
+        query = (
+            select(Event, EventRegistration)
+            .join(EventRegistration, EventRegistration.event_id == Event.id)
+            .where(
+                and_(
+                    EventRegistration.user_id == user.id,
+                    EventRegistration.status == "registered",
+                    Event.event_date >= event_window_start,
+                    Event.event_date <= event_window_end,
+                    Event.is_active == True
+                )
+            )
+            .order_by(Event.event_date)  # Ближайшее событие
+        )
+
+        result = await session.execute(query)
+        event_registration = result.first()
+
+        if not event_registration:
+            await message.reply(
+                "❌ У вас нет активной регистрации на сегодняшнее мероприятие.\n\n"
+                "Пожалуйста, зарегистрируйтесь через /events или обратитесь к организатору."
+            )
+            return
+
+        event, registration = event_registration
+
+        # Защита от двойного check-in
+        if registration.status == "attended":
+            await message.reply(
+                f"✅ Вы уже отметились на этом мероприятии!\n\n"
+                f"📋 {event.title}\n"
+                f"Добро пожаловать! 🎉"
+            )
+            return
+
+        # 3. Обновить статус на 'attended'
+        await session.execute(
+            update(EventRegistration)
+            .where(EventRegistration.id == registration.id)
+            .values(status="attended")
+        )
+        await session.commit()
+
+        # 4. Подтверждение участнику
+        await message.reply(
+            f"✅ <b>Добро пожаловать!</b>\n\n"
+            f"📋 Мероприятие: {event.title}\n"
+            f"📅 {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n"
+            f"📍 {event.location or 'Место уточняется'}\n\n"
+            f"Ваше присутствие отмечено. Приятного времяпрепровождения! 🎉",
+            parse_mode="HTML"
+        )
+
+        logger.info(
+            f"✅ CHECK-IN: User {user.tg_user_id} ({user.username}) checked in to event {event.id} ({event.title})"
+        )
+

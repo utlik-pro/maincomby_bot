@@ -159,6 +159,10 @@ class EventRegistration(Base):
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # Подтверждено ли участие
     confirmation_requested_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Когда запрошено подтверждение
 
+    # Tracking broadcast reminders
+    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # Отправлено ли напоминание
+    reminder_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Когда отправлено напоминание
+
     event: Mapped[Event] = relationship(back_populates="registrations")
     user: Mapped[User] = relationship(back_populates="registrations")
 
