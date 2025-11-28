@@ -157,9 +157,15 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
     """Обрабатывает команду /start (с параметрами и без)."""
     logger.info(f"Получена команда /start от пользователя {message.from_user.id}")
 
+    # Deep link для QR кода check-in: /start checkin
+    deep_link = command.args or ""
+    if deep_link == "checkin":
+        logger.info(f"QR код check-in от пользователя {message.from_user.id}")
+        await cmd_checkin(message)
+        return
+
     async with get_session() as session:
         # Парсим deep link (формат: /start source_utm_campaign_referrer)
-        deep_link = command.args or ""
         parts = deep_link.split("_")
 
         source = parts[0] if len(parts) > 0 else None
@@ -220,6 +226,7 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
 @router.callback_query(F.data.in_(["select_city_minsk", "select_city_grodno", "select_city_both"]), RegistrationStates.selecting_city)
 async def callback_select_city(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Обрабатывает выбор города пользователем и показывает доступные мероприятия."""
+    logger.info(f"User {callback.from_user.id} selected city with callback: {callback.data}")
     # Определяем выбранный город
     if callback.data == "select_city_minsk":
         selected_cities = ["Минск"]
@@ -254,6 +261,7 @@ async def callback_select_city(callback: CallbackQuery, state: FSMContext, bot: 
             .order_by(Event.event_date)
         )
         events = result.scalars().all()
+        logger.info(f"Found {len(events)} events for cities: {selected_cities}")
 
         if not events:
             await callback.message.answer(
@@ -323,6 +331,7 @@ async def callback_select_city(callback: CallbackQuery, state: FSMContext, bot: 
                     ])
 
                 await callback.message.answer(event_message, parse_mode="HTML", reply_markup=keyboard)
+    logger.info(f"Finished processing city selection for user {callback.from_user.id}")
 
 
 @router.callback_query(F.data.regexp(r"^register_(\d+)$"))
@@ -1009,6 +1018,8 @@ async def cmd_checkin(message: Message):
 
     user_tg_id = message.from_user.id
 
+    logger.info(f"Check-in attempt by user {user_tg_id}")
+
     async with get_session() as session:
         # 1. Найти пользователя
         user_result = await session.execute(
@@ -1017,6 +1028,7 @@ async def cmd_checkin(message: Message):
         user = user_result.scalar_one_or_none()
 
         if not user:
+            logger.warning(f"User {user_tg_id} not found in DB.")
             await message.reply(
                 "❌ Вы не зарегистрированы в системе.\n"
                 "Пожалуйста, зарегистрируйтесь сначала через /start"
@@ -1024,11 +1036,16 @@ async def cmd_checkin(message: Message):
             return
 
         # 2. Найти активное событие на сегодня
-        today = datetime.utcnow()
+        # ВАЖНО: event_date в БД хранится по времени Минска (UTC+3), но без timezone
+        # Поэтому сравниваем с "сегодня" по Минску
+        minsk_offset = timedelta(hours=3)
+        now_utc = datetime.utcnow()
+        now_minsk = now_utc + minsk_offset
 
-        # Расширенный диапазон (событие может начаться вечером и идти до ночи)
-        event_window_start = today - timedelta(hours=4)
-        event_window_end = today + timedelta(hours=8)
+        today_start_minsk = now_minsk.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end_minsk = today_start_minsk + timedelta(days=1)
+
+        logger.info(f"Searching for events for user {user.id} between {today_start_minsk} and {today_end_minsk} (Minsk time)")
 
         query = (
             select(Event, EventRegistration)
@@ -1037,8 +1054,8 @@ async def cmd_checkin(message: Message):
                 and_(
                     EventRegistration.user_id == user.id,
                     EventRegistration.status == "registered",
-                    Event.event_date >= event_window_start,
-                    Event.event_date <= event_window_end,
+                    Event.event_date >= today_start_minsk,
+                    Event.event_date < today_end_minsk,
                     Event.is_active == True
                 )
             )
@@ -1049,6 +1066,7 @@ async def cmd_checkin(message: Message):
         event_registration = result.first()
 
         if not event_registration:
+            logger.warning(f"No active registration found for user {user.id}")
             await message.reply(
                 "❌ У вас нет активной регистрации на сегодняшнее мероприятие.\n\n"
                 "Пожалуйста, зарегистрируйтесь через /events или обратитесь к организатору."
