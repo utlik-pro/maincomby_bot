@@ -1,0 +1,15 @@
+[Unit]
+Description=Webhook Server for Bot Auto-Deploy
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/maincomby_bot
+Environment="WEBHOOK_SECRET=your_secret_here"
+ExecStart=/usr/bin/python3 /root/maincomby_bot/webhook_server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import sys
 
 from loguru import logger
 from aiogram import F
@@ -16,9 +17,17 @@ from .handlers.event_admin import router as event_admin_router
 from .handlers.welcome import router as welcome_router
 from .handlers.broadcast import router as broadcast_router
 from .handlers.matching import router as matching_router
+from .handlers.feedback import router as feedback_router
 
 
 async def main() -> None:
+    logger.remove()  # Удаляем все предыдущие обработчики
+    logger.add(
+        sys.stderr,
+        level="INFO",
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+        colorize=True
+    )
     logging.getLogger("aiogram.event").setLevel(logging.WARNING)
     bot, dp = create_bot_and_dispatcher()
 
@@ -59,6 +68,7 @@ async def main() -> None:
     from .handlers.welcome import set_session_factory as set_welcome_session_factory
     from .handlers.broadcast import set_session_factory as set_broadcast_session_factory
     from .handlers.matching import set_session_factory as set_matching_session_factory
+    from .handlers.feedback import set_session_factory as set_feedback_session_factory
     set_news_session_factory(session_factory)
     set_qa_session_factory(session_factory)
     set_events_session_factory(session_factory)
@@ -66,6 +76,7 @@ async def main() -> None:
     set_welcome_session_factory(session_factory)
     set_broadcast_session_factory(session_factory)
     set_matching_session_factory(session_factory)
+    set_feedback_session_factory(session_factory)
 
     # Routers (порядок важен!)
     # 0. welcome_router - первым для обработки новых участников
@@ -76,9 +87,11 @@ async def main() -> None:
     dp.include_router(broadcast_router)
     # 2. matching_router - система матчинга
     dp.include_router(matching_router)
-    # 3. qa_router - должен быть ДО moderation_router, чтобы обрабатывать упоминания
+    # 3. feedback_router - фидбек после мероприятий
+    dp.include_router(feedback_router)
+    # 4. qa_router - должен быть ДО moderation_router, чтобы обрабатывать упоминания
     dp.include_router(qa_router)
-    # 4. остальные роутеры
+    # 5. остальные роутеры
     dp.include_router(moderation_router)
     dp.include_router(news_moderation_router)
     dp.include_router(utils_router)
@@ -281,7 +294,8 @@ async def main() -> None:
             "Доступные команды:\n"
             "- /help — список команд\n"
             "- /start — информация о ближайшем мероприятии\n"
-            "- /my_events — мои регистрации на мероприятия\n\n"
+            "- /my_events — мои регистрации на мероприятия\n"
+            "- /feedback — оставить отзыв о мероприятии\n\n"
             "<b>💕 Система матчинга:</b>\n"
             "- /tinder — система знакомств и нетворкинга\n"
             "- /my_profile — мой профиль\n"

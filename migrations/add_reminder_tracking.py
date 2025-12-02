@@ -11,12 +11,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import text
-from app.db.session import get_db_session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from app.config import load_settings
 
 
 async def upgrade():
     """Add reminder_sent and reminder_sent_at fields to event_registrations"""
-    async with get_db_session() as session:
+    settings = load_settings()
+    engine = create_async_engine(settings.database_url, echo=False)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with async_session() as session:
         # Add reminder_sent column (Boolean)
         await session.execute(
             text("""
@@ -44,10 +50,16 @@ async def upgrade():
         await session.commit()
         print("✅ Migration completed: Added reminder tracking fields")
 
+    await engine.dispose()
+
 
 async def downgrade():
     """Remove reminder tracking fields"""
-    async with get_db_session() as session:
+    settings = load_settings()
+    engine = create_async_engine(settings.database_url, echo=False)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with async_session() as session:
         # Drop index
         await session.execute(
             text("""
@@ -72,6 +84,8 @@ async def downgrade():
 
         await session.commit()
         print("✅ Downgrade completed: Removed reminder tracking fields")
+
+    await engine.dispose()
 
 
 if __name__ == "__main__":

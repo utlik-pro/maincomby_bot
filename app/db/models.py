@@ -142,6 +142,7 @@ class Event(Base):
     created_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Кто создал (admin user_id)
 
     registrations: Mapped[list["EventRegistration"]] = relationship(back_populates="event")
+    feedback: Mapped[list["EventFeedback"]] = relationship(back_populates="event")
 
 
 class EventRegistration(Base):
@@ -228,5 +229,27 @@ class Swipe(Base):
 
     swiper: Mapped[User] = relationship(foreign_keys=[swiper_id], back_populates="swipes_made")
     swiped: Mapped[User] = relationship(foreign_keys=[swiped_id], back_populates="swipes_received")
+
+
+class EventFeedback(Base):
+    """Фидбек от участников после мероприятия."""
+    __tablename__ = "event_feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+
+    # Оценки по 4-балльной системе (1-4, где 4 - лучше всего)
+    # Сохраняем как числа для аналитики
+    speaker1_rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Оценка первого спикера
+    speaker2_rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Оценка второго спикера
+
+    # Свободный комментарий
+    comment: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    event: Mapped["Event"] = relationship(back_populates="feedback")
+    user: Mapped[User] = relationship()
 
 

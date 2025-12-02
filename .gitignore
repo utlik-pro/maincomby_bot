@@ -32,3 +32,12 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Videos and media files
+*.MP4
+*.mp4
+*.mov
+*.avi
+
+# Deployment scripts with sensitive data
+deploy_to_vps.sh
+
