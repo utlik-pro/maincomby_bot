@@ -3,8 +3,8 @@ import logging
 import sys
 
 from loguru import logger
-from aiogram import F
-from aiogram.types import Message, CallbackQuery
+from aiogram import F, Bot
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from .bot import create_bot_and_dispatcher
 from .db.session import create_engine, create_session_factory, init_models
@@ -43,6 +43,77 @@ async def main() -> None:
             f"text={event.text[:50] if event.text else 'NO TEXT'}"
         )
         return await handler(event, data)
+
+    async def check_subscription(handler, event, data):
+        """
+        Проверяет, подписан ли пользователь на основной канал.
+        """
+        user_id = event.from_user.id
+        bot: Bot = data.get('bot')
+
+        # Пропускаем администраторов
+        from .config import load_settings
+        settings = load_settings()
+        if user_id in settings.admin_ids:
+            return await handler(event, data)
+        
+        if not settings.check_subscription_channel_id or not settings.check_subscription_channel_url:
+            # Если канал не настроен, пропускаем проверку
+            return await handler(event, data)
+        
+        try:
+            member = await bot.get_chat_member(chat_id=settings.check_subscription_channel_id, user_id=user_id)
+            if member.status not in ("member", "administrator", "creator"):
+                # Пользователь не подписан
+                keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔗 Перейти в канал", url=settings.check_subscription_channel_url)],
+                    [InlineKeyboardButton(text="✅ Я подписался", callback_data="check_subscription")]
+                ])
+                
+                # Определяем, как ответить: редактировать сообщение или отправить новое
+                if isinstance(event, Message):
+                    await event.answer(
+                        "Для доступа к боту, пожалуйста, подпишитесь на наш основной канал.",
+                        reply_markup=keyboard
+                    )
+                elif isinstance(event, CallbackQuery):
+                    await event.message.answer(
+                        "Для доступа к боту, пожалуйста, подпишитесь на наш основной канал.",
+                        reply_markup=keyboard
+                    )
+                    await event.answer() # Закрываем уведомление от нажатия на кнопку
+                return
+        except Exception as e:
+            logger.error(f"Ошибка проверки подписки для user_id={user_id}: {e}")
+            # В случае ошибки (например, бот не админ в канале), пропускаем проверку
+            return await handler(event, data)
+
+        return await handler(event, data)
+
+    dp.message.outer_middleware()(check_subscription)
+    dp.callback_query.outer_middleware()(check_subscription)
+
+    @dp.callback_query(F.data == "check_subscription")
+    async def process_check_subscription_callback(callback: CallbackQuery, bot: Bot):
+        """
+        Обрабатывает нажатие кнопки "Я подписался".
+        """
+        from .config import load_settings
+        settings = load_settings()
+        user_id = callback.from_user.id
+        try:
+            member = await bot.get_chat_member(chat_id=settings.check_subscription_channel_id, user_id=user_id)
+            if member.status in ("member", "administrator", "creator"):
+                # Пользователь подписан, удаляем сообщение с кнопкой
+                await callback.message.delete()
+                await callback.answer("Спасибо за подписку! Теперь вы можете пользоваться ботом. ✨", show_alert=True)
+            else:
+                # Пользователь все еще не подписан
+                await callback.answer("Вы все еще не подписаны на канал. Пожалуйста, подпишитесь.", show_alert=True)
+        except Exception as e:
+            logger.error(f"Ошибка при повторной проверке подписки для user_id={user_id}: {e}")
+            await callback.answer("Произошла ошибка при проверке. Попробуйте позже.", show_alert=True)
+
 
     # Middleware для логирования chat_member событий
     @dp.chat_member.outer_middleware()
