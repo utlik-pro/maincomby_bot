@@ -503,16 +503,11 @@ async def cmd_export_leads(message: Message):
             await message.answer(f"Мероприятие с ID {event_id} не найдено.")
             return
 
-        # Получаем регистрации с данными пользователей
+        # Получаем регистрации с данными пользователей (все статусы)
         result = await session.execute(
             select(EventRegistration, User)
             .join(User, EventRegistration.user_id == User.id)
-            .where(
-                and_(
-                    EventRegistration.event_id == event_id,
-                    EventRegistration.status == "registered"
-                )
-            )
+            .where(EventRegistration.event_id == event_id)
             .order_by(EventRegistration.registered_at.desc())
         )
         registrations_with_users = result.all()
@@ -529,7 +524,7 @@ async def cmd_export_leads(message: Message):
         leads_message += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
         # CSV формат для экспорта
-        csv_content = "№,Имя,Фамилия,Username,Телефон,Дата регистрации\n"
+        csv_content = "№,Имя,Фамилия,Username,Телефон,Статус,Дата регистрации\n"
 
         for idx, (reg, user) in enumerate(registrations_with_users, 1):
             # Для сообщения
@@ -539,15 +534,24 @@ async def cmd_export_leads(message: Message):
             last_name = user.last_name or "—"
             username = f"@{user.username}" if user.username else "—"
             phone = user.phone_number or "—"
+            status = reg.status or "registered"
+
+            # Эмодзи для статусов
+            status_emoji = {
+                "registered": "✅",
+                "cancelled": "❌",
+                "attended": "👤"
+            }.get(status, "❓")
 
             leads_message += f"{first_name} {last_name}"
             if user.username:
                 leads_message += f" ({username})"
             leads_message += f"\n📱 {phone}"
+            leads_message += f"\n{status_emoji} {status}"
             leads_message += f"\n📅 {reg.registered_at.strftime('%d.%m.%Y %H:%M')}\n\n"
 
             # Для CSV
-            csv_content += f'{idx},"{first_name}","{last_name}","{username}","{phone}","{reg.registered_at.strftime("%d.%m.%Y %H:%M")}"\n'
+            csv_content += f'{idx},"{first_name}","{last_name}","{username}","{phone}","{status}","{reg.registered_at.strftime("%d.%m.%Y %H:%M")}"\n'
 
         # Отправляем сообщение с лидами
         try:

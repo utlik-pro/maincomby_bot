@@ -18,6 +18,7 @@ from .handlers.welcome import router as welcome_router
 from .handlers.broadcast import router as broadcast_router
 from .handlers.matching import router as matching_router
 from .handlers.feedback import router as feedback_router
+from .handlers.broadcast_feedback import router as broadcast_feedback_router
 
 
 async def main() -> None:
@@ -69,6 +70,7 @@ async def main() -> None:
     from .handlers.broadcast import set_session_factory as set_broadcast_session_factory
     from .handlers.matching import set_session_factory as set_matching_session_factory
     from .handlers.feedback import set_session_factory as set_feedback_session_factory
+    from .handlers.broadcast_feedback import set_session_factory as set_broadcast_feedback_session_factory
     set_news_session_factory(session_factory)
     set_qa_session_factory(session_factory)
     set_events_session_factory(session_factory)
@@ -77,6 +79,7 @@ async def main() -> None:
     set_broadcast_session_factory(session_factory)
     set_matching_session_factory(session_factory)
     set_feedback_session_factory(session_factory)
+    set_broadcast_feedback_session_factory(session_factory)
 
     # Routers (порядок важен!)
     # 0. welcome_router - первым для обработки новых участников
@@ -89,6 +92,8 @@ async def main() -> None:
     dp.include_router(matching_router)
     # 3. feedback_router - фидбек после мероприятий
     dp.include_router(feedback_router)
+    # 3.5. broadcast_feedback_router - фидбек из рассылок
+    dp.include_router(broadcast_feedback_router)
     # 4. qa_router - должен быть ДО moderation_router, чтобы обрабатывать упоминания
     dp.include_router(qa_router)
     # 5. остальные роутеры
@@ -295,7 +300,7 @@ async def main() -> None:
             "- /help — список команд\n"
             "- /start — информация о ближайшем мероприятии\n"
             "- /my_events — мои регистрации на мероприятия\n"
-            "- /feedback — оставить отзыв о мероприятии\n\n"
+            "- /checkin — отметиться на мероприятии\n\n"
             "<b>💕 Система матчинга:</b>\n"
             "- /tinder — система знакомств и нетворкинга\n"
             "- /my_profile — мой профиль\n"
@@ -311,11 +316,11 @@ async def main() -> None:
                 "- /create_event — создать мероприятие\n"
                 "- /list_events — список всех мероприятий\n"
                 "- /event_stats [id] — статистика регистраций\n"
-                "- /confirmation_stats <id> — статистика подтверждений\n"
-                "- /registration_timeline <id> — динамика регистраций\n"
-                "- /toggle_event <id> — активировать/деактивировать\n"
-                "- /mark_old_registrations <id> — пометить как старая дата\n"
-                "- /request_confirmation <id> — запросить подтверждения\n\n"
+                "- /confirmation_stats [id] — статистика подтверждений\n"
+                "- /registration_timeline [id] — динамика регистраций\n"
+                "- /toggle_event [id] — активировать/деактивировать\n"
+                "- /mark_old_registrations [id] — пометить как старая дата\n"
+                "- /request_confirmation [id] — запросить подтверждения\n\n"
 
                 "<b>Админ-команды (рассылки):</b>\n"
                 "- /broadcast_video_test — тест рассылки видео админам\n"
@@ -334,8 +339,8 @@ async def main() -> None:
                 "<b>Админ-команды (матчинг):</b>\n"
                 "- /matching_stats — статистика системы матчинга\n"
                 "- /moderate_profiles — модерация профилей\n"
-                "- /approve_profile <id> — одобрить профиль\n"
-                "- /reject_profile <id> — отклонить профиль\n\n"
+                "- /approve_profile [id] — одобрить профиль\n"
+                "- /reject_profile [id] — отклонить профиль\n\n"
             )
 
         help_text += (
@@ -346,6 +351,16 @@ async def main() -> None:
         )
 
         await message.answer(help_text, parse_mode="HTML")
+
+    # Устанавливаем команды меню
+    from aiogram.types import BotCommand
+    commands = [
+        BotCommand(command="start", description="🏠 Главное меню"),
+        BotCommand(command="checkin", description="📍 Чекин на мероприятие"),
+        BotCommand(command="help", description="❓ Помощь"),
+    ]
+    await bot.set_my_commands(commands)
+    logger.info("Bot menu commands set successfully")
 
     logger.info("Starting bot long-polling…")
     # Явно указываем типы обновлений, которые хотим получать

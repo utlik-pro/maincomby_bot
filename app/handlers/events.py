@@ -155,6 +155,8 @@ def format_event_message(event: Event, registered_count: int = 0) -> str:
 @router.message(CommandStart())
 async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, state: FSMContext):
     """Обрабатывает команду /start (с параметрами и без)."""
+    from datetime import datetime
+
     logger.info(f"Получена команда /start от пользователя {message.from_user.id}")
 
     # Deep link для QR кода check-in: /start checkin
@@ -206,132 +208,83 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
             )
             return
 
-        # Предлагаем выбрать город
-        await state.set_state(RegistrationStates.selecting_city)
-
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🏙 Минск", callback_data="select_city_minsk")],
-            [InlineKeyboardButton(text="🏰 Гродно", callback_data="select_city_grodno")],
-            [InlineKeyboardButton(text="🌍 Оба города", callback_data="select_city_both")],
-        ])
-
+        # Показываем все активные мероприятия напрямую
         await message.answer(
             "Привет! 👋\n\n"
-            "Рады видеть тебя в боте ИИшницы!\n\n"
-            "В каком городе ты хочешь посетить мероприятия?",
-            reply_markup=keyboard
+            "Рады видеть тебя в боте ИИшницы!"
         )
 
-
-@router.callback_query(F.data.in_(["select_city_minsk", "select_city_grodno", "select_city_both"]), RegistrationStates.selecting_city)
-async def callback_select_city(callback: CallbackQuery, state: FSMContext, bot: Bot):
-    """Обрабатывает выбор города пользователем и показывает доступные мероприятия."""
-    logger.info(f"User {callback.from_user.id} selected city with callback: {callback.data}")
-    # Определяем выбранный город
-    if callback.data == "select_city_minsk":
-        selected_cities = ["Минск"]
-        city_text = "Минске"
-    elif callback.data == "select_city_grodno":
-        selected_cities = ["Гродно"]
-        city_text = "Гродно"
-    else:  # select_city_both
-        selected_cities = ["Минск", "Гродно"]
-        city_text = "обоих городах"
-
-    await callback.answer()
-    await state.clear()  # Очищаем состояние
-
-    async with get_session() as session:
-        # Получаем пользователя
-        result = await session.execute(
-            select(User).where(User.tg_user_id == callback.from_user.id)
-        )
-        user = result.scalar_one_or_none()
-
-        # Получаем активные мероприятия в выбранных городах
-        result = await session.execute(
-            select(Event)
-            .where(
-                and_(
-                    Event.is_active == True,
-                    Event.event_date > datetime.utcnow(),
-                    Event.city.in_(selected_cities)
+        # Показываем каждое мероприятие
+        for event in events:
+            # Получаем количество зарегистрированных
+            result = await session.execute(
+                select(EventRegistration).where(
+                    and_(
+                        EventRegistration.event_id == event.id,
+                        EventRegistration.status == "registered"
+                    )
                 )
             )
-            .order_by(Event.event_date)
-        )
-        events = result.scalars().all()
-        logger.info(f"Found {len(events)} events for cities: {selected_cities}")
+            registered_count = len(result.scalars().all())
 
-        if not events:
-            await callback.message.answer(
-                f"К сожалению, в {city_text} пока нет запланированных мероприятий.\n\n"
-                "Следи за обновлениями!"
-            )
-            return
-
-        # Группируем мероприятия по городам
-        events_by_city = {}
-        for event in events:
-            if event.city not in events_by_city:
-                events_by_city[event.city] = []
-            events_by_city[event.city].append(event)
-
-        # Отправляем информацию о каждом мероприятии
-        intro_message = f"Отлично! Вот мероприятия в {city_text}:\n"
-        await callback.message.answer(intro_message)
-
-        for city in selected_cities:
-            if city not in events_by_city:
-                continue
-
-            for event in events_by_city[city]:
-                # Получаем количество зарегистрированных
+            # Проверяем, зарегистрирован ли уже пользователь
+            is_registered = False
+            if user:
                 result = await session.execute(
                     select(EventRegistration).where(
                         and_(
                             EventRegistration.event_id == event.id,
+                            EventRegistration.user_id == user.id,
                             EventRegistration.status == "registered"
                         )
                     )
                 )
-                registered_count = len(result.scalars().all())
+                is_registered = result.scalar_one_or_none() is not None
 
-                # Проверяем, зарегистрирован ли уже пользователь
-                is_registered = False
-                if user:
-                    result = await session.execute(
-                        select(EventRegistration).where(
-                            and_(
-                                EventRegistration.event_id == event.id,
-                                EventRegistration.user_id == user.id,
-                                EventRegistration.status == "registered"
-                            )
-                        )
-                    )
-                    is_registered = result.scalar_one_or_none() is not None
+            # Формируем сообщение и кнопки
+            event_message = format_event_message(event, registered_count)
 
-                # Формируем сообщение и кнопки
-                event_message = format_event_message(event, registered_count)
+            # Проверяем, можно ли показать кнопку чекина
+            from datetime import datetime, time, timezone, timedelta
+            from ..config import load_settings
+            settings = load_settings()
+            is_admin = message.from_user.id in settings.admin_ids
 
-                if is_registered:
-                    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="✅ Я иду!", callback_data="already_registered")],
-                        [InlineKeyboardButton(text="❌ Отменить регистрацию", callback_data=f"unregister_{event.id}")],
-                    ])
-                    event_message += "\n<b>✅ Вы уже зарегистрированы на это мероприятие!</b>"
-                else:
-                    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="😎 Иду!", callback_data=f"register_{event.id}")],
-                    ])
+            # Получаем текущее время в Минске (UTC+3)
+            minsk_tz = timezone(timedelta(hours=3))
+            now_minsk = datetime.now(minsk_tz)
+            current_time = now_minsk.time()
+            checkin_start = time(17, 0)  # 17:00
+            checkin_end = time(21, 0)    # 21:00
+            can_checkin = is_admin or (checkin_start <= current_time <= checkin_end)
 
-                if event.location_url:
-                    keyboard.inline_keyboard.append([
-                        InlineKeyboardButton(text="📍 Показать на карте", url=event.location_url)
-                    ])
+            if is_registered:
+                keyboard_buttons = [
+                    [InlineKeyboardButton(text="✅ Я иду!", callback_data="already_registered")],
+                ]
 
-                await callback.message.answer(event_message, parse_mode="HTML", reply_markup=keyboard)
-    logger.info(f"Finished processing city selection for user {callback.from_user.id}")
+                # Добавляем кнопку чекина если доступно
+                if can_checkin:
+                    keyboard_buttons.append([InlineKeyboardButton(text="📍 Чекин", callback_data=f"checkin_{event.id}")])
+
+                keyboard_buttons.append([InlineKeyboardButton(text="❌ Отменить регистрацию", callback_data=f"unregister_{event.id}")])
+
+                keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+                event_message += "\n<b>✅ Вы уже зарегистрированы на это мероприятие!</b>"
+            else:
+                keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="😎 Иду!", callback_data=f"register_{event.id}")],
+                ])
+
+            if event.location_url:
+                keyboard.inline_keyboard.append([
+                    InlineKeyboardButton(text="📍 Показать на карте", url=event.location_url)
+                ])
+
+            await message.answer(event_message, parse_mode="HTML", reply_markup=keyboard)
+
+
+# Удалён обработчик выбора города - теперь показываем все мероприятия сразу
 
 
 @router.callback_query(F.data.regexp(r"^register_(\d+)$"))
@@ -496,6 +449,93 @@ async def callback_unregister_event(callback: CallbackQuery):
 async def callback_already_registered(callback: CallbackQuery):
     """Заглушка для уже зарегистрированных."""
     await callback.answer("Вы уже зарегистрированы на это мероприятие.", show_alert=False)
+
+
+@router.callback_query(F.data.regexp(r"^checkin_(\d+)$"))
+async def callback_checkin_event(callback: CallbackQuery):
+    """Обрабатывает чекин через кнопку."""
+    import re
+    match = re.match(r"^checkin_(\d+)$", callback.data)
+    if not match:
+        return
+
+    event_id = int(match.group(1))
+
+    async with get_session() as session:
+        # Получаем пользователя
+        result = await session.execute(
+            select(User).where(User.tg_user_id == callback.from_user.id)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            await callback.answer("Пользователь не найден в базе данных.", show_alert=True)
+            return
+
+        # Получаем мероприятие
+        result = await session.execute(
+            select(Event).where(Event.id == event_id)
+        )
+        event = result.scalar_one_or_none()
+
+        if not event:
+            await callback.answer("Мероприятие не найдено.", show_alert=True)
+            return
+
+        # Проверяем регистрацию
+        result = await session.execute(
+            select(EventRegistration)
+            .where(
+                and_(
+                    EventRegistration.event_id == event_id,
+                    EventRegistration.user_id == user.id
+                )
+            )
+        )
+        registration = result.scalar_one_or_none()
+
+        if not registration:
+            await callback.answer("❌ Вы не зарегистрированы на это мероприятие.", show_alert=True)
+            return
+
+        # Проверяем доступность чекина по времени
+        from datetime import datetime, time, timezone, timedelta
+        from ..config import load_settings
+        settings = load_settings()
+        is_admin = callback.from_user.id in settings.admin_ids
+
+        # Получаем текущее время в Минске (UTC+3)
+        minsk_tz = timezone(timedelta(hours=3))
+        now_minsk = datetime.now(minsk_tz)
+        current_time = now_minsk.time()
+        checkin_start = time(17, 0)  # 17:00
+        checkin_end = time(21, 0)    # 21:00
+
+        if not is_admin and not (checkin_start <= current_time <= checkin_end):
+            await callback.answer(
+                f"⏰ Чекин доступен с {checkin_start.strftime('%H:%M')} до {checkin_end.strftime('%H:%M')}",
+                show_alert=True
+            )
+            return
+
+        # Отмечаем посещение
+        registration.status = "attended"
+        await session.commit()
+
+        await callback.answer("✅ Чекин выполнен!", show_alert=True)
+
+        await callback.message.answer(
+            f"✅ <b>Чекин успешно выполнен!</b>\n\n"
+            f"📋 Мероприятие: {event.title}\n"
+            f"📅 {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n"
+            f"📍 {event.location or 'Место уточняется'}\n\n"
+            f"Приятного времяпрепровождения! 🎉",
+            parse_mode="HTML"
+        )
+
+        logger.info(
+            f"✅ CHECK-IN (Button): User {user.tg_user_id} ({user.username}) checked in to event {event.id} ({event.title})"
+        )
 
 
 @router.message(RegistrationStates.waiting_for_full_name)
