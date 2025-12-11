@@ -1060,6 +1060,27 @@ async def cmd_checkin(message: Message):
 
     logger.info(f"Check-in attempt by user {user_tg_id}")
 
+    # Проверка времени доступности чекина: только 18 декабря 2025 с 17:00 до 21:00 (Минск)
+    minsk_offset = timedelta(hours=3)
+    now_utc = datetime.utcnow()
+    now_minsk = now_utc + minsk_offset
+
+    # Определяем временное окно для чекина
+    checkin_date = datetime(2025, 12, 18, 17, 0, 0)  # 18 декабря 2025, 17:00
+    checkin_end = datetime(2025, 12, 18, 21, 0, 0)   # 18 декабря 2025, 21:00
+
+    if not (checkin_date <= now_minsk <= checkin_end):
+        logger.info(f"Check-in not available at {now_minsk} (Minsk time)")
+        await message.reply(
+            "📍 <b>Чекин временно недоступен</b>\n\n"
+            "Чекин будет доступен:\n"
+            "📅 18 декабря 2025\n"
+            "🕐 с 17:00 до 21:00\n\n"
+            "Пожалуйста, попробуйте в указанное время.",
+            parse_mode="HTML"
+        )
+        return
+
     async with get_session() as session:
         # 1. Найти пользователя
         user_result = await session.execute(

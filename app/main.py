@@ -48,28 +48,41 @@ async def main() -> None:
         """
         Проверяет, подписан ли пользователь на основной канал.
         """
+        logger.info(f"[SUBSCRIPTION] check_subscription middleware called for event type: {type(event).__name__}")
+
+        # Пропускаем callback "check_subscription" - он будет обработан отдельным handler
+        if isinstance(event, CallbackQuery) and event.data == "check_subscription":
+            logger.info(f"[SUBSCRIPTION] Skipping middleware for check_subscription callback")
+            return await handler(event, data)
+
         user_id = event.from_user.id
         bot: Bot = data.get('bot')
+        logger.info(f"[SUBSCRIPTION] Processing user_id: {user_id}")
 
         # Пропускаем администраторов
         from .config import load_settings
         settings = load_settings()
         if user_id in settings.admin_ids:
+            logger.info(f"[SUBSCRIPTION] User {user_id} is admin, skipping check")
             return await handler(event, data)
-        
+
         if not settings.check_subscription_channel_id or not settings.check_subscription_channel_url:
             # Если канал не настроен, пропускаем проверку
+            logger.warning(f"[SUBSCRIPTION] Channel not configured, skipping check")
             return await handler(event, data)
-        
+
         try:
             member = await bot.get_chat_member(chat_id=settings.check_subscription_channel_id, user_id=user_id)
+            logger.info(f"[SUBSCRIPTION] User {user_id} status: {member.status}")
+
             if member.status not in ("member", "administrator", "creator"):
                 # Пользователь не подписан
+                logger.warning(f"[SUBSCRIPTION] User {user_id} is NOT subscribed, blocking access")
                 keyboard = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="🔗 Перейти в канал", url=settings.check_subscription_channel_url)],
                     [InlineKeyboardButton(text="✅ Я подписался", callback_data="check_subscription")]
                 ])
-                
+
                 # Определяем, как ответить: редактировать сообщение или отправить новое
                 if isinstance(event, Message):
                     await event.answer(
@@ -82,12 +95,14 @@ async def main() -> None:
                         reply_markup=keyboard
                     )
                     await event.answer() # Закрываем уведомление от нажатия на кнопку
+                logger.info(f"[SUBSCRIPTION] Sent subscription message to user {user_id}")
                 return
         except Exception as e:
-            logger.error(f"Ошибка проверки подписки для user_id={user_id}: {e}")
+            logger.error(f"[SUBSCRIPTION] Error checking subscription for user_id={user_id}: {e}")
             # В случае ошибки (например, бот не админ в канале), пропускаем проверку
             return await handler(event, data)
 
+        logger.info(f"[SUBSCRIPTION] User {user_id} is subscribed, allowing access")
         return await handler(event, data)
 
     dp.message.outer_middleware()(check_subscription)
@@ -109,7 +124,20 @@ async def main() -> None:
                 await callback.answer("Спасибо за подписку! Теперь вы можете пользоваться ботом. ✨", show_alert=True)
             else:
                 # Пользователь все еще не подписан
-                await callback.answer("Вы все еще не подписаны на канал. Пожалуйста, подпишитесь.", show_alert=True)
+                keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔗 Перейти в канал", url=settings.check_subscription_channel_url)],
+                    [InlineKeyboardButton(text="✅ Я подписался", callback_data="check_subscription")]
+                ])
+
+                await callback.message.edit_text(
+                    "⚠️ <b>Вы все еще не подписаны на канал!</b>\n\n"
+                    "Для доступа к боту необходимо подписаться на наш основной канал.\n\n"
+                    "👇 Нажмите на кнопку ниже, подпишитесь на канал, "
+                    "а затем вернитесь и нажмите «✅ Я подписался».",
+                    reply_markup=keyboard,
+                    parse_mode="HTML"
+                )
+                await callback.answer("❌ Вы не подписаны! Сначала подпишитесь на канал.", show_alert=True)
         except Exception as e:
             logger.error(f"Ошибка при повторной проверке подписки для user_id={user_id}: {e}")
             await callback.answer("Произошла ошибка при проверке. Попробуйте позже.", show_alert=True)
@@ -371,7 +399,7 @@ async def main() -> None:
             "- /help — список команд\n"
             "- /start — информация о ближайшем мероприятии\n"
             "- /my_events — мои регистрации на мероприятия\n"
-            "- /checkin — отметиться на мероприятии\n\n"
+            "- /checkin — отметиться на мероприятии (доступно 18 декабря с 17:00 до 21:00)\n\n"
             "<b>💕 Система матчинга:</b>\n"
             "- /tinder — система знакомств и нетворкинга\n"
             "- /my_profile — мой профиль\n"
@@ -427,7 +455,7 @@ async def main() -> None:
     from aiogram.types import BotCommand
     commands = [
         BotCommand(command="start", description="🏠 Главное меню"),
-        BotCommand(command="checkin", description="📍 Чекин на мероприятие"),
+        BotCommand(command="tinder", description="💕 Тиндер"),
         BotCommand(command="help", description="❓ Помощь"),
     ]
     await bot.set_my_commands(commands)
