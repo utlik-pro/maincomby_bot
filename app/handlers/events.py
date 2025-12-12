@@ -261,13 +261,9 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
             if is_registered:
                 keyboard_buttons = [
                     [InlineKeyboardButton(text="✅ Я иду!", callback_data="already_registered")],
+                    [InlineKeyboardButton(text="💕 Tinder", callback_data="tinder")],
+                    [InlineKeyboardButton(text="❌ Отменить регистрацию", callback_data=f"unregister_{event.id}")]
                 ]
-
-                # Добавляем кнопку чекина если доступно
-                if can_checkin:
-                    keyboard_buttons.append([InlineKeyboardButton(text="📍 Чекин", callback_data=f"checkin_{event.id}")])
-
-                keyboard_buttons.append([InlineKeyboardButton(text="❌ Отменить регистрацию", callback_data=f"unregister_{event.id}")])
 
                 keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
                 event_message += "\n<b>✅ Вы уже зарегистрированы на это мероприятие!</b>"
@@ -449,6 +445,16 @@ async def callback_unregister_event(callback: CallbackQuery):
 async def callback_already_registered(callback: CallbackQuery):
     """Заглушка для уже зарегистрированных."""
     await callback.answer("Вы уже зарегистрированы на это мероприятие.", show_alert=False)
+
+
+@router.callback_query(F.data == "tinder")
+async def callback_tinder(callback: CallbackQuery, state: FSMContext):
+    """Открывает Main Tinder по нажатию кнопки."""
+    from .matching import cmd_tinder
+
+    # Создаем объект Message из callback для совместимости с cmd_tinder
+    await callback.answer()
+    await cmd_tinder(callback.message, state)
 
 
 @router.callback_query(F.data.regexp(r"^checkin_(\d+)$"))
