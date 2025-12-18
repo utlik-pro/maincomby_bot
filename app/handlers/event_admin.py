@@ -1221,9 +1221,11 @@ async def cmd_registration_timeline(message: Message):
 # =============================================================================
 
 @router.message(Command("moderate_profiles"))
-async def cmd_moderate_profiles(message: Message):
+async def cmd_moderate_profiles(message: Message, user_id: int = None):
     """Показать профили на модерации."""
-    if not await is_admin(message.from_user.id):
+    # Если user_id не передан, берём из message (для прямого вызова команды)
+    check_user_id = user_id if user_id is not None else message.from_user.id
+    if not await is_admin(check_user_id):
         await message.bot.send_message(message.chat.id, "Только администраторы могут модерировать профили.")
         return
 
@@ -1334,10 +1336,22 @@ async def callback_approve_profile(callback: CallbackQuery):
         except Exception as e:
             logger.error(f"Не удалось уведомить пользователя {user.tg_user_id}: {e}")
 
-        await callback.message.edit_caption(
-            caption=f"{callback.message.caption}\n\n✅ <b>ОДОБРЕН</b> администратором @{callback.from_user.username}",
-            parse_mode="HTML"
-        )
+        # Обновляем сообщение (caption для фото, text для текста)
+        admin_username = callback.from_user.username or callback.from_user.id
+        status_text = f"\n\n✅ <b>ОДОБРЕН</b> администратором @{admin_username}"
+        try:
+            if callback.message.caption:
+                await callback.message.edit_caption(
+                    caption=f"{callback.message.caption}{status_text}",
+                    parse_mode="HTML"
+                )
+            else:
+                await callback.message.edit_text(
+                    text=f"{callback.message.text}{status_text}",
+                    parse_mode="HTML"
+                )
+        except Exception as e:
+            logger.error(f"Не удалось обновить сообщение: {e}")
         await callback.answer("✅ Профиль одобрен")
 
         logger.info(f"Профиль {profile_id} одобрен администратором {callback.from_user.id}")
@@ -1388,10 +1402,22 @@ async def callback_reject_profile(callback: CallbackQuery):
         except Exception as e:
             logger.error(f"Не удалось уведомить пользователя {user.tg_user_id}: {e}")
 
-        await callback.message.edit_caption(
-            caption=f"{callback.message.caption}\n\n❌ <b>ОТКЛОНЁН</b> администратором @{callback.from_user.username}",
-            parse_mode="HTML"
-        )
+        # Обновляем сообщение (caption для фото, text для текста)
+        admin_username = callback.from_user.username or callback.from_user.id
+        status_text = f"\n\n❌ <b>ОТКЛОНЁН</b> администратором @{admin_username}"
+        try:
+            if callback.message.caption:
+                await callback.message.edit_caption(
+                    caption=f"{callback.message.caption}{status_text}",
+                    parse_mode="HTML"
+                )
+            else:
+                await callback.message.edit_text(
+                    text=f"{callback.message.text}{status_text}",
+                    parse_mode="HTML"
+                )
+        except Exception as e:
+            logger.error(f"Не удалось обновить сообщение: {e}")
         await callback.answer("❌ Профиль отклонён")
 
         logger.info(f"Профиль {profile_id} отклонён администратором {callback.from_user.id}")
@@ -1597,3 +1623,63 @@ async def cmd_matching_stats(message: Message):
         )
 
         await message.bot.send_message(message.chat.id, response, parse_mode="HTML")
+
+
+@router.message(Command("pending_registrations"))
+async def cmd_pending_registrations(message: Message):
+    """
+    Показывает пользователей с незавершённой регистрацией.
+    Это те, кто нажал 'Иду' но не ввёл имя/фамилию или телефон.
+    """
+    if not await is_admin(message.from_user.id):
+        await message.reply("Только администраторы могут использовать эту команду.")
+        return
+
+    from ..fsm_storage import get_pending_registrations
+
+    pending = get_pending_registrations(db_path="data/bot.db")
+
+    if not pending:
+        await message.answer(
+            "✅ <b>Нет незавершённых регистраций</b>\n\n"
+            "Все пользователи либо завершили регистрацию, либо ещё не начинали.",
+            parse_mode="HTML"
+        )
+        return
+
+    response = f"⏳ <b>Незавершённые регистрации ({len(pending)})</b>\n\n"
+
+    for p in pending[:20]:  # Показываем первые 20
+        username = f"@{p['username']}" if p['username'] else "нет"
+        name_parts = []
+        if p['first_name']:
+            name_parts.append(p['first_name'])
+        if p['last_name']:
+            name_parts.append(p['last_name'])
+        name = " ".join(name_parts) if name_parts else "не указано"
+
+        # Определяем этап регистрации
+        state = p['state'] or ""
+        if "waiting_for_full_name" in state:
+            stage = "⏳ Ждём имя и фамилию"
+        elif "waiting_for_phone" in state:
+            stage = "📱 Ждём телефон"
+        else:
+            stage = f"🔄 {state.split(':')[-1] if ':' in state else state}"
+
+        # Данные из FSM
+        data = p.get('data', {})
+        event_id = data.get('event_id', '?')
+
+        response += (
+            f"👤 <b>TG ID:</b> {p['tg_user_id']}\n"
+            f"   {username} | {name}\n"
+            f"   {stage}\n"
+            f"   Мероприятие ID: {event_id}\n"
+            f"   Обновлено: {p['updated_at']}\n\n"
+        )
+
+    if len(pending) > 20:
+        response += f"\n... и ещё {len(pending) - 20}"
+
+    await message.answer(response, parse_mode="HTML")

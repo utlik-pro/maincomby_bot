@@ -235,6 +235,7 @@ async def main() -> None:
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📊 Общая статистика", callback_data="cmd_event_stats_all")],
             [InlineKeyboardButton(text="📈 Статистика по мероприятию", callback_data="cmd_event_stats_ask")],
+            [InlineKeyboardButton(text="⏳ Незавершённые регистрации", callback_data="cmd_pending_registrations")],
             [InlineKeyboardButton(text="✅ Статистика подтверждений", callback_data="cmd_confirmation_stats")],
             [InlineKeyboardButton(text="📉 Динамика регистраций", callback_data="cmd_registration_timeline")],
             [InlineKeyboardButton(text="« Назад", callback_data="admin_back")],
@@ -384,9 +385,24 @@ async def main() -> None:
     async def callback_moderate_profiles(callback: CallbackQuery):
         """Вызов /moderate_profiles."""
         await callback.answer()
-        # Используем callback.message напрямую, она уже связана с bot
+        # Передаём user_id из callback, т.к. callback.message.from_user — это бот
         from .handlers.event_admin import cmd_moderate_profiles
-        await cmd_moderate_profiles(callback.message)
+        await cmd_moderate_profiles(callback.message, user_id=callback.from_user.id)
+
+    @dp.callback_query(F.data == "cmd_pending_registrations")
+    async def callback_pending_registrations(callback: CallbackQuery):
+        """Вызов /pending_registrations."""
+        await callback.answer()
+        from .handlers.event_admin import cmd_pending_registrations
+        # Создаём фейковое сообщение с правильным from_user
+        fake_msg = Message(
+            message_id=callback.message.message_id,
+            date=callback.message.date,
+            chat=callback.message.chat,
+            from_user=callback.from_user,
+            text="/pending_registrations"
+        )
+        await cmd_pending_registrations(fake_msg)
 
     @dp.message(F.text == "/help")
     async def cmd_help(message: Message):
@@ -415,6 +431,7 @@ async def main() -> None:
                 "- /create_event — создать мероприятие\n"
                 "- /list_events — список всех мероприятий\n"
                 "- /event_stats [id] — статистика регистраций\n"
+                "- /pending_registrations — незавершённые регистрации\n"
                 "- /confirmation_stats [id] — статистика подтверждений\n"
                 "- /registration_timeline [id] — динамика регистраций\n"
                 "- /toggle_event [id] — активировать/деактивировать\n"
@@ -455,6 +472,7 @@ async def main() -> None:
     from aiogram.types import BotCommand
     commands = [
         BotCommand(command="start", description="🏠 Главное меню"),
+        BotCommand(command="checkin", description="✅ Чекин"),
         BotCommand(command="tinder", description="💕 Тиндер"),
         BotCommand(command="help", description="❓ Помощь"),
     ]
