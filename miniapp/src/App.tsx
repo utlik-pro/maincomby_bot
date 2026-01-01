@@ -6,6 +6,7 @@ import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, cre
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { Skeleton } from '@/components/ui'
+import { useShakeDetector, useSpeedRunner } from '@/lib/easterEggs'
 
 // Screen imports (lazy loaded)
 const HomeScreen = React.lazy(() => import('@/screens/HomeScreen'))
@@ -67,6 +68,21 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const App: React.FC = () => {
   const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, hasCompletedOnboarding, profile } = useAppStore()
   const { addToast } = useToastStore()
+
+  // Easter eggs - shake detector (global)
+  useShakeDetector(() => {
+    // Easter egg unlocked - toast is shown by the hook
+  })
+
+  // Easter eggs - speed runner (visit all tabs quickly)
+  const { recordTabVisit } = useSpeedRunner(['home', 'events', 'network', 'achievements', 'profile'], 10000)
+
+  // Record tab visits for speed runner
+  useEffect(() => {
+    if (activeTab) {
+      recordTabVisit(activeTab)
+    }
+  }, [activeTab, recordTabVisit])
 
   // Initialize app
   useEffect(() => {
@@ -158,20 +174,15 @@ const App: React.FC = () => {
           throw new Error('User not found')
         }
 
-        console.log('🔥 Loaded user from Supabase:', user)
-        console.log('📊 Points:', user.points)
-        console.log('🎖️ Calculated rank:', calculateRank(user.points || 0))
         setUser(user)
 
         // Get profile if exists
         const profile = await getProfile(user.id)
         const tgPhotoUrl = tgUser?.photo_url
-        console.log('📸 Telegram photo_url:', tgPhotoUrl)
 
         if (profile) {
           // Update photo from Telegram if available and different
           if (tgPhotoUrl && tgPhotoUrl !== profile.photo_url) {
-            console.log('📸 Updating photo in existing profile')
             try {
               const updatedProfile = await updateProfile(user.id, { photo_url: tgPhotoUrl })
               setProfile(updatedProfile)
@@ -184,7 +195,6 @@ const App: React.FC = () => {
           }
         } else {
           // No profile - create one with Telegram photo and basic data
-          console.log('📸 Creating new profile with Telegram data')
           try {
             const newProfile = await createProfile(user.id, {
               city: 'Минск', // Default city

@@ -220,7 +220,6 @@ export async function getEventRegistration(eventId: number, userId: number) {
 export async function createEventRegistration(eventId: number, userId: number) {
   // Generate unique ticket code
   const ticketCode = `MAIN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
-  console.log('📝 createEventRegistration:', { eventId, userId, ticketCode })
 
   const { data, error } = await getSupabase()
     .from('bot_registrations')
@@ -233,13 +232,11 @@ export async function createEventRegistration(eventId: number, userId: number) {
     .select()
     .single()
 
-  console.log('📝 createEventRegistration result:', { data, error })
   if (error) throw error
   return data
 }
 
 export async function getUserRegistrations(userId: number) {
-  console.log('📋 getUserRegistrations for userId:', userId)
   const { data, error } = await getSupabase()
     .from('bot_registrations')
     .select(`
@@ -249,9 +246,28 @@ export async function getUserRegistrations(userId: number) {
     .eq('user_id', userId)
     .order('registered_at', { ascending: false })
 
-  console.log('📋 getUserRegistrations result:', { count: data?.length, data, error })
   if (error) throw error
   return data
+}
+
+// Cancel registration
+export async function cancelEventRegistration(registrationId: number, userId: number) {
+  const supabase = getSupabase()
+
+  // Update status to cancelled
+  const { error } = await supabase
+    .from('bot_registrations')
+    .update({ status: 'cancelled' })
+    .eq('id', registrationId)
+
+  if (error) throw error
+
+  // Remove XP that was awarded for registration
+  try {
+    await addXP(userId, -10, 'EVENT_CANCEL')
+  } catch (e) {
+    console.warn('Failed to remove XP for cancelled registration:', e)
+  }
 }
 
 // Check-in (for volunteers/admins)

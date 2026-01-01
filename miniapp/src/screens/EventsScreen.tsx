@@ -23,11 +23,12 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, requestContact } from '@/lib/telegram'
+import { hapticFeedback, requestContact, showConfirm } from '@/lib/telegram'
 import {
   getActiveEvents,
   getUserRegistrations,
   createEventRegistration,
+  cancelEventRegistration,
   checkInByTicketCode,
   addXP,
   createOrUpdateUser,
@@ -271,7 +272,8 @@ const EventDetail: React.FC<{
   onClose: () => void
   onRegister: () => void
   onShowTicket: () => void
-}> = ({ event, registration, onClose, onRegister, onShowTicket }) => {
+  onCancelRegistration: () => void
+}> = ({ event, registration, onClose, onRegister, onShowTicket, onCancelRegistration }) => {
   const eventDate = new Date(event.event_date)
   const IconComponent = eventTypeIcons[event.event_type || 'default'] || eventTypeIcons.default
 
@@ -361,7 +363,10 @@ const EventDetail: React.FC<{
               <Ticket size={18} />
               Показать билет
             </Button>
-            <button className="w-full text-danger text-sm py-3 mt-2 flex items-center justify-center gap-2">
+            <button
+              onClick={onCancelRegistration}
+              className="w-full text-danger text-sm py-3 mt-2 flex items-center justify-center gap-2"
+            >
               <X size={16} />
               Отменить регистрацию
             </button>
@@ -401,15 +406,6 @@ const EventsScreen: React.FC = () => {
     enabled: !!user,
   })
 
-  // Debug logging
-  console.log('🎫 EventsScreen Debug:')
-  console.log('  - user:', user?.id, user?.username, user?.tg_user_id)
-  console.log('  - filter:', filter)
-  console.log('  - registrations count:', registrations?.length)
-  console.log('  - registrations:', registrations)
-  console.log('  - registrationsError:', registrationsError)
-  console.log('  - events count:', events?.length)
-
   // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async (eventId: number) => {
@@ -417,10 +413,8 @@ const EventsScreen: React.FC = () => {
 
       // Check if user has phone number, request if not
       if (!user.phone_number) {
-        console.log('📞 User has no phone, requesting from Telegram...')
         const contact = await requestContact()
         if (contact?.phone_number) {
-          console.log('📞 Got phone:', contact.phone_number)
           // Update user with phone number
           await createOrUpdateUser({
             tg_user_id: user.tg_user_id,
@@ -428,14 +422,10 @@ const EventsScreen: React.FC = () => {
           })
           // Update local state
           setUser({ ...user, phone_number: contact.phone_number })
-        } else {
-          console.log('📞 User declined to share phone - continuing without')
         }
       }
 
-      console.log('🎫 Creating registration for event:', eventId, 'user:', user.id)
       const registration = await createEventRegistration(eventId, user.id)
-      console.log('🎫 Registration created:', registration)
 
       // Award XP for registration
       try {
@@ -445,8 +435,7 @@ const EventsScreen: React.FC = () => {
       }
       return registration
     },
-    onSuccess: (data) => {
-      console.log('🎫 Registration success, invalidating queries. Data:', data)
+    onSuccess: () => {
       hapticFeedback.success()
       addToast(`+${XP_REWARDS.EVENT_REGISTER} XP за регистрацию!`, 'xp', XP_REWARDS.EVENT_REGISTER)
       queryClient.invalidateQueries({ queryKey: ['registrations'] })
@@ -460,9 +449,7 @@ const EventsScreen: React.FC = () => {
 
       if (errorCode === '23505') {
         if (errorMsg.includes('pkey')) {
-          // Sequence is broken - show helpful message
           addToast('Ошибка базы данных. Попробуйте позже.', 'error')
-          console.error('🔧 Sequence error - need to run: SELECT setval(\'bot_registrations_id_seq\', (SELECT MAX(id) FROM bot_registrations) + 1);')
         } else {
           addToast('Вы уже зарегистрированы на это событие', 'info')
         }
@@ -492,6 +479,32 @@ const EventsScreen: React.FC = () => {
       addToast(error.message || 'Ошибка чекина', 'error')
     },
   })
+
+  // Cancel registration mutation
+  const cancelMutation = useMutation({
+    mutationFn: async (registrationId: number) => {
+      if (!user) throw new Error('No user')
+      await cancelEventRegistration(registrationId, user.id)
+    },
+    onSuccess: () => {
+      hapticFeedback.success()
+      addToast('Регистрация отменена. -10 XP', 'info')
+      queryClient.invalidateQueries({ queryKey: ['registrations'] })
+      setSelectedEvent(null)
+    },
+    onError: (error: any) => {
+      hapticFeedback.error()
+      addToast(error.message || 'Ошибка отмены', 'error')
+    },
+  })
+
+  // Handle cancel with confirmation
+  const handleCancelRegistration = async (registrationId: number) => {
+    const confirmed = await showConfirm('Отменить регистрацию? Вы потеряете 10 XP.')
+    if (confirmed) {
+      cancelMutation.mutate(registrationId)
+    }
+  }
 
   const getRegistrationForEvent = (eventId: number) => {
     return registrations?.find((r: any) => r.event_id === eventId && r.status !== 'cancelled')
@@ -532,12 +545,13 @@ const EventsScreen: React.FC = () => {
         onClose={() => setSelectedEvent(null)}
         onRegister={() => registerMutation.mutate(selectedEvent.id)}
         onShowTicket={() => setShowTicket({ registration: registration!, event: selectedEvent })}
+        onCancelRegistration={() => registration && handleCancelRegistration(registration.id)}
       />
     )
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-24">
       {/* Header */}
       <div className="p-4">
         <div className="flex justify-between items-start mb-1">
@@ -581,11 +595,6 @@ const EventsScreen: React.FC = () => {
       {/* My Tickets */}
       {filter === 'registered' && (
         <div className="px-4 mb-6">
-          {/* Debug info - remove after fixing */}
-          <div className="mb-3 p-2 bg-yellow-500/10 rounded-lg text-xs text-yellow-400 font-mono">
-            DEBUG: user.id={user?.id}, tg_id={user?.tg_user_id}, regs={registrations?.length || 0}
-          </div>
-
           <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
             <Ticket size={14} />
             Мои билеты ({registrations?.length || 0})

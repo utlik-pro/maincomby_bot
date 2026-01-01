@@ -200,27 +200,20 @@ export const requestContact = (): Promise<TelegramContact | null> => {
   return new Promise((resolve) => {
     const webApp = getTelegramWebApp()
     if (!webApp || !isContactRequestSupported()) {
-      console.log('📞 requestContact not supported in this Telegram version')
       resolve(null)
       return
     }
 
-    console.log('📞 Requesting contact from Telegram...')
     // @ts-ignore - Method might not be in types yet
     webApp.requestContact?.((sent: boolean, contact?: TelegramContact) => {
       if (sent && contact) {
-        console.log('📞 Contact received:', contact)
         resolve(contact)
       } else {
-        console.log('📞 Contact request declined or failed')
         resolve(null)
       }
     })
 
     // Fallback timeout
-    setTimeout(() => {
-      console.log('📞 Contact request timeout')
-      resolve(null)
-    }, 30000)
+    setTimeout(() => resolve(null), 30000)
   })
 }

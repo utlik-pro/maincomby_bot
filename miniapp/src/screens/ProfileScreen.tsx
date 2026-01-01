@@ -33,6 +33,7 @@ import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScree
 import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole } from '@/types'
+import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
 
 // Icon mapping for ranks
@@ -57,6 +58,12 @@ const ProfileScreen: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showTeamSection, setShowTeamSection] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
+
+  // Easter eggs (tap-based)
+  const { handleTap: handleAvatarTap } = useTapEasterEgg('avatar_taps', 5)
+  const { handleTap: handleRankTap } = useTapEasterEgg('rank_taps', 10)
+  const { handleTap: handleDebugTap, isUnlocked: debugUnlocked } = useTapEasterEgg('debug_console', 7, () => setShowDebug(true))
 
   // Fetch unread notifications count
   const { data: unreadCount = 0 } = useQuery({
@@ -80,6 +87,11 @@ const ProfileScreen: React.FC = () => {
     city: profile?.city || 'Минск',
     looking_for: profile?.looking_for || '',
     can_help_with: profile?.can_help_with || '',
+  })
+
+  // Secret code easter egg - triggers when user types "MAIN" in bio
+  useSecretCode('MAIN', editForm.bio, () => {
+    // Easter egg unlocked - toast is shown by the hook
   })
 
   const handleSaveProfile = async () => {
@@ -386,7 +398,8 @@ const ProfileScreen: React.FC = () => {
     <div className="pb-6">
       {/* Header with gradient background */}
       <div className="bg-gradient-to-b from-accent/10 to-transparent p-6 text-center">
-        <div className="relative inline-block">
+        {/* Avatar - tap 5 times for easter egg */}
+        <div className="relative inline-block cursor-pointer" onClick={handleAvatarTap}>
           <Avatar
             src={profile?.photo_url}
             name={user?.first_name || 'User'}
@@ -435,14 +448,36 @@ const ProfileScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Rank badge */}
-        <div className="mt-4">
+        {/* Rank badge - tap 10 times for easter egg */}
+        <div className="mt-4 cursor-pointer" onClick={handleRankTap}>
           <Badge variant="accent" className="text-sm flex items-center gap-1 justify-center">
             {RANK_ICONS[rank]}
             {rankInfo.ru}
           </Badge>
         </div>
       </div>
+
+      {/* Debug Console (hidden, activated by 7 taps on version) */}
+      {showDebug && (
+        <div className="mx-4 mb-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-yellow-400 font-mono text-sm">🔧 Debug Console</span>
+            <button onClick={() => setShowDebug(false)} className="text-gray-400">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="text-xs text-gray-400 font-mono space-y-1">
+            <div>user.id: {user?.id}</div>
+            <div>tg_user_id: {user?.tg_user_id}</div>
+            <div>username: @{user?.username}</div>
+            <div>points: {user?.points}</div>
+            <div>rank: {rank}</div>
+            <div>tier: {tier}</div>
+            <div>profile.id: {profile?.id}</div>
+            <div>team_role: {user?.team_role || 'none'}</div>
+          </div>
+        </div>
+      )}
 
       <div className="px-4">
         {/* Edit Profile Button */}
@@ -605,8 +640,11 @@ const ProfileScreen: React.FC = () => {
           Связаться с поддержкой
         </button>
 
-        {/* Version */}
-        <p className="text-center text-gray-600 text-xs mt-4">
+        {/* Version - tap 7 times for debug console */}
+        <p
+          className="text-center text-gray-600 text-xs mt-4 cursor-pointer select-none"
+          onClick={handleDebugTap}
+        >
           MAIN Community v1.0.0
         </p>
       </div>

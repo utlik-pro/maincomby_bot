@@ -14,9 +14,11 @@ import {
 import { useAppStore } from '@/lib/store'
 import { Avatar, Badge, Card, Progress } from '@/components/ui'
 import { RANK_LABELS } from '@/types'
+import { useTapEasterEgg } from '@/lib/easterEggs'
 
 const HomeScreen: React.FC = () => {
   const { user, profile, setActiveTab, getRank, getRankProgress } = useAppStore()
+  const { handleTap: handleLogoTap } = useTapEasterEgg('logo_taps', 6)
 
   const rank = getRank()
   const rankInfo = RANK_LABELS[rank]
@@ -47,6 +49,14 @@ const HomeScreen: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
+          {/* Hidden easter egg - tap logo 6 times */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleLogoTap}
+            className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center"
+          >
+            <span className="text-accent font-bold text-lg">M</span>
+          </motion.button>
           <motion.button
             whileTap={{ scale: 0.9 }}
             className="w-10 h-10 rounded-xl bg-bg-card flex items-center justify-center"
