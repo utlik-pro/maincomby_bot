@@ -79,7 +79,13 @@ export const useAppStore = create<AppState>()(
       lastSeenEventId: null,
 
       // Actions
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user) => {
+        // Ensure points are never negative in UI
+        if (user && user.points < 0) {
+          user = { ...user, points: 0 }
+        }
+        set({ user, isAuthenticated: !!user })
+      },
       setProfile: (profile) => set({ profile }),
       setLoading: (isLoading) => set({ isLoading }),
       setActiveTab: (activeTab) => set({ activeTab }),
