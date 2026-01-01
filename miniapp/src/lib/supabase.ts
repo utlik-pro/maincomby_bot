@@ -1,0 +1,317 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndpkxustvcijykzxqxrn.supabase.co'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+// Lazy initialization - only create client when needed and key is available
+let _supabase: SupabaseClient | null = null
+
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    if (!supabaseAnonKey) {
+      throw new Error('Supabase not configured - running in dev mode')
+    }
+    _supabase = createClient(supabaseUrl, supabaseAnonKey)
+  }
+  return _supabase
+}
+
+// Helper functions for common operations
+
+// Users
+export async function getUserByTelegramId(tgUserId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .select('*')
+    .eq('tg_user_id', tgUserId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
+export async function createOrUpdateUser(userData: {
+  tg_user_id: number
+  username?: string | null
+  first_name?: string | null
+  last_name?: string | null
+}) {
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .upsert(userData, { onConflict: 'tg_user_id' })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// Profiles
+export async function getProfile(userId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
+export async function updateProfile(userId: number, profileData: {
+  bio?: string | null
+  occupation?: string | null
+  city?: string
+  looking_for?: string | null
+  can_help_with?: string | null
+  photo_url?: string | null
+}) {
+  const { data, error } = await getSupabase()
+    .from('bot_profiles')
+    .update({
+      ...profileData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function createProfile(userId: number, profileData: {
+  bio?: string | null
+  occupation?: string | null
+  city: string
+  looking_for?: string | null
+  can_help_with?: string | null
+}) {
+  const { data, error } = await getSupabase()
+    .from('bot_profiles')
+    .insert({
+      user_id: userId,
+      ...profileData,
+      moderation_status: 'pending',
+      is_visible: true,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getApprovedProfiles(excludeUserId: number, city?: string) {
+  let query = getSupabase()
+    .from('bot_profiles')
+    .select(`
+      *,
+      user:bot_users(*)
+    `)
+    .eq('moderation_status', 'approved')
+    .eq('is_visible', true)
+    .neq('user_id', excludeUserId)
+
+  if (city) {
+    query = query.eq('city', city)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+// Swipes
+export async function getSwipedUserIds(swiperId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_swipes')
+    .select('swiped_id')
+    .eq('swiper_id', swiperId)
+
+  if (error) throw error
+  return data?.map(s => s.swiped_id) || []
+}
+
+export async function createSwipe(swiperId: number, swipedId: number, action: 'like' | 'skip' | 'superlike') {
+  const { data, error } = await getSupabase()
+    .from('bot_swipes')
+    .insert({ swiper_id: swiperId, swiped_id: swipedId, action })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function checkMutualLike(userId1: number, userId2: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_swipes')
+    .select('id')
+    .eq('swiper_id', userId2)
+    .eq('swiped_id', userId1)
+    .in('action', ['like', 'superlike'])
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return !!data
+}
+
+// Matches
+export async function createMatch(userId1: number, userId2: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_matches')
+    .insert({
+      user1_id: Math.min(userId1, userId2),
+      user2_id: Math.max(userId1, userId2),
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserMatches(userId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_matches')
+    .select(`
+      *,
+      user1:bot_users!bot_matches_user1_id_fkey(*),
+      user2:bot_users!bot_matches_user2_id_fkey(*),
+      profile1:bot_profiles!bot_matches_user1_id_fkey(*),
+      profile2:bot_profiles!bot_matches_user2_id_fkey(*)
+    `)
+    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+    .eq('is_active', true)
+    .order('matched_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+// Events
+export async function getActiveEvents() {
+  const { data, error } = await getSupabase()
+    .from('bot_events')
+    .select('*')
+    .eq('is_active', true)
+    .gte('event_date', new Date().toISOString())
+    .order('event_date', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function getEventRegistration(eventId: number, userId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_registrations')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('user_id', userId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
+export async function createEventRegistration(eventId: number, userId: number) {
+  // Generate unique ticket code
+  const ticketCode = `MAIN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
+  const { data, error } = await getSupabase()
+    .from('bot_registrations')
+    .insert({
+      event_id: eventId,
+      user_id: userId,
+      status: 'registered',
+      ticket_code: ticketCode,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserRegistrations(userId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_registrations')
+    .select(`
+      *,
+      event:bot_events(*)
+    `)
+    .eq('user_id', userId)
+    .order('registered_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+// Check-in (for volunteers/admins)
+export async function checkInByTicketCode(ticketCode: string, volunteerId: number) {
+  const supabase = getSupabase()
+
+  const { data: registration, error: findError } = await supabase
+    .from('bot_registrations')
+    .select('*, event:bot_events(*)')
+    .eq('ticket_code', ticketCode)
+    .single()
+
+  if (findError) throw findError
+  if (!registration) throw new Error('Билет не найден')
+  if (registration.status === 'attended') throw new Error('Билет уже использован')
+  if (registration.status === 'cancelled') throw new Error('Регистрация отменена')
+
+  const { data, error } = await supabase
+    .from('bot_registrations')
+    .update({
+      status: 'attended',
+      checked_in_at: new Date().toISOString(),
+      checked_in_by: volunteerId,
+    })
+    .eq('id', registration.id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return { registration: data, event: registration.event }
+}
+
+// XP & Achievements
+export async function addXP(userId: number, amount: number, reason: string) {
+  const supabase = getSupabase()
+
+  // Add transaction
+  await supabase
+    .from('xp_transactions')
+    .insert({ user_id: userId, amount, reason })
+
+  // Update user points
+  const { data, error } = await supabase
+    .rpc('increment_user_points', { user_id: userId, points_to_add: amount })
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserAchievements(userId: number) {
+  const { data, error } = await getSupabase()
+    .from('user_achievements')
+    .select('*')
+    .eq('user_id', userId)
+
+  if (error) throw error
+  return data
+}
+
+export async function unlockAchievement(userId: number, achievementId: string) {
+  const { data, error } = await getSupabase()
+    .from('user_achievements')
+    .insert({ user_id: userId, achievement_id: achievementId })
+    .select()
+    .single()
+
+  if (error && error.code !== '23505') throw error // Ignore duplicate key
+  return data
+}

@@ -1,0 +1,160 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { User, UserProfile, SubscriptionTier, UserRank, RANK_THRESHOLDS } from '@/types'
+
+// Calculate rank from XP
+export function calculateRank(xp: number): UserRank {
+  if (xp >= RANK_THRESHOLDS.general) return 'general'
+  if (xp >= RANK_THRESHOLDS.colonel) return 'colonel'
+  if (xp >= RANK_THRESHOLDS.major) return 'major'
+  if (xp >= RANK_THRESHOLDS.captain) return 'captain'
+  if (xp >= RANK_THRESHOLDS.lieutenant) return 'lieutenant'
+  if (xp >= RANK_THRESHOLDS.sergeant_major) return 'sergeant_major'
+  if (xp >= RANK_THRESHOLDS.sergeant) return 'sergeant'
+  if (xp >= RANK_THRESHOLDS.corporal) return 'corporal'
+  return 'private'
+}
+
+// Calculate progress to next rank (0-100)
+export function calculateRankProgress(xp: number): { current: UserRank; next: UserRank | null; progress: number } {
+  const ranks: UserRank[] = ['private', 'corporal', 'sergeant', 'sergeant_major', 'lieutenant', 'captain', 'major', 'colonel', 'general']
+  const current = calculateRank(xp)
+  const currentIndex = ranks.indexOf(current)
+
+  if (currentIndex === ranks.length - 1) {
+    return { current, next: null, progress: 100 }
+  }
+
+  const next = ranks[currentIndex + 1]
+  const currentThreshold = RANK_THRESHOLDS[current]
+  const nextThreshold = RANK_THRESHOLDS[next]
+  const progress = ((xp - currentThreshold) / (nextThreshold - currentThreshold)) * 100
+
+  return { current, next, progress: Math.min(100, Math.max(0, progress)) }
+}
+
+interface AppState {
+  // User data
+  user: User | null
+  profile: UserProfile | null
+  isAuthenticated: boolean
+  isLoading: boolean
+
+  // UI state
+  activeTab: 'home' | 'events' | 'network' | 'achievements' | 'profile'
+  isVolunteerMode: boolean
+  hasCompletedOnboarding: boolean
+
+  // Actions
+  setUser: (user: User | null) => void
+  setProfile: (profile: UserProfile | null) => void
+  setLoading: (loading: boolean) => void
+  setActiveTab: (tab: AppState['activeTab']) => void
+  setVolunteerMode: (mode: boolean) => void
+  setOnboardingComplete: (complete: boolean) => void
+  logout: () => void
+
+  // Computed
+  getRank: () => UserRank
+  getRankProgress: () => { current: UserRank; next: UserRank | null; progress: number }
+  getSubscriptionTier: () => SubscriptionTier
+  getDailySwipesRemaining: () => number
+}
+
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      // Initial state
+      user: null,
+      profile: null,
+      isAuthenticated: false,
+      isLoading: true,
+      activeTab: 'home',
+      isVolunteerMode: false,
+      hasCompletedOnboarding: false,
+
+      // Actions
+      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setProfile: (profile) => set({ profile }),
+      setLoading: (isLoading) => set({ isLoading }),
+      setActiveTab: (activeTab) => set({ activeTab }),
+      setVolunteerMode: (isVolunteerMode) => set({ isVolunteerMode }),
+      setOnboardingComplete: (hasCompletedOnboarding) => set({ hasCompletedOnboarding }),
+      logout: () => set({ user: null, profile: null, isAuthenticated: false, hasCompletedOnboarding: false }),
+
+      // Computed
+      getRank: () => {
+        const { user } = get()
+        return calculateRank(user?.points || 0)
+      },
+      getRankProgress: () => {
+        const { user } = get()
+        return calculateRankProgress(user?.points || 0)
+      },
+      getSubscriptionTier: () => {
+        const { user } = get()
+        if (!user) return 'free'
+        if (user.subscription_expires_at && new Date(user.subscription_expires_at) < new Date()) {
+          return 'free'
+        }
+        return user.subscription_tier || 'free'
+      },
+      getDailySwipesRemaining: () => {
+        const { user } = get()
+        if (!user) return 0
+
+        const tier = get().getSubscriptionTier()
+        const limits = {
+          free: 5,
+          light: 20,
+          pro: Infinity,
+        }
+
+        const maxSwipes = limits[tier]
+        const usedSwipes = user.daily_swipes_used || 0
+
+        return Math.max(0, maxSwipes - usedSwipes)
+      },
+    }),
+    {
+      name: 'main-community-app',
+      partialize: (state) => ({
+        activeTab: state.activeTab,
+        isVolunteerMode: state.isVolunteerMode,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
+      }),
+    }
+  )
+)
+
+// Toast notifications store
+interface ToastState {
+  toasts: Array<{
+    id: string
+    message: string
+    type: 'success' | 'error' | 'info' | 'xp'
+    xpAmount?: number
+  }>
+  addToast: (message: string, type?: 'success' | 'error' | 'info' | 'xp', xpAmount?: number) => void
+  removeToast: (id: string) => void
+}
+
+export const useToastStore = create<ToastState>((set) => ({
+  toasts: [],
+  addToast: (message, type = 'info', xpAmount) => {
+    const id = Math.random().toString(36).substring(7)
+    set((state) => ({
+      toasts: [...state.toasts, { id, message, type, xpAmount }],
+    }))
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      set((state) => ({
+        toasts: state.toasts.filter((t) => t.id !== id),
+      }))
+    }, 3000)
+  },
+  removeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    })),
+}))

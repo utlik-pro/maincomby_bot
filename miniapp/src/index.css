@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Telegram Web App overrides */
+:root {
+  --tg-theme-bg-color: #0a0a0a;
+  --tg-theme-text-color: #ffffff;
+  --tg-theme-hint-color: #888888;
+  --tg-theme-link-color: #c8ff00;
+  --tg-theme-button-color: #c8ff00;
+  --tg-theme-button-text-color: #0a0a0a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* Hide scrollbar everywhere */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+
+/* Fixed viewport for Telegram Mini App */
+html, body, #root {
+  height: 100%;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #0a0a0a;
+  color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent pull-to-refresh and overscroll */
+  overscroll-behavior: none;
+}
+
+/* Main scrollable content area */
+.screen-scroll {
+  height: calc(100dvh - 80px); /* viewport minus navigation */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe area padding for notch devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+/* Haptic feedback simulation */
+.haptic {
+  transition: transform 0.1s ease;
+}
+.haptic:active {
+  transform: scale(0.97);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: background-color 0.2s ease;
+}
+.card-hover:hover {
+  background-color: #252525;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #c8ff00 0%, #00d26a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Swipe card animations */
+.swipe-card {
+  touch-action: pan-y;
+  user-select: none;
+}
+
+/* Badge pulse animation */
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.badge-pulse {
+  animation: pulse-badge 2s infinite;
+}
