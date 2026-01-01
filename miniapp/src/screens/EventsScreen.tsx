@@ -25,6 +25,7 @@ import {
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, requestContact } from '@/lib/telegram'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { PhoneDialog } from '@/components/PhoneDialog'
 import {
   getActiveEvents,
   getUserRegistrations,
@@ -397,6 +398,10 @@ const EventsScreen: React.FC = () => {
     show: false,
     registrationId: null,
   })
+  const [phoneDialog, setPhoneDialog] = useState<{ show: boolean; eventId: number | null }>({
+    show: false,
+    eventId: null,
+  })
 
   // Fetch events
   const { data: events, isLoading } = useQuery({
@@ -415,20 +420,6 @@ const EventsScreen: React.FC = () => {
   const registerMutation = useMutation({
     mutationFn: async (eventId: number) => {
       if (!user) throw new Error('No user')
-
-      // Check if user has phone number, request if not
-      if (!user.phone_number) {
-        const contact = await requestContact()
-        if (contact?.phone_number) {
-          // Update user with phone number
-          await createOrUpdateUser({
-            tg_user_id: user.tg_user_id,
-            phone_number: contact.phone_number,
-          })
-          // Update local state
-          setUser({ ...user, phone_number: contact.phone_number })
-        }
-      }
 
       const registration = await createEventRegistration(eventId, user.id)
 
@@ -520,6 +511,56 @@ const EventsScreen: React.FC = () => {
     setCancelConfirm({ show: false, registrationId: null })
   }
 
+  // Handle registration - check phone first
+  const handleRegister = (eventId: number) => {
+    if (!user?.phone_number) {
+      // Show phone dialog
+      setPhoneDialog({ show: true, eventId })
+    } else {
+      // Proceed with registration
+      registerMutation.mutate(eventId)
+    }
+  }
+
+  // Handle phone from Telegram
+  const handlePhoneFromTelegram = async () => {
+    try {
+      const contact = await requestContact()
+      if (contact?.phone_number) {
+        await createOrUpdateUser({
+          tg_user_id: user!.tg_user_id,
+          phone_number: contact.phone_number,
+        })
+        setUser({ ...user!, phone_number: contact.phone_number })
+        // Continue registration
+        if (phoneDialog.eventId) {
+          registerMutation.mutate(phoneDialog.eventId)
+        }
+      }
+    } catch (e) {
+      addToast('Не удалось получить номер', 'error')
+    }
+    setPhoneDialog({ show: false, eventId: null })
+  }
+
+  // Handle manual phone input
+  const handlePhoneManual = async (phone: string) => {
+    try {
+      await createOrUpdateUser({
+        tg_user_id: user!.tg_user_id,
+        phone_number: phone,
+      })
+      setUser({ ...user!, phone_number: phone })
+      // Continue registration
+      if (phoneDialog.eventId) {
+        registerMutation.mutate(phoneDialog.eventId)
+      }
+    } catch (e) {
+      addToast('Ошибка сохранения номера', 'error')
+    }
+    setPhoneDialog({ show: false, eventId: null })
+  }
+
   const getRegistrationForEvent = (eventId: number) => {
     return registrations?.find((r: any) => r.event_id === eventId && r.status !== 'cancelled')
   }
@@ -565,11 +606,18 @@ const EventsScreen: React.FC = () => {
           onConfirm={confirmCancel}
           onCancel={() => setCancelConfirm({ show: false, registrationId: null })}
         />
+        {/* Phone Dialog - for registration */}
+        <PhoneDialog
+          isOpen={phoneDialog.show}
+          onSubmit={handlePhoneManual}
+          onCancel={() => setPhoneDialog({ show: false, eventId: null })}
+          onUseTelegram={handlePhoneFromTelegram}
+        />
         <EventDetail
           event={selectedEvent}
           registration={registration}
           onClose={() => setSelectedEvent(null)}
-          onRegister={() => registerMutation.mutate(selectedEvent.id)}
+          onRegister={() => handleRegister(selectedEvent.id)}
           onShowTicket={() => setShowTicket({ registration: registration!, event: selectedEvent })}
           onCancelRegistration={() => registration && handleCancelRegistration(registration.id)}
         />
@@ -633,7 +681,7 @@ const EventsScreen: React.FC = () => {
 
       {/* My Tickets */}
       {filter === 'registered' && (
-        <div className="px-4 mb-6">
+        <div className="px-4 mb-6 pb-20">
           <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
             <Ticket size={14} />
             Мои билеты ({registrations?.length || 0})
