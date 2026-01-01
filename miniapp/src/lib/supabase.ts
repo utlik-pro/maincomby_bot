@@ -478,3 +478,23 @@ export async function createNotification(
   if (error) throw error
   return notification as AppNotification
 }
+
+// Team members
+export async function getTeamMembers() {
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .select(`
+      id,
+      tg_user_id,
+      username,
+      first_name,
+      last_name,
+      team_role,
+      profile:bot_profiles(photo_url, occupation, bio)
+    `)
+    .not('team_role', 'is', null)
+    .order('team_role', { ascending: true })
+
+  if (error) throw error
+  return data
+}

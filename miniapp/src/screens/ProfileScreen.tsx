@@ -25,12 +25,14 @@ import {
   X,
   Loader2,
   Smartphone,
+  Users,
+  ExternalLink,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen } from '@/lib/telegram'
-import { updateProfile, createProfile, getUnreadNotificationsCount } from '@/lib/supabase'
+import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
-import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES } from '@/types'
+import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole } from '@/types'
 import NotificationsScreen from './NotificationsScreen'
 
 // Icon mapping for ranks
@@ -53,6 +55,7 @@ const ProfileScreen: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false)
   const [showSubscription, setShowSubscription] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showTeamSection, setShowTeamSection] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   // Fetch unread notifications count
@@ -61,6 +64,13 @@ const ProfileScreen: React.FC = () => {
     queryFn: () => (user ? getUnreadNotificationsCount(user.id) : 0),
     enabled: !!user,
     refetchInterval: 30000, // Refresh every 30 seconds
+  })
+
+  // Fetch team members
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['teamMembers'],
+    queryFn: getTeamMembers,
+    staleTime: 300000, // 5 minutes
   })
 
   // Edit form state
@@ -307,6 +317,71 @@ const ProfileScreen: React.FC = () => {
     return <NotificationsScreen onClose={() => setShowNotifications(false)} />
   }
 
+  // Team Section
+  if (showTeamSection) {
+    return (
+      <div className="pb-6">
+        <button onClick={() => setShowTeamSection(false)} className="p-4 text-gray-400 flex items-center gap-2">
+          <ArrowLeft size={16} />
+          Назад
+        </button>
+
+        <div className="px-4">
+          <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+            💎 Команда MAIN
+          </h1>
+          <p className="text-gray-400 text-sm mb-6">Люди, которые делают сообщество лучше</p>
+
+          {teamMembers.length === 0 ? (
+            <Card className="text-center py-8">
+              <Users size={48} className="mx-auto text-gray-500 mb-3" />
+              <p className="text-gray-400">Команда ещё формируется</p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {teamMembers.map((member: any) => {
+                const role = member.team_role as Exclude<TeamRole, null>
+                const badge = TEAM_BADGES[role]
+                const profileData = Array.isArray(member.profile) ? member.profile[0] : member.profile
+
+                return (
+                  <Card key={member.id} className="flex items-center gap-3">
+                    <Avatar
+                      src={profileData?.photo_url}
+                      name={member.first_name || 'User'}
+                      size="md"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold truncate">
+                        {member.first_name} {member.last_name}
+                      </div>
+                      {profileData?.occupation && (
+                        <div className="text-sm text-gray-400 truncate">{profileData.occupation}</div>
+                      )}
+                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${badge?.color || 'bg-gray-500'} text-white`}>
+                        <span>{badge?.icon}</span>
+                        <span>{badge?.label}</span>
+                      </div>
+                    </div>
+                    {member.username && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openTelegramLink(`https://t.me/${member.username}`)}
+                      >
+                        <ExternalLink size={14} />
+                      </Button>
+                    )}
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="pb-6">
       {/* Header with gradient background */}
@@ -423,6 +498,7 @@ const ProfileScreen: React.FC = () => {
         <Card className="mb-4 p-0 overflow-hidden">
           {[
             { icon: <Bell size={20} className="text-blue-400" />, label: 'Уведомления', badge: unreadCount > 0 ? unreadCount : null, onClick: () => setShowNotifications(true) },
+            { icon: <Users size={20} className="text-accent" />, label: 'Команда MAIN', badge: teamMembers.length > 0 ? teamMembers.length : null, onClick: () => setShowTeamSection(true) },
             { icon: <Ticket size={20} className="text-purple-400" />, label: 'Мои билеты', badge: null, onClick: () => setActiveTab('events') },
             { icon: <Heart size={20} className="text-pink-400" />, label: 'Мои матчи', badge: null, onClick: () => setActiveTab('network') },
             { icon: <Trophy size={20} className="text-yellow-400" />, label: 'Достижения', badge: null, onClick: () => setActiveTab('achievements') },

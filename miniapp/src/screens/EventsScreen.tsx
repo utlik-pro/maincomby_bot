@@ -376,11 +376,17 @@ const EventsScreen: React.FC = () => {
   })
 
   // Fetch user registrations
-  const { data: registrations } = useQuery({
+  const { data: registrations, error: registrationsError } = useQuery({
     queryKey: ['registrations', user?.id],
     queryFn: () => (user ? getUserRegistrations(user.id) : []),
     enabled: !!user,
   })
+
+  // Debug logging
+  console.log('🎫 EventsScreen Debug:')
+  console.log('  - user:', user?.id, user?.username)
+  console.log('  - registrations:', registrations?.length, registrations)
+  console.log('  - registrationsError:', registrationsError)
 
   // Registration mutation
   const registerMutation = useMutation({
