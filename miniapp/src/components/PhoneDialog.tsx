@@ -58,13 +58,13 @@ export const PhoneDialog: React.FC<PhoneDialogProps> = ({
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
           />
 
-          {/* Dialog */}
+          {/* Dialog - positioned higher when in manual mode to avoid keyboard */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-x-4 top-[40%] -translate-y-1/2 z-50 max-w-sm mx-auto"
+            className={`fixed inset-x-4 z-50 max-w-sm mx-auto ${mode === 'manual' ? 'top-4' : 'top-[30%] -translate-y-1/2'}`}
           >
             <div className="bg-bg-card rounded-2xl p-6 shadow-xl border border-white/10">
               {/* Close button */}
