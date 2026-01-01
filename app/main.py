@@ -201,6 +201,7 @@ async def main() -> None:
 
     # Handler для сохранения номера телефона (от Mini App)
     from aiogram.types import ContentType
+    from sqlalchemy import select
     from .db.models import User as DBUser
 
     @dp.message(F.content_type == ContentType.CONTACT)
@@ -214,31 +215,30 @@ async def main() -> None:
                 phone = '+' + phone
 
             async with session_factory() as session:
-                # Найти или создать пользователя
+                # Найти пользователя
                 result = await session.execute(
-                    DBUser.__table__.select().where(DBUser.tg_user_id == message.from_user.id)
+                    select(DBUser).where(DBUser.tg_user_id == message.from_user.id)
                 )
-                user = result.fetchone()
+                user = result.scalar_one_or_none()
 
                 if user:
                     # Обновить номер телефона
-                    await session.execute(
-                        DBUser.__table__.update()
-                        .where(DBUser.tg_user_id == message.from_user.id)
-                        .values(phone_number=phone)
-                    )
+                    user.phone_number = phone
                     await session.commit()
+                    await session.refresh(user)
                     logger.info(f"Phone saved for user {message.from_user.id}: {phone}")
+
+                    # Синхронизируем с Supabase
+                    if sync_service:
+                        try:
+                            await sync_service.sync_user(user)
+                            logger.info(f"User {message.from_user.id} synced to Supabase")
+                        except Exception as e:
+                            logger.error(f"Failed to sync user to Supabase: {e}")
+
                     await message.answer("✅ Номер телефона сохранён! Вернитесь в приложение.")
                 else:
                     await message.answer("⚠️ Сначала запустите бота командой /start")
-
-            # Синхронизируем с Supabase
-            if sync_service:
-                try:
-                    await sync_service.sync_user_to_web(message.from_user.id)
-                except Exception as e:
-                    logger.error(f"Failed to sync user to web after phone save: {e}")
 
     # Routers (порядок важен!)
     # 0. welcome_router - первым для обработки новых участников
