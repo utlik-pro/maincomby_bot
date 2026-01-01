@@ -23,7 +23,8 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, requestContact, showConfirm } from '@/lib/telegram'
+import { hapticFeedback, requestContact } from '@/lib/telegram'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import {
   getActiveEvents,
   getUserRegistrations,
@@ -392,6 +393,10 @@ const EventsScreen: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [showTicket, setShowTicket] = useState<{ registration: EventRegistration; event: Event } | null>(null)
   const [showScanner, setShowScanner] = useState(false)
+  const [cancelConfirm, setCancelConfirm] = useState<{ show: boolean; registrationId: number | null }>({
+    show: false,
+    registrationId: null,
+  })
 
   // Fetch events
   const { data: events, isLoading } = useQuery({
@@ -498,12 +503,17 @@ const EventsScreen: React.FC = () => {
     },
   })
 
-  // Handle cancel with confirmation
-  const handleCancelRegistration = async (registrationId: number) => {
-    const confirmed = await showConfirm('Отменить регистрацию? Вы потеряете 10 XP.')
-    if (confirmed) {
-      cancelMutation.mutate(registrationId)
+  // Handle cancel - show custom dialog
+  const handleCancelRegistration = (registrationId: number) => {
+    setCancelConfirm({ show: true, registrationId })
+  }
+
+  // Confirm cancel
+  const confirmCancel = () => {
+    if (cancelConfirm.registrationId) {
+      cancelMutation.mutate(cancelConfirm.registrationId)
     }
+    setCancelConfirm({ show: false, registrationId: null })
   }
 
   const getRegistrationForEvent = (eventId: number) => {
@@ -552,6 +562,18 @@ const EventsScreen: React.FC = () => {
 
   return (
     <div className="pb-24">
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={cancelConfirm.show}
+        title="Отменить регистрацию?"
+        message="Вы уверены, что хотите отменить регистрацию? Вы потеряете 10 XP."
+        confirmText="Отменить"
+        cancelText="Назад"
+        variant="danger"
+        onConfirm={confirmCancel}
+        onCancel={() => setCancelConfirm({ show: false, registrationId: null })}
+      />
+
       {/* Header */}
       <div className="p-4">
         <div className="flex justify-between items-start mb-1">

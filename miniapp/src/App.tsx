@@ -6,7 +6,7 @@ import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, cre
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { Skeleton } from '@/components/ui'
-import { useShakeDetector, useSpeedRunner } from '@/lib/easterEggs'
+import { useSpeedRunner } from '@/lib/easterEggs'
 
 // Screen imports (lazy loaded)
 const HomeScreen = React.lazy(() => import('@/screens/HomeScreen'))
@@ -68,11 +68,6 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const App: React.FC = () => {
   const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, hasCompletedOnboarding, profile } = useAppStore()
   const { addToast } = useToastStore()
-
-  // Easter eggs - shake detector (global)
-  useShakeDetector(() => {
-    // Easter egg unlocked - toast is shown by the hook
-  })
 
   // Easter eggs - speed runner (visit all tabs quickly)
   const { recordTabVisit } = useSpeedRunner(['home', 'events', 'network', 'achievements', 'profile'], 10000)
