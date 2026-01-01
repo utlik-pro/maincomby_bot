@@ -578,7 +578,7 @@ const EventsScreen: React.FC = () => {
   }
 
   return (
-    <div className="pb-24">
+    <div className="pb-32">
       {/* Cancel Confirmation Dialog (fallback) */}
       <ConfirmDialog
         isOpen={cancelConfirm.show}
