@@ -432,11 +432,9 @@ const EventsScreen: React.FC = () => {
 
       const registration = await createEventRegistration(eventId, user.id)
 
-      // Award XP for registration
+      // Award XP for registration (database)
       try {
         await addXP(user.id, XP_REWARDS.EVENT_REGISTER, 'EVENT_REGISTER')
-        // Update local state
-        addPoints(XP_REWARDS.EVENT_REGISTER)
       } catch (e) {
         console.warn('XP award failed:', e)
       }
@@ -444,6 +442,8 @@ const EventsScreen: React.FC = () => {
     },
     onSuccess: () => {
       hapticFeedback.success()
+      // Update local UI state
+      addPoints(XP_REWARDS.EVENT_REGISTER)
       addToast(`+${XP_REWARDS.EVENT_REGISTER} XP за регистрацию!`, 'xp', XP_REWARDS.EVENT_REGISTER)
       queryClient.invalidateQueries({ queryKey: ['registrations'] })
       setSelectedEvent(null)
@@ -492,11 +492,11 @@ const EventsScreen: React.FC = () => {
     mutationFn: async (registrationId: number) => {
       if (!user) throw new Error('No user')
       await cancelEventRegistration(registrationId, user.id)
-      // Update local XP (deduct 10)
-      addPoints(-10)
     },
     onSuccess: () => {
       hapticFeedback.success()
+      // Update local XP (deduct 10)
+      addPoints(-10)
       addToast('Регистрация отменена. -10 XP', 'info')
       queryClient.invalidateQueries({ queryKey: ['registrations'] })
       setSelectedEvent(null)

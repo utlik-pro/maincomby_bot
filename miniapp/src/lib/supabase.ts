@@ -356,9 +356,9 @@ export async function addXP(userId: number, amount: number, reason: string) {
     .from('xp_transactions')
     .insert({ user_id: userId, amount, reason })
 
-  // Update user points
+  // Update user points (use correct param names from migration)
   const { data, error } = await supabase
-    .rpc('increment_user_points', { user_id: userId, points_to_add: amount })
+    .rpc('increment_user_points', { p_user_id: userId, p_points_to_add: amount })
 
   if (error) throw error
 
