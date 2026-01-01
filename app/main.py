@@ -199,6 +199,47 @@ async def main() -> None:
     except Exception as e:
         logger.warning(f"Notification service не инициализирован: {e}")
 
+    # Handler для сохранения номера телефона (от Mini App)
+    from aiogram.types import ContentType
+    from .db.models import User as DBUser
+
+    @dp.message(F.content_type == ContentType.CONTACT)
+    async def handle_contact(message: Message):
+        """Сохраняет номер телефона от пользователя (для Mini App регистрации)"""
+        contact = message.contact
+        if contact and contact.user_id == message.from_user.id:
+            # Это контакт самого пользователя
+            phone = contact.phone_number
+            if not phone.startswith('+'):
+                phone = '+' + phone
+
+            async with session_factory() as session:
+                # Найти или создать пользователя
+                result = await session.execute(
+                    DBUser.__table__.select().where(DBUser.tg_user_id == message.from_user.id)
+                )
+                user = result.fetchone()
+
+                if user:
+                    # Обновить номер телефона
+                    await session.execute(
+                        DBUser.__table__.update()
+                        .where(DBUser.tg_user_id == message.from_user.id)
+                        .values(phone_number=phone)
+                    )
+                    await session.commit()
+                    logger.info(f"Phone saved for user {message.from_user.id}: {phone}")
+                    await message.answer("✅ Номер телефона сохранён! Вернитесь в приложение.")
+                else:
+                    await message.answer("⚠️ Сначала запустите бота командой /start")
+
+            # Синхронизируем с Supabase
+            if sync_service:
+                try:
+                    await sync_service.sync_user_to_web(message.from_user.id)
+                except Exception as e:
+                    logger.error(f"Failed to sync user to web after phone save: {e}")
+
     # Routers (порядок важен!)
     # 0. welcome_router - первым для обработки новых участников
     dp.include_router(welcome_router)

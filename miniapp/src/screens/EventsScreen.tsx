@@ -34,6 +34,7 @@ import {
   checkInByTicketCode,
   addXP,
   createOrUpdateUser,
+  getUserByTelegramId,
 } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { Event, EventRegistration, XP_REWARDS } from '@/types'
@@ -523,19 +524,32 @@ const EventsScreen: React.FC = () => {
   }
 
   // Handle phone from Telegram
+  // Note: requestContact sends phone to BOT, not mini app
+  // We need to wait for bot to save it, then refetch user
   const handlePhoneFromTelegram = async () => {
     try {
-      const contact = await requestContact()
-      if (contact?.phone_number) {
-        await createOrUpdateUser({
-          tg_user_id: user!.tg_user_id,
-          phone_number: contact.phone_number,
-        })
-        setUser({ ...user!, phone_number: contact.phone_number })
-        // Continue registration
-        if (phoneDialog.eventId) {
-          registerMutation.mutate(phoneDialog.eventId)
+      const shared = await requestContact()
+      if (shared) {
+        // Phone was shared with bot - wait for bot to save it
+        addToast('Сохраняем номер...', 'info')
+
+        // Wait 2 seconds for bot to process
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        // Refetch user from database
+        const updatedUser = await getUserByTelegramId(user!.tg_user_id)
+        if (updatedUser?.phone_number) {
+          setUser(updatedUser)
+          setPhoneDialog({ show: false, eventId: null })
+          // Continue registration
+          if (phoneDialog.eventId) {
+            registerMutation.mutate(phoneDialog.eventId)
+          }
+          return
         }
+
+        // If still no phone, ask to enter manually
+        addToast('Введите номер вручную', 'info')
       }
     } catch (e) {
       addToast('Не удалось получить номер', 'error')
