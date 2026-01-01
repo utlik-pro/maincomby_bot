@@ -146,3 +146,37 @@ export const initTelegramApp = () => {
     document.documentElement.style.setProperty('--tg-theme-text-color', webApp.themeParams.text_color || '#ffffff')
   }
 }
+
+// Check if add to home screen is supported (requires version 8.0+)
+export const isHomeScreenSupported = (): boolean => {
+  const webApp = getTelegramWebApp()
+  if (!webApp) return false
+  const version = parseFloat(webApp.version || '0')
+  return version >= 8.0
+}
+
+// Add Mini App to home screen
+export const addToHomeScreen = (): void => {
+  const webApp = getTelegramWebApp()
+  if (webApp && isHomeScreenSupported()) {
+    // @ts-ignore - Method might not be in types yet
+    webApp.addToHomeScreen?.()
+  }
+}
+
+// Check home screen status
+export const checkHomeScreenStatus = (): Promise<'added' | 'not_added' | 'unknown'> => {
+  return new Promise((resolve) => {
+    const webApp = getTelegramWebApp()
+    if (!webApp || !isHomeScreenSupported()) {
+      resolve('unknown')
+      return
+    }
+    // @ts-ignore - Method might not be in types yet
+    webApp.checkHomeScreenStatus?.((status: string) => {
+      resolve(status as 'added' | 'not_added' | 'unknown')
+    })
+    // Fallback if callback not called
+    setTimeout(() => resolve('unknown'), 1000)
+  })
+}

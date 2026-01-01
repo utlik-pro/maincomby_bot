@@ -315,3 +315,76 @@ export async function unlockAchievement(userId: number, achievementId: string) {
   if (error && error.code !== '23505') throw error // Ignore duplicate key
   return data
 }
+
+// Notifications
+export type NotificationType = 'event_reminder' | 'match' | 'achievement' | 'rank_up' | 'system' | 'xp'
+
+export interface AppNotification {
+  id: number
+  user_id: number
+  type: NotificationType
+  title: string
+  message: string
+  data: Record<string, any>
+  is_read: boolean
+  created_at: string
+}
+
+export async function getNotifications(userId: number, limit = 50) {
+  const { data, error } = await getSupabase()
+    .from('app_notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data as AppNotification[]
+}
+
+export async function getUnreadNotificationsCount(userId: number): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from('app_notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('is_read', false)
+
+  if (error) throw error
+  return count || 0
+}
+
+export async function markNotificationAsRead(notificationId: number) {
+  const { error } = await getSupabase()
+    .from('app_notifications')
+    .update({ is_read: true })
+    .eq('id', notificationId)
+
+  if (error) throw error
+}
+
+export async function markAllNotificationsAsRead(userId: number) {
+  const { error } = await getSupabase()
+    .from('app_notifications')
+    .update({ is_read: true })
+    .eq('user_id', userId)
+    .eq('is_read', false)
+
+  if (error) throw error
+}
+
+export async function createNotification(
+  userId: number,
+  type: NotificationType,
+  title: string,
+  message: string,
+  data: Record<string, any> = {}
+) {
+  const { data: notification, error } = await getSupabase()
+    .from('app_notifications')
+    .insert({ user_id: userId, type, title, message, data })
+    .select()
+    .single()
+
+  if (error) throw error
+  return notification as AppNotification
+}

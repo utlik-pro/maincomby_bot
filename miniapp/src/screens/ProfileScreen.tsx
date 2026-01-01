@@ -23,9 +23,10 @@ import {
   Save,
   X,
   Loader2,
+  Smartphone,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, openTelegramLink } from '@/lib/telegram'
+import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen } from '@/lib/telegram'
 import { updateProfile, createProfile } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank } from '@/types'
@@ -472,6 +473,28 @@ const ProfileScreen: React.FC = () => {
             </Button>
           </div>
         </Card>
+
+        {/* Add to Home Screen */}
+        {isHomeScreenSupported() && (
+          <Card className="mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
+                <Smartphone size={24} className="text-accent" />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold">Добавить на экран</div>
+                <div className="text-xs text-gray-400">Быстрый доступ с главного экрана</div>
+              </div>
+              <Button size="sm" variant="primary" onClick={() => {
+                hapticFeedback.medium()
+                addToHomeScreen()
+                addToast('Добавление на экран...', 'success')
+              }}>
+                Добавить
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Support */}
         <button

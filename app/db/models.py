@@ -12,7 +12,7 @@ class Base(DeclarativeBase):
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "bot_users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     tg_user_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
@@ -43,19 +43,19 @@ class User(Base):
 
 
 class Post(Base):
-    __tablename__ = "posts"
+    __tablename__ = "bot_posts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     chat_id: Mapped[int] = mapped_column(Integer, index=True)
     message_id: Mapped[int] = mapped_column(Integer, index=True)
-    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    author_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     author: Mapped[User] = relationship(back_populates="posts")
 
 
 class Role(Base):
-    __tablename__ = "roles"
+    __tablename__ = "bot_roles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(32), unique=True, index=True)
@@ -65,11 +65,11 @@ class Role(Base):
 
 
 class UserRole(Base):
-    __tablename__ = "user_roles"
+    __tablename__ = "bot_user_roles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"))
+    role_id: Mapped[int] = mapped_column(ForeignKey("bot_roles.id"))
     assigned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user: Mapped[User] = relationship(back_populates="roles")
@@ -77,7 +77,7 @@ class UserRole(Base):
 
 
 class SourceChannel(Base):
-    __tablename__ = "source_channels"
+    __tablename__ = "bot_source_channels"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     channel_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
@@ -91,10 +91,10 @@ class SourceChannel(Base):
 
 
 class PendingPost(Base):
-    __tablename__ = "pending_posts"
+    __tablename__ = "bot_pending_posts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_channel_id: Mapped[int] = mapped_column(ForeignKey("source_channels.id"))
+    source_channel_id: Mapped[int] = mapped_column(ForeignKey("bot_source_channels.id"))
     original_message_id: Mapped[int] = mapped_column(Integer, index=True)
     original_text: Mapped[str] = mapped_column(String(4096))
     adapted_text: Mapped[Optional[str]] = mapped_column(String(4096), nullable=True)
@@ -109,7 +109,7 @@ class PendingPost(Base):
 
 
 class Question(Base):
-    __tablename__ = "questions"
+    __tablename__ = "bot_questions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, index=True)  # Telegram user ID
@@ -125,7 +125,7 @@ class Question(Base):
 
 
 class Event(Base):
-    __tablename__ = "events"
+    __tablename__ = "bot_events"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(256), index=True)  # Название мероприятия
@@ -146,11 +146,11 @@ class Event(Base):
 
 
 class EventRegistration(Base):
-    __tablename__ = "event_registrations"
+    __tablename__ = "bot_registrations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("bot_events.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), index=True)
     registered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     status: Mapped[str] = mapped_column(String(16), default="registered")  # registered, cancelled, attended
     notes: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Дополнительная информация
@@ -169,7 +169,7 @@ class EventRegistration(Base):
 
 
 class SecurityLog(Base):
-    __tablename__ = "security_logs"
+    __tablename__ = "bot_security_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, index=True)  # Telegram user ID
@@ -184,10 +184,10 @@ class SecurityLog(Base):
 
 class UserProfile(Base):
     """Расширенный профиль пользователя для системы матчинга."""
-    __tablename__ = "user_profiles"
+    __tablename__ = "bot_profiles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), unique=True, index=True)
     bio: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # О себе
     occupation: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)  # Чем занимается
     looking_for: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Кого ищет
@@ -205,11 +205,11 @@ class UserProfile(Base):
 
 class Match(Base):
     """Взаимный матч между двумя пользователями."""
-    __tablename__ = "matches"
+    __tablename__ = "bot_matches"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user1_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    user2_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    user1_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), index=True)
+    user2_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), index=True)
     matched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     is_active: Mapped[bool] = mapped_column(Boolean, index=True, default=True)  # Активен ли матч
 
@@ -219,11 +219,11 @@ class Match(Base):
 
 class Swipe(Base):
     """История свайпов (лайк/скип)."""
-    __tablename__ = "swipes"
+    __tablename__ = "bot_swipes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    swiper_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)  # Кто свайпнул
-    swiped_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)  # Кого свайпнули
+    swiper_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), index=True)  # Кто свайпнул
+    swiped_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), index=True)  # Кого свайпнули
     action: Mapped[str] = mapped_column(String(16), index=True)  # like, skip
     swiped_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -233,11 +233,11 @@ class Swipe(Base):
 
 class EventFeedback(Base):
     """Фидбек от участников после мероприятия."""
-    __tablename__ = "event_feedback"
+    __tablename__ = "bot_feedback"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("bot_events.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), index=True)
 
     # Оценки по 4-балльной системе (1-4, где 4 - лучше всего)
     # Сохраняем как числа для аналитики
@@ -246,6 +246,9 @@ class EventFeedback(Base):
 
     # Свободный комментарий
     comment: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
+
+    # Интересующие темы (через запятую: "ИИ в бизнесе,ИИ в маркетинге")
+    interested_topics: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
