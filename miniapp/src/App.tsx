@@ -165,11 +165,13 @@ const App: React.FC = () => {
 
         // Get profile if exists
         const profile = await getProfile(user.id)
+        const tgPhotoUrl = tgUser?.photo_url
+        console.log('📸 Telegram photo_url:', tgPhotoUrl)
+
         if (profile) {
           // Update photo from Telegram if available and different
-          const tgPhotoUrl = tgUser?.photo_url
           if (tgPhotoUrl && tgPhotoUrl !== profile.photo_url) {
-            console.log('📸 Updating photo from Telegram:', tgPhotoUrl)
+            console.log('📸 Updating photo in existing profile')
             try {
               const updatedProfile = await updateProfile(user.id, { photo_url: tgPhotoUrl })
               setProfile(updatedProfile)
@@ -180,9 +182,20 @@ const App: React.FC = () => {
           } else {
             setProfile(profile)
           }
-        } else if (tgUser?.photo_url) {
-          // No profile yet, but we have Telegram photo - store it for later
-          console.log('📸 Telegram photo available:', tgUser.photo_url)
+        } else {
+          // No profile - create one with Telegram photo and basic data
+          console.log('📸 Creating new profile with Telegram data')
+          try {
+            const newProfile = await createProfile(user.id, {
+              city: 'Минск', // Default city
+              photo_url: tgPhotoUrl || null,
+              bio: null,
+              occupation: null,
+            })
+            setProfile(newProfile)
+          } catch (e) {
+            console.warn('Failed to create profile:', e)
+          }
         }
       } catch (error) {
         console.error('Init error:', error)

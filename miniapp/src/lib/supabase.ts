@@ -86,6 +86,7 @@ export async function createProfile(userId: number, profileData: {
   city: string
   looking_for?: string | null
   can_help_with?: string | null
+  photo_url?: string | null
 }) {
   const { data, error } = await getSupabase()
     .from('bot_profiles')
