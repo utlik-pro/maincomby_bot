@@ -551,6 +551,11 @@ const EventsScreen: React.FC = () => {
       {/* My Tickets */}
       {filter === 'registered' && (
         <div className="px-4 mb-6">
+          {/* Debug info - remove after fixing */}
+          <div className="mb-3 p-2 bg-yellow-500/10 rounded-lg text-xs text-yellow-400 font-mono">
+            DEBUG: user.id={user?.id}, tg_id={user?.tg_user_id}, regs={registrations?.length || 0}
+          </div>
+
           <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
             <Ticket size={14} />
             Мои билеты ({registrations?.length || 0})
