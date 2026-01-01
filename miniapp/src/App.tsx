@@ -106,6 +106,7 @@ const App: React.FC = () => {
             subscription_expires_at: '2025-12-31T23:59:59Z',
             daily_swipes_used: 0,
             daily_swipes_reset_at: null,
+            team_role: 'core' as const,
           }
           setUser(mockUser)
 
