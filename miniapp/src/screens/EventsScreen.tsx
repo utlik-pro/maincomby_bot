@@ -525,33 +525,51 @@ const EventsScreen: React.FC = () => {
       </div>
 
       {/* My Tickets */}
-      {filter === 'registered' && registrations && registrations.length > 0 && (
+      {filter === 'registered' && (
         <div className="px-4 mb-6">
           <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
             <Ticket size={14} />
-            Мои билеты
+            Мои билеты ({registrations?.length || 0})
           </h3>
-          {registrations
-            .filter((r: any) => r.status !== 'cancelled')
-            .map((reg: any) => (
-              <Card
-                key={reg.id}
-                onClick={() => setShowTicket({ registration: reg, event: reg.event })}
-                className="mb-3"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-semibold">{reg.event?.title}</div>
-                    <div className="text-sm text-gray-400">
-                      {format(new Date(reg.event?.event_date), 'd MMM, HH:mm', { locale: ru })}
+          {registrationsError && (
+            <Card className="mb-3 border-red-500/20">
+              <div className="text-red-400 text-sm">
+                Ошибка загрузки билетов: {String(registrationsError)}
+              </div>
+            </Card>
+          )}
+          {registrations && registrations.length > 0 ? (
+            registrations
+              .filter((r: any) => r.status !== 'cancelled')
+              .map((reg: any) => (
+                <Card
+                  key={reg.id}
+                  onClick={() => setShowTicket({ registration: reg, event: reg.event })}
+                  className="mb-3"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-semibold">{reg.event?.title || `Событие #${reg.event_id}`}</div>
+                      <div className="text-sm text-gray-400">
+                        {reg.event?.event_date
+                          ? format(new Date(reg.event.event_date), 'd MMM, HH:mm', { locale: ru })
+                          : 'Дата не указана'}
+                      </div>
                     </div>
+                    <Badge variant={reg.status === 'attended' ? 'success' : 'accent'}>
+                      {reg.status === 'attended' ? <Check size={12} /> : 'Активен'}
+                    </Badge>
                   </div>
-                  <Badge variant={reg.status === 'attended' ? 'success' : 'accent'}>
-                    {reg.status === 'attended' ? <Check size={12} /> : 'Активен'}
-                  </Badge>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))
+          ) : !registrationsError ? (
+            <Card className="mb-3">
+              <div className="text-center text-gray-400 py-4">
+                <Ticket size={24} className="mx-auto mb-2 opacity-50" />
+                <div className="text-sm">Нет регистраций на события</div>
+              </div>
+            </Card>
+          ) : null}
         </div>
       )}
 
