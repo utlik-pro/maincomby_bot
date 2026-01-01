@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
   MapPin,
@@ -27,9 +28,10 @@ import {
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen } from '@/lib/telegram'
-import { updateProfile, createProfile } from '@/lib/supabase'
+import { updateProfile, createProfile, getUnreadNotificationsCount } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank } from '@/types'
+import NotificationsScreen from './NotificationsScreen'
 
 // Icon mapping for ranks
 const RANK_ICONS: Record<UserRank, React.ReactNode> = {
@@ -50,7 +52,16 @@ const ProfileScreen: React.FC = () => {
 
   const [isEditing, setIsEditing] = useState(false)
   const [showSubscription, setShowSubscription] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Fetch unread notifications count
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unreadCount', user?.id],
+    queryFn: () => (user ? getUnreadNotificationsCount(user.id) : 0),
+    enabled: !!user,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  })
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -291,6 +302,11 @@ const ProfileScreen: React.FC = () => {
     )
   }
 
+  // Notifications Screen
+  if (showNotifications) {
+    return <NotificationsScreen onClose={() => setShowNotifications(false)} />
+  }
+
   return (
     <div className="pb-6">
       {/* Header with gradient background */}
@@ -398,7 +414,7 @@ const ProfileScreen: React.FC = () => {
         {/* Menu */}
         <Card className="mb-4 p-0 overflow-hidden">
           {[
-            { icon: <Bell size={20} className="text-blue-400" />, label: 'Уведомления', badge: null, onClick: () => {} },
+            { icon: <Bell size={20} className="text-blue-400" />, label: 'Уведомления', badge: unreadCount > 0 ? unreadCount : null, onClick: () => setShowNotifications(true) },
             { icon: <Ticket size={20} className="text-purple-400" />, label: 'Мои билеты', badge: null, onClick: () => setActiveTab('events') },
             { icon: <Heart size={20} className="text-pink-400" />, label: 'Мои матчи', badge: null, onClick: () => setActiveTab('network') },
             { icon: <Trophy size={20} className="text-yellow-400" />, label: 'Достижения', badge: null, onClick: () => setActiveTab('achievements') },
