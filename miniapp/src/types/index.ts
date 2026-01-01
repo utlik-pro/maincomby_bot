@@ -78,6 +78,23 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'regular', title: 'Завсегдатай', description: '10 событий', emoji: '🏆', xpReward: 150 },
 ]
 
+// Team roles/badges
+export type TeamRole =
+  | 'core'      // Ядро команды MAIN
+  | 'partner'   // Партнёр
+  | 'sponsor'   // Спонсор
+  | 'volunteer' // Волонтёр
+  | 'speaker'   // Спикер
+  | null
+
+export const TEAM_BADGES: Record<Exclude<TeamRole, null>, { label: string; color: string; icon: string }> = {
+  core: { label: 'MAIN Team', color: 'bg-accent', icon: '💎' },
+  partner: { label: 'Партнёр', color: 'bg-blue-500', icon: '🤝' },
+  sponsor: { label: 'Спонсор', color: 'bg-yellow-500', icon: '⭐' },
+  volunteer: { label: 'Волонтёр', color: 'bg-green-500', icon: '💚' },
+  speaker: { label: 'Спикер', color: 'bg-purple-500', icon: '🎤' },
+}
+
 // Database types
 export interface User {
   id: number
@@ -96,6 +113,8 @@ export interface User {
   subscription_expires_at: string | null
   daily_swipes_used: number
   daily_swipes_reset_at: string | null
+  // Team role
+  team_role: TeamRole
 }
 
 export interface UserProfile {

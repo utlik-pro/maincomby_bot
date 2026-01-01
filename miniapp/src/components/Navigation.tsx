@@ -1,8 +1,10 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
 import { Home, Calendar, Trophy, User } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
+import { getActiveEvents } from '@/lib/supabase'
 
 // MVP v1.0: Network tab hidden until critical mass of profiles
 const tabs = [
@@ -14,11 +16,27 @@ const tabs = [
 ]
 
 export const Navigation: React.FC = () => {
-  const { activeTab, setActiveTab } = useAppStore()
+  const { activeTab, setActiveTab, lastSeenEventId, setLastSeenEventId } = useAppStore()
+
+  // Fetch events to check for new ones
+  const { data: events } = useQuery({
+    queryKey: ['events'],
+    queryFn: getActiveEvents,
+    staleTime: 60000, // 1 minute
+  })
+
+  // Check if there are new events
+  const latestEventId = events?.[0]?.id || 0
+  const hasNewEvents = latestEventId > 0 && latestEventId > (lastSeenEventId || 0)
 
   const handleTabClick = (tabId: typeof activeTab) => {
     hapticFeedback.selection()
     setActiveTab(tabId)
+
+    // Mark events as seen when opening events tab
+    if (tabId === 'events' && latestEventId > 0) {
+      setLastSeenEventId(latestEventId)
+    }
   }
 
   return (
@@ -27,6 +45,7 @@ export const Navigation: React.FC = () => {
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
           const IconComponent = tab.icon
+          const showBadge = tab.id === 'events' && hasNewEvents && !isActive
 
           return (
             <motion.button
@@ -35,12 +54,18 @@ export const Navigation: React.FC = () => {
               onClick={() => handleTabClick(tab.id)}
               className="flex flex-col items-center gap-1 px-3 py-2 relative"
             >
-              <IconComponent
-                size={22}
-                className={`transition-all duration-200 ${
-                  isActive ? 'text-accent' : 'text-gray-500'
-                }`}
-              />
+              <div className="relative">
+                <IconComponent
+                  size={22}
+                  className={`transition-all duration-200 ${
+                    isActive ? 'text-accent' : 'text-gray-500'
+                  }`}
+                />
+                {/* New events badge */}
+                {showBadge && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full" />
+                )}
+              </div>
               <span
                 className={`text-[10px] font-semibold transition-colors duration-200 ${
                   isActive ? 'text-accent' : 'text-gray-500'

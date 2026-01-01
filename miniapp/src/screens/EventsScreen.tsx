@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
+import { Html5Qrcode } from 'html5-qrcode'
 import { format, isToday, isTomorrow, addHours, isBefore, isAfter } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
@@ -11,17 +12,15 @@ import {
   Clock,
   MapPin,
   Ticket,
-  QrCode,
   ScanLine,
   Camera,
   Users,
   Check,
   X,
-  Sparkles,
   Code,
-  Wrench,
   Megaphone,
   Lightbulb,
+  Loader2,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
@@ -44,13 +43,67 @@ const eventTypeIcons: Record<string, React.ReactNode> = {
   default: <Calendar size={32} className="text-accent" />,
 }
 
-// QR Scanner component
+// QR Scanner component with real camera
 const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void }> = ({ onScan, onClose }) => {
   const [manualCode, setManualCode] = useState('')
+  const [isScanning, setIsScanning] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const scannerRef = useRef<Html5Qrcode | null>(null)
+  const containerId = 'qr-reader'
+
+  useEffect(() => {
+    // Start camera scanner
+    const startScanner = async () => {
+      try {
+        setIsScanning(true)
+        setCameraError(null)
+
+        const scanner = new Html5Qrcode(containerId)
+        scannerRef.current = scanner
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          (decodedText) => {
+            // Success - QR code scanned
+            hapticFeedback.success()
+            scanner.stop()
+            onScan(decodedText)
+          },
+          () => {
+            // Ignore scan errors (no QR found)
+          }
+        )
+      } catch (err: any) {
+        console.error('Camera error:', err)
+        setCameraError(err?.message || 'Не удалось запустить камеру')
+        setIsScanning(false)
+      }
+    }
+
+    startScanner()
+
+    return () => {
+      // Cleanup on unmount
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {})
+      }
+    }
+  }, [onScan])
+
+  const handleClose = () => {
+    if (scannerRef.current) {
+      scannerRef.current.stop().catch(() => {})
+    }
+    onClose()
+  }
 
   return (
-    <div className="fixed inset-0 bg-bg z-50 p-4">
-      <button onClick={onClose} className="text-gray-400 mb-4 flex items-center gap-2">
+    <div className="fixed inset-0 bg-bg z-50 p-4 overflow-y-auto">
+      <button onClick={handleClose} className="text-gray-400 mb-4 flex items-center gap-2">
         <ArrowLeft size={20} />
         Закрыть сканер
       </button>
@@ -61,20 +114,24 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
       </h1>
 
       <Card className="mb-6">
-        <div className="aspect-square bg-black rounded-xl flex items-center justify-center mb-4">
-          <div className="text-center">
-            <ScanLine size={64} className="text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-sm">
-              Камера будет здесь
-              <br />
-              (используй ручной ввод)
-            </p>
-          </div>
-        </div>
+        {/* Camera view */}
+        <div
+          id={containerId}
+          className="aspect-square bg-black rounded-xl overflow-hidden mb-4"
+        />
 
-        <p className="text-center text-gray-400 text-sm">
-          Наведите камеру на QR-код билета
-        </p>
+        {isScanning && !cameraError && (
+          <p className="text-center text-accent text-sm flex items-center justify-center gap-2">
+            <Loader2 size={16} className="animate-spin" />
+            Наведите камеру на QR-код билета
+          </p>
+        )}
+
+        {cameraError && (
+          <p className="text-center text-red-400 text-sm">
+            {cameraError}
+          </p>
+        )}
       </Card>
 
       <Card>
@@ -106,6 +163,9 @@ const TicketView: React.FC<{
   const checkInStart = addHours(eventDate, -1)
   const canCheckIn = isAfter(new Date(), checkInStart) && isBefore(new Date(), eventDate)
 
+  // Generate fallback ticket code if missing
+  const ticketCode = registration.ticket_code || `MAIN-${registration.id}-${registration.event_id}`
+
   return (
     <div className="fixed inset-0 bg-bg z-50 p-4 overflow-y-auto">
       <button onClick={onClose} className="text-gray-400 mb-4 flex items-center gap-2">
@@ -127,7 +187,7 @@ const TicketView: React.FC<{
         {/* QR Code */}
         <div className="bg-white p-6 rounded-2xl inline-block mb-4">
           <QRCodeSVG
-            value={registration.ticket_code}
+            value={ticketCode}
             size={180}
             level="H"
             includeMargin={false}
@@ -135,7 +195,11 @@ const TicketView: React.FC<{
         </div>
 
         <div className="font-mono text-lg font-bold text-accent mb-4">
-          {registration.ticket_code}
+          {ticketCode}
+        </div>
+
+        <div className="text-xs text-gray-500 mb-4">
+          Билет #{registration.id}
         </div>
 
         {registration.status === 'attended' ? (
@@ -296,7 +360,7 @@ const EventDetail: React.FC<{
 }
 
 const EventsScreen: React.FC = () => {
-  const { user } = useAppStore()
+  const { user, canAccessScanner } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -418,14 +482,17 @@ const EventsScreen: React.FC = () => {
       <div className="p-4">
         <div className="flex justify-between items-start mb-1">
           <h1 className="text-2xl font-bold">Мероприятия</h1>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowScanner(true)}
-            className="bg-bg-card px-3 py-2 rounded-xl text-sm flex items-center gap-2"
-          >
-            <ScanLine size={16} />
-            Скан
-          </motion.button>
+          {/* Scanner only for volunteers and core team */}
+          {canAccessScanner() && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowScanner(true)}
+              className="bg-bg-card px-3 py-2 rounded-xl text-sm flex items-center gap-2"
+            >
+              <ScanLine size={16} />
+              Скан
+            </motion.button>
+          )}
         </div>
         <p className="text-gray-400 text-sm">Учись, знакомься, развивайся</p>
       </div>

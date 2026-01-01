@@ -44,6 +44,7 @@ interface AppState {
   activeTab: 'home' | 'events' | 'network' | 'achievements' | 'profile'
   isVolunteerMode: boolean
   hasCompletedOnboarding: boolean
+  lastSeenEventId: number | null
 
   // Actions
   setUser: (user: User | null) => void
@@ -52,6 +53,7 @@ interface AppState {
   setActiveTab: (tab: AppState['activeTab']) => void
   setVolunteerMode: (mode: boolean) => void
   setOnboardingComplete: (complete: boolean) => void
+  setLastSeenEventId: (eventId: number) => void
   logout: () => void
 
   // Computed
@@ -59,6 +61,7 @@ interface AppState {
   getRankProgress: () => { current: UserRank; next: UserRank | null; progress: number }
   getSubscriptionTier: () => SubscriptionTier
   getDailySwipesRemaining: () => number
+  canAccessScanner: () => boolean
 }
 
 export const useAppStore = create<AppState>()(
@@ -72,6 +75,7 @@ export const useAppStore = create<AppState>()(
       activeTab: 'home',
       isVolunteerMode: false,
       hasCompletedOnboarding: false,
+      lastSeenEventId: null,
 
       // Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -80,7 +84,8 @@ export const useAppStore = create<AppState>()(
       setActiveTab: (activeTab) => set({ activeTab }),
       setVolunteerMode: (isVolunteerMode) => set({ isVolunteerMode }),
       setOnboardingComplete: (hasCompletedOnboarding) => set({ hasCompletedOnboarding }),
-      logout: () => set({ user: null, profile: null, isAuthenticated: false, hasCompletedOnboarding: false }),
+      setLastSeenEventId: (lastSeenEventId) => set({ lastSeenEventId }),
+      logout: () => set({ user: null, profile: null, isAuthenticated: false, hasCompletedOnboarding: false, lastSeenEventId: null }),
 
       // Computed
       getRank: () => {
@@ -115,6 +120,14 @@ export const useAppStore = create<AppState>()(
 
         return Math.max(0, maxSwipes - usedSwipes)
       },
+      // Check if user can access scanner (volunteers, core team)
+      canAccessScanner: () => {
+        const { user } = get()
+        if (!user) return false
+        // Allow: core team, volunteers, or anyone with volunteer mode enabled
+        const allowedRoles = ['core', 'volunteer']
+        return allowedRoles.includes(user.team_role || '') || get().isVolunteerMode
+      },
     }),
     {
       name: 'main-community-app',
@@ -122,6 +135,7 @@ export const useAppStore = create<AppState>()(
         activeTab: state.activeTab,
         isVolunteerMode: state.isVolunteerMode,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
+        lastSeenEventId: state.lastSeenEventId,
       }),
     }
   )

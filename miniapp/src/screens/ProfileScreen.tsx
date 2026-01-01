@@ -30,7 +30,7 @@ import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen } from '@/lib/telegram'
 import { updateProfile, createProfile, getUnreadNotificationsCount } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
-import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank } from '@/types'
+import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES } from '@/types'
 import NotificationsScreen from './NotificationsScreen'
 
 // Icon mapping for ranks
@@ -329,7 +329,15 @@ const ProfileScreen: React.FC = () => {
           {user?.first_name} {user?.last_name}
         </h1>
 
-        {profile?.occupation && <p className="text-accent">{profile.occupation}</p>}
+        {/* Team Badge */}
+        {user?.team_role && TEAM_BADGES[user.team_role] && (
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold mt-2 ${TEAM_BADGES[user.team_role].color} text-white`}>
+            <span>{TEAM_BADGES[user.team_role].icon}</span>
+            <span>{TEAM_BADGES[user.team_role].label}</span>
+          </div>
+        )}
+
+        {profile?.occupation && <p className="text-accent mt-1">{profile.occupation}</p>}
 
         <p className="text-gray-400 text-sm flex items-center justify-center gap-1">
           <MapPin size={14} />
