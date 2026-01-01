@@ -324,7 +324,11 @@ const EventsScreen: React.FC = () => {
       if (!user) throw new Error('No user')
       const registration = await createEventRegistration(eventId, user.id)
       // Award XP for registration
-      await addXP(user.id, XP_REWARDS.EVENT_REGISTER, 'EVENT_REGISTER')
+      try {
+        await addXP(user.id, XP_REWARDS.EVENT_REGISTER, 'EVENT_REGISTER')
+      } catch (e) {
+        console.warn('XP award failed:', e)
+      }
       return registration
     },
     onSuccess: () => {
@@ -333,9 +337,15 @@ const EventsScreen: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['registrations'] })
       setSelectedEvent(null)
     },
-    onError: () => {
+    onError: (error: any) => {
       hapticFeedback.error()
-      addToast('Ошибка регистрации', 'error')
+      // Handle duplicate registration (409 Conflict)
+      if (error?.code === '23505' || error?.message?.includes('duplicate') || error?.status === 409) {
+        addToast('Вы уже зарегистрированы на это событие', 'info')
+        queryClient.invalidateQueries({ queryKey: ['registrations'] })
+      } else {
+        addToast('Ошибка регистрации', 'error')
+      }
     },
   })
 

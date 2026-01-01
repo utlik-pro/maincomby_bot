@@ -25,15 +25,23 @@ export const getInitData = (): string => {
   return webApp?.initData || ''
 }
 
-// Haptic feedback
+// Check if HapticFeedback is supported (requires version 6.1+)
+const isHapticSupported = (): boolean => {
+  const webApp = getTelegramWebApp()
+  if (!webApp) return false
+  const version = parseFloat(webApp.version || '0')
+  return version >= 6.1
+}
+
+// Haptic feedback (silently fails if not supported)
 export const hapticFeedback = {
-  light: () => getTelegramWebApp()?.HapticFeedback?.impactOccurred('light'),
-  medium: () => getTelegramWebApp()?.HapticFeedback?.impactOccurred('medium'),
-  heavy: () => getTelegramWebApp()?.HapticFeedback?.impactOccurred('heavy'),
-  success: () => getTelegramWebApp()?.HapticFeedback?.notificationOccurred('success'),
-  error: () => getTelegramWebApp()?.HapticFeedback?.notificationOccurred('error'),
-  warning: () => getTelegramWebApp()?.HapticFeedback?.notificationOccurred('warning'),
-  selection: () => getTelegramWebApp()?.HapticFeedback?.selectionChanged(),
+  light: () => isHapticSupported() && getTelegramWebApp()?.HapticFeedback?.impactOccurred('light'),
+  medium: () => isHapticSupported() && getTelegramWebApp()?.HapticFeedback?.impactOccurred('medium'),
+  heavy: () => isHapticSupported() && getTelegramWebApp()?.HapticFeedback?.impactOccurred('heavy'),
+  success: () => isHapticSupported() && getTelegramWebApp()?.HapticFeedback?.notificationOccurred('success'),
+  error: () => isHapticSupported() && getTelegramWebApp()?.HapticFeedback?.notificationOccurred('error'),
+  warning: () => isHapticSupported() && getTelegramWebApp()?.HapticFeedback?.notificationOccurred('warning'),
+  selection: () => isHapticSupported() && getTelegramWebApp()?.HapticFeedback?.selectionChanged(),
 }
 
 // Main button controls
