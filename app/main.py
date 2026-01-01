@@ -180,6 +180,25 @@ async def main() -> None:
     set_feedback_session_factory(session_factory)
     set_broadcast_feedback_session_factory(session_factory)
 
+    # Инициализируем Supabase sync service (async версия)
+    sync_service = None
+    try:
+        from .services.supabase_sync import SupabaseSync, set_sync_service
+        sync_service = SupabaseSync(session_factory, bot=bot)
+        set_sync_service(sync_service)
+        logger.info("Supabase sync service initialized with bot for broadcasts")
+    except Exception as e:
+        logger.warning(f"Supabase sync service не инициализирован: {e}")
+
+    # Инициализируем Notification service
+    notification_service = None
+    try:
+        from .services.notifications import init_notification_service
+        notification_service = init_notification_service(bot)
+        logger.info("Notification service initialized")
+    except Exception as e:
+        logger.warning(f"Notification service не инициализирован: {e}")
+
     # Routers (порядок важен!)
     # 0. welcome_router - первым для обработки новых участников
     dp.include_router(welcome_router)
@@ -478,6 +497,21 @@ async def main() -> None:
     ]
     await bot.set_my_commands(commands)
     logger.info("Bot menu commands set successfully")
+
+    # Запускаем sync service перед polling
+    if sync_service:
+        await sync_service.start()
+        logger.info("Supabase sync service started")
+
+    # Запускаем scheduler для автоматических задач (напоминания о событиях)
+    try:
+        from .services.scheduler import create_scheduler, setup_scheduled_jobs
+        scheduler = create_scheduler()
+        setup_scheduled_jobs(scheduler)
+        scheduler.start()
+        logger.info("Scheduler started for event reminders")
+    except Exception as e:
+        logger.warning(f"Scheduler не запущен: {e}")
 
     logger.info("Starting bot long-polling…")
     # Явно указываем типы обновлений, которые хотим получать
