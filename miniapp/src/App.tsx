@@ -199,8 +199,8 @@ const App: React.FC = () => {
     return <NotTelegramScreen />
   }
 
-  // Show onboarding for new users (no profile AND not completed onboarding)
-  const shouldShowOnboarding = !hasCompletedOnboarding && !profile
+  // Show onboarding for users who haven't completed it yet
+  const shouldShowOnboarding = !hasCompletedOnboarding
 
   if (shouldShowOnboarding) {
     return (

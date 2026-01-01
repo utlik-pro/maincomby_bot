@@ -30,6 +30,7 @@ import {
   getUserRegistrations,
   createEventRegistration,
   checkInByTicketCode,
+  addXP,
 } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { Event, EventRegistration, XP_REWARDS } from '@/types'
@@ -321,7 +322,10 @@ const EventsScreen: React.FC = () => {
   const registerMutation = useMutation({
     mutationFn: async (eventId: number) => {
       if (!user) throw new Error('No user')
-      return createEventRegistration(eventId, user.id)
+      const registration = await createEventRegistration(eventId, user.id)
+      // Award XP for registration
+      await addXP(user.id, XP_REWARDS.EVENT_REGISTER, 'EVENT_REGISTER')
+      return registration
     },
     onSuccess: () => {
       hapticFeedback.success()
@@ -339,11 +343,14 @@ const EventsScreen: React.FC = () => {
   const checkInMutation = useMutation({
     mutationFn: async (ticketCode: string) => {
       if (!user) throw new Error('No user')
-      return checkInByTicketCode(ticketCode, user.id)
+      const result = await checkInByTicketCode(ticketCode, user.id)
+      // Award XP for check-in (to the attendee, not volunteer)
+      // Note: The user checking in might be a volunteer, XP goes to ticket owner
+      return result
     },
     onSuccess: () => {
       hapticFeedback.success()
-      addToast('Чекин успешен!', 'success')
+      addToast(`Чекин успешен! +${XP_REWARDS.EVENT_CHECKIN} XP`, 'success')
       setShowScanner(false)
     },
     onError: (error: any) => {
