@@ -278,9 +278,56 @@ export async function checkInByTicketCode(ticketCode: string, volunteerId: numbe
   return { registration: data, event: registration.event }
 }
 
+// Rank thresholds (same as store.ts)
+const RANK_THRESHOLDS: Record<string, number> = {
+  private: 0,
+  corporal: 100,
+  sergeant: 300,
+  sergeant_major: 600,
+  lieutenant: 1000,
+  captain: 2000,
+  major: 5000,
+  colonel: 10000,
+  general: 20000,
+}
+
+const RANK_NAMES: Record<string, string> = {
+  private: 'Рядовой',
+  corporal: 'Капрал',
+  sergeant: 'Сержант',
+  sergeant_major: 'Старший сержант',
+  lieutenant: 'Лейтенант',
+  captain: 'Капитан',
+  major: 'Майор',
+  colonel: 'Полковник',
+  general: 'Генерал',
+}
+
+function getRankFromPoints(points: number): string {
+  if (points >= RANK_THRESHOLDS.general) return 'general'
+  if (points >= RANK_THRESHOLDS.colonel) return 'colonel'
+  if (points >= RANK_THRESHOLDS.major) return 'major'
+  if (points >= RANK_THRESHOLDS.captain) return 'captain'
+  if (points >= RANK_THRESHOLDS.lieutenant) return 'lieutenant'
+  if (points >= RANK_THRESHOLDS.sergeant_major) return 'sergeant_major'
+  if (points >= RANK_THRESHOLDS.sergeant) return 'sergeant'
+  if (points >= RANK_THRESHOLDS.corporal) return 'corporal'
+  return 'private'
+}
+
 // XP & Achievements
 export async function addXP(userId: number, amount: number, reason: string) {
   const supabase = getSupabase()
+
+  // Get current points before update
+  const { data: userBefore } = await supabase
+    .from('bot_users')
+    .select('points')
+    .eq('id', userId)
+    .single()
+
+  const oldPoints = userBefore?.points || 0
+  const oldRank = getRankFromPoints(oldPoints)
 
   // Add transaction
   await supabase
@@ -292,7 +339,50 @@ export async function addXP(userId: number, amount: number, reason: string) {
     .rpc('increment_user_points', { user_id: userId, points_to_add: amount })
 
   if (error) throw error
+
+  const newPoints = data || oldPoints + amount
+  const newRank = getRankFromPoints(newPoints)
+
+  // Check for rank up and create notification
+  if (newRank !== oldRank) {
+    try {
+      await createNotification(
+        userId,
+        'rank_up',
+        `Новое звание: ${RANK_NAMES[newRank]}!`,
+        `Поздравляем! Вы достигли звания "${RANK_NAMES[newRank]}" с ${newPoints} XP!`,
+        { rank: newRank, points: newPoints }
+      )
+    } catch (e) {
+      console.warn('Failed to create rank up notification:', e)
+    }
+  }
+
+  // Create XP notification
+  try {
+    await createNotification(
+      userId,
+      'xp',
+      `+${amount} XP`,
+      `Вы получили ${amount} XP за: ${getReasonText(reason)}`,
+      { amount, reason }
+    )
+  } catch (e) {
+    console.warn('Failed to create XP notification:', e)
+  }
+
   return data
+}
+
+function getReasonText(reason: string): string {
+  const reasons: Record<string, string> = {
+    EVENT_REGISTER: 'регистрацию на событие',
+    EVENT_CHECKIN: 'посещение события',
+    PROFILE_COMPLETE: 'заполнение профиля',
+    MATCH: 'новый матч',
+    INVITE_FRIEND: 'приглашение друга',
+  }
+  return reasons[reason] || reason
 }
 
 export async function getUserAchievements(userId: number) {
