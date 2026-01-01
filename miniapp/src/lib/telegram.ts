@@ -180,3 +180,47 @@ export const checkHomeScreenStatus = (): Promise<'added' | 'not_added' | 'unknow
     setTimeout(() => resolve('unknown'), 1000)
   })
 }
+
+// Request phone number from user (requires version 6.9+)
+export interface TelegramContact {
+  phone_number: string
+  first_name: string
+  last_name?: string
+  user_id: number
+}
+
+export const isContactRequestSupported = (): boolean => {
+  const webApp = getTelegramWebApp()
+  if (!webApp) return false
+  const version = parseFloat(webApp.version || '0')
+  return version >= 6.9
+}
+
+export const requestContact = (): Promise<TelegramContact | null> => {
+  return new Promise((resolve) => {
+    const webApp = getTelegramWebApp()
+    if (!webApp || !isContactRequestSupported()) {
+      console.log('📞 requestContact not supported in this Telegram version')
+      resolve(null)
+      return
+    }
+
+    console.log('📞 Requesting contact from Telegram...')
+    // @ts-ignore - Method might not be in types yet
+    webApp.requestContact?.((sent: boolean, contact?: TelegramContact) => {
+      if (sent && contact) {
+        console.log('📞 Contact received:', contact)
+        resolve(contact)
+      } else {
+        console.log('📞 Contact request declined or failed')
+        resolve(null)
+      }
+    })
+
+    // Fallback timeout
+    setTimeout(() => {
+      console.log('📞 Contact request timeout')
+      resolve(null)
+    }, 30000)
+  })
+}

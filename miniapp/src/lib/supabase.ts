@@ -35,6 +35,7 @@ export async function createOrUpdateUser(userData: {
   username?: string | null
   first_name?: string | null
   last_name?: string | null
+  phone_number?: string | null
 }) {
   const { data, error } = await getSupabase()
     .from('bot_users')

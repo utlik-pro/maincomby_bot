@@ -23,13 +23,14 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, requestContact } from '@/lib/telegram'
 import {
   getActiveEvents,
   getUserRegistrations,
   createEventRegistration,
   checkInByTicketCode,
   addXP,
+  createOrUpdateUser,
 } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { Event, EventRegistration, XP_REWARDS } from '@/types'
@@ -378,7 +379,7 @@ const EventDetail: React.FC<{
 }
 
 const EventsScreen: React.FC = () => {
-  const { user, canAccessScanner } = useAppStore()
+  const { user, setUser, canAccessScanner } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -413,9 +414,29 @@ const EventsScreen: React.FC = () => {
   const registerMutation = useMutation({
     mutationFn: async (eventId: number) => {
       if (!user) throw new Error('No user')
+
+      // Check if user has phone number, request if not
+      if (!user.phone_number) {
+        console.log('📞 User has no phone, requesting from Telegram...')
+        const contact = await requestContact()
+        if (contact?.phone_number) {
+          console.log('📞 Got phone:', contact.phone_number)
+          // Update user with phone number
+          await createOrUpdateUser({
+            tg_user_id: user.tg_user_id,
+            phone_number: contact.phone_number,
+          })
+          // Update local state
+          setUser({ ...user, phone_number: contact.phone_number })
+        } else {
+          console.log('📞 User declined to share phone - continuing without')
+        }
+      }
+
       console.log('🎫 Creating registration for event:', eventId, 'user:', user.id)
       const registration = await createEventRegistration(eventId, user.id)
       console.log('🎫 Registration created:', registration)
+
       // Award XP for registration
       try {
         await addXP(user.id, XP_REWARDS.EVENT_REGISTER, 'EVENT_REGISTER')
@@ -433,9 +454,18 @@ const EventsScreen: React.FC = () => {
     },
     onError: (error: any) => {
       hapticFeedback.error()
-      // Handle duplicate registration (409 Conflict)
-      if (error?.code === '23505' || error?.message?.includes('duplicate') || error?.status === 409) {
-        addToast('Вы уже зарегистрированы на это событие', 'info')
+      // Handle duplicate registration or sequence error
+      const errorMsg = error?.message || ''
+      const errorCode = error?.code || ''
+
+      if (errorCode === '23505') {
+        if (errorMsg.includes('pkey')) {
+          // Sequence is broken - show helpful message
+          addToast('Ошибка базы данных. Попробуйте позже.', 'error')
+          console.error('🔧 Sequence error - need to run: SELECT setval(\'bot_registrations_id_seq\', (SELECT MAX(id) FROM bot_registrations) + 1);')
+        } else {
+          addToast('Вы уже зарегистрированы на это событие', 'info')
+        }
         queryClient.invalidateQueries({ queryKey: ['registrations'] })
       } else {
         addToast('Ошибка регистрации', 'error')
