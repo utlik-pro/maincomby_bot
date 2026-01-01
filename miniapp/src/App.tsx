@@ -139,14 +139,19 @@ const App: React.FC = () => {
 
         // Get or create user in database
         let user = await getUserByTelegramId(userId)
-        if (!user && tgUser) {
+        const isNewUser = !user
+
+        // Always update user data from Telegram (or create if new)
+        if (tgUser) {
           user = await createOrUpdateUser({
             tg_user_id: tgUser.id,
             username: tgUser.username,
             first_name: tgUser.first_name,
             last_name: tgUser.last_name,
           })
-          addToast('Добро пожаловать в MAIN Community!', 'success')
+          if (isNewUser) {
+            addToast('Добро пожаловать в MAIN Community!', 'success')
+          }
         }
 
         if (!user) {
