@@ -102,16 +102,21 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
   }
 
   return (
-    <div className="fixed inset-0 bg-bg z-50 p-4 overflow-y-auto">
-      <button onClick={handleClose} className="text-gray-400 mb-4 flex items-center gap-2">
-        <ArrowLeft size={20} />
-        Закрыть сканер
-      </button>
+    <div className="fixed inset-0 bg-bg z-50 flex flex-col">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3">
+        <button onClick={handleClose} className="text-gray-400 flex items-center gap-2">
+          <ArrowLeft size={20} />
+          Закрыть сканер
+        </button>
+      </div>
 
-      <h1 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <Camera size={24} className="text-accent" />
-        Сканер билетов
-      </h1>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <h1 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Camera size={24} className="text-accent" />
+          Сканер билетов
+        </h1>
 
       <Card className="mb-6">
         {/* Camera view */}
@@ -149,6 +154,7 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
           </Button>
         </div>
       </Card>
+      </div>{/* End scrollable content */}
     </div>
   )
 }
@@ -167,13 +173,18 @@ const TicketView: React.FC<{
   const ticketCode = registration.ticket_code || `MAIN-${registration.id}-${registration.event_id}`
 
   return (
-    <div className="fixed inset-0 bg-bg z-50 p-4 overflow-y-auto">
-      <button onClick={onClose} className="text-gray-400 mb-4 flex items-center gap-2">
-        <ArrowLeft size={20} />
-        Назад
-      </button>
+    <div className="fixed inset-0 bg-bg z-50 flex flex-col">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3">
+        <button onClick={onClose} className="text-gray-400 flex items-center gap-2">
+          <ArrowLeft size={20} />
+          Назад
+        </button>
+      </div>
 
-      <Card className="text-center p-6">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <Card className="text-center p-6">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
           <Ticket size={32} className="text-accent" />
         </div>
@@ -247,6 +258,7 @@ const TicketView: React.FC<{
           </div>
         </Card>
       </div>
+      </div>{/* End scrollable content */}
     </div>
   )
 }
@@ -263,16 +275,21 @@ const EventDetail: React.FC<{
   const IconComponent = eventTypeIcons[event.event_type || 'default'] || eventTypeIcons.default
 
   return (
-    <div className="pb-6">
-      <button onClick={onClose} className="p-4 text-gray-400 flex items-center gap-2">
-        <ArrowLeft size={20} />
-        Назад
-      </button>
-
-      {/* Hero */}
-      <div className="h-44 bg-gradient-to-br from-accent/30 to-bg-card flex items-center justify-center">
-        {IconComponent}
+    <div className="h-full flex flex-col">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card">
+        <button onClick={onClose} className="p-4 text-gray-400 flex items-center gap-2">
+          <ArrowLeft size={20} />
+          Назад
+        </button>
       </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto pb-6">
+        {/* Hero */}
+        <div className="h-44 bg-gradient-to-br from-accent/30 to-bg-card flex items-center justify-center">
+          {IconComponent}
+        </div>
 
       <div className="p-4">
         <div className="flex gap-2 mb-3">
@@ -355,6 +372,7 @@ const EventDetail: React.FC<{
           </Button>
         )}
       </div>
+      </div>{/* End scrollable content */}
     </div>
   )
 }
@@ -384,15 +402,20 @@ const EventsScreen: React.FC = () => {
 
   // Debug logging
   console.log('🎫 EventsScreen Debug:')
-  console.log('  - user:', user?.id, user?.username)
-  console.log('  - registrations:', registrations?.length, registrations)
+  console.log('  - user:', user?.id, user?.username, user?.tg_user_id)
+  console.log('  - filter:', filter)
+  console.log('  - registrations count:', registrations?.length)
+  console.log('  - registrations:', registrations)
   console.log('  - registrationsError:', registrationsError)
+  console.log('  - events count:', events?.length)
 
   // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async (eventId: number) => {
       if (!user) throw new Error('No user')
+      console.log('🎫 Creating registration for event:', eventId, 'user:', user.id)
       const registration = await createEventRegistration(eventId, user.id)
+      console.log('🎫 Registration created:', registration)
       // Award XP for registration
       try {
         await addXP(user.id, XP_REWARDS.EVENT_REGISTER, 'EVENT_REGISTER')
@@ -401,7 +424,8 @@ const EventsScreen: React.FC = () => {
       }
       return registration
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('🎫 Registration success, invalidating queries. Data:', data)
       hapticFeedback.success()
       addToast(`+${XP_REWARDS.EVENT_REGISTER} XP за регистрацию!`, 'xp', XP_REWARDS.EVENT_REGISTER)
       queryClient.invalidateQueries({ queryKey: ['registrations'] })
