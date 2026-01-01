@@ -385,7 +385,7 @@ const EventDetail: React.FC<{
 }
 
 const EventsScreen: React.FC = () => {
-  const { user, setUser, canAccessScanner } = useAppStore()
+  const { user, setUser, addPoints, canAccessScanner } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -435,6 +435,8 @@ const EventsScreen: React.FC = () => {
       // Award XP for registration
       try {
         await addXP(user.id, XP_REWARDS.EVENT_REGISTER, 'EVENT_REGISTER')
+        // Update local state
+        addPoints(XP_REWARDS.EVENT_REGISTER)
       } catch (e) {
         console.warn('XP award failed:', e)
       }
@@ -490,6 +492,8 @@ const EventsScreen: React.FC = () => {
     mutationFn: async (registrationId: number) => {
       if (!user) throw new Error('No user')
       await cancelEventRegistration(registrationId, user.id)
+      // Update local XP (deduct 10)
+      addPoints(-10)
     },
     onSuccess: () => {
       hapticFeedback.success()
@@ -549,20 +553,33 @@ const EventsScreen: React.FC = () => {
   if (selectedEvent) {
     const registration = getRegistrationForEvent(selectedEvent.id)
     return (
-      <EventDetail
-        event={selectedEvent}
-        registration={registration}
-        onClose={() => setSelectedEvent(null)}
-        onRegister={() => registerMutation.mutate(selectedEvent.id)}
-        onShowTicket={() => setShowTicket({ registration: registration!, event: selectedEvent })}
-        onCancelRegistration={() => registration && handleCancelRegistration(registration.id)}
-      />
+      <>
+        {/* Cancel Confirmation Dialog - rendered above EventDetail */}
+        <ConfirmDialog
+          isOpen={cancelConfirm.show}
+          title="Отменить регистрацию?"
+          message="Вы уверены, что хотите отменить регистрацию? Вы потеряете 10 XP."
+          confirmText="Да, отменить"
+          cancelText="Назад"
+          variant="danger"
+          onConfirm={confirmCancel}
+          onCancel={() => setCancelConfirm({ show: false, registrationId: null })}
+        />
+        <EventDetail
+          event={selectedEvent}
+          registration={registration}
+          onClose={() => setSelectedEvent(null)}
+          onRegister={() => registerMutation.mutate(selectedEvent.id)}
+          onShowTicket={() => setShowTicket({ registration: registration!, event: selectedEvent })}
+          onCancelRegistration={() => registration && handleCancelRegistration(registration.id)}
+        />
+      </>
     )
   }
 
   return (
     <div className="pb-24">
-      {/* Cancel Confirmation Dialog */}
+      {/* Cancel Confirmation Dialog (fallback) */}
       <ConfirmDialog
         isOpen={cancelConfirm.show}
         title="Отменить регистрацию?"

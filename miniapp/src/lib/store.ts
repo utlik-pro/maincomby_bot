@@ -54,6 +54,7 @@ interface AppState {
   setVolunteerMode: (mode: boolean) => void
   setOnboardingComplete: (complete: boolean) => void
   setLastSeenEventId: (eventId: number) => void
+  addPoints: (amount: number) => void
   logout: () => void
 
   // Computed
@@ -85,6 +86,12 @@ export const useAppStore = create<AppState>()(
       setVolunteerMode: (isVolunteerMode) => set({ isVolunteerMode }),
       setOnboardingComplete: (hasCompletedOnboarding) => set({ hasCompletedOnboarding }),
       setLastSeenEventId: (lastSeenEventId) => set({ lastSeenEventId }),
+      addPoints: (amount) => {
+        const { user } = get()
+        if (user) {
+          set({ user: { ...user, points: Math.max(0, (user.points || 0) + amount) } })
+        }
+      },
       logout: () => set({ user: null, profile: null, isAuthenticated: false, hasCompletedOnboarding: false, lastSeenEventId: null }),
 
       // Computed

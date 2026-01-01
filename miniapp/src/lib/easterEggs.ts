@@ -79,7 +79,7 @@ export function useTapEasterEgg(
   const [tapCount, setTapCount] = useState(0)
   const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked(eggId))
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const { user } = useAppStore()
+  const { user, addPoints } = useAppStore()
   const { addToast } = useToastStore()
 
   const handleTap = useCallback(async () => {
@@ -109,6 +109,8 @@ export function useTapEasterEgg(
       if (egg.xpReward > 0 && user) {
         try {
           await addXP(user.id, egg.xpReward, `EASTER_EGG_${eggId.toUpperCase()}`)
+          // Update local state immediately
+          addPoints(egg.xpReward)
         } catch (e) {
           console.warn('Failed to award easter egg XP:', e)
         }
@@ -234,7 +236,7 @@ export function useSecretCode(
   onMatch: () => void
 ) {
   const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked('secret_code'))
-  const { user } = useAppStore()
+  const { user, addPoints } = useAppStore()
   const { addToast } = useToastStore()
 
   useEffect(() => {
@@ -248,12 +250,14 @@ export function useSecretCode(
 
       const egg = EASTER_EGGS.secret_code
       if (user) {
-        addXP(user.id, egg.xpReward, 'EASTER_EGG_SECRET_CODE').catch(() => {})
+        addXP(user.id, egg.xpReward, 'EASTER_EGG_SECRET_CODE')
+          .then(() => addPoints(egg.xpReward))
+          .catch(() => {})
       }
       addToast(egg.message, 'xp', egg.xpReward)
       onMatch()
     }
-  }, [currentValue, targetCode, isUnlocked, user, addToast, onMatch])
+  }, [currentValue, targetCode, isUnlocked, user, addToast, onMatch, addPoints])
 
   return { isUnlocked }
 }
@@ -263,7 +267,7 @@ export function useSpeedRunner(tabs: string[], timeLimit = 10000) {
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set())
   const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked('speed_runner'))
   const startTimeRef = useRef<number | null>(null)
-  const { user } = useAppStore()
+  const { user, addPoints } = useAppStore()
   const { addToast } = useToastStore()
 
   const recordTabVisit = useCallback((tabId: string) => {
@@ -290,7 +294,9 @@ export function useSpeedRunner(tabs: string[], timeLimit = 10000) {
 
           const egg = EASTER_EGGS.speed_runner
           if (user) {
-            addXP(user.id, egg.xpReward, 'EASTER_EGG_SPEED_RUNNER').catch(() => {})
+            addXP(user.id, egg.xpReward, 'EASTER_EGG_SPEED_RUNNER')
+              .then(() => addPoints(egg.xpReward))
+              .catch(() => {})
           }
           addToast(egg.message, 'xp', egg.xpReward)
         }
@@ -298,7 +304,7 @@ export function useSpeedRunner(tabs: string[], timeLimit = 10000) {
 
       return newSet
     })
-  }, [isUnlocked, tabs.length, timeLimit, user, addToast])
+  }, [isUnlocked, tabs.length, timeLimit, user, addToast, addPoints])
 
   // Reset after time limit
   useEffect(() => {
