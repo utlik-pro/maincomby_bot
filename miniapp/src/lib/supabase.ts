@@ -218,10 +218,12 @@ export async function getEventRegistration(eventId: number, userId: number) {
 }
 
 export async function createEventRegistration(eventId: number, userId: number) {
+  const supabase = getSupabase()
+
   // Generate unique ticket code
   const ticketCode = `MAIN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
-  const { data, error } = await getSupabase()
+  const { data, error } = await supabase
     .from('bot_registrations')
     .insert({
       event_id: eventId,
@@ -233,7 +235,55 @@ export async function createEventRegistration(eventId: number, userId: number) {
     .single()
 
   if (error) throw error
+
+  // Sync to leads table for web admin panel
+  try {
+    await syncRegistrationToLeads(supabase, eventId, userId)
+  } catch (e) {
+    console.warn('Failed to sync registration to leads:', e)
+  }
+
   return data
+}
+
+// Sync registration to web admin leads table
+async function syncRegistrationToLeads(supabase: SupabaseClient, eventId: number, userId: number) {
+  // Get bot event info
+  const { data: botEvent } = await supabase
+    .from('bot_events')
+    .select('title')
+    .eq('id', eventId)
+    .single()
+
+  if (!botEvent) return
+
+  // Get user info
+  const { data: user } = await supabase
+    .from('bot_users')
+    .select('tg_user_id, username, first_name, last_name, phone_number')
+    .eq('id', userId)
+    .single()
+
+  if (!user) return
+
+  // Check if lead already exists by telegram ID placeholder email
+  const placeholderEmail = `tg_${user.tg_user_id}@telegram.placeholder`
+  const { data: existingLead } = await supabase
+    .from('leads')
+    .select('id')
+    .eq('email', placeholderEmail)
+    .maybeSingle()
+
+  if (existingLead) return
+
+  // Create lead (using email as unique identifier for Telegram users)
+  await supabase.from('leads').insert({
+    name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown',
+    email: placeholderEmail,
+    phone: user.phone_number,
+    status: 'registered',
+    notes: `Telegram: @${user.username || 'N/A'} | Mini App | ${botEvent.title}`,
+  })
 }
 
 export async function getUserRegistrations(userId: number) {
