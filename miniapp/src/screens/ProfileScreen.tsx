@@ -518,11 +518,6 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <div className="pb-6">
-      {/* Logo header */}
-      <div className="pt-6 pb-4 bg-gradient-to-b from-accent/20 to-transparent flex items-center justify-center">
-        <div className="text-accent font-bold text-5xl">M</div>
-      </div>
-
       {/* Header with themed gradient background */}
       <div className={`${theme.headerGradient} p-6 text-center`}>
         {/* Avatar with themed ring and glow - tap 5 times for easter egg */}
