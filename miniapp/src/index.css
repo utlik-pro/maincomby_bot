@@ -59,7 +59,7 @@ body {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   /* Add top padding to prevent overlap with iOS status bar and Telegram header */
-  padding-top: 20px;
+  padding-top: 60px;
 }
 
 /* Safe area padding for notch devices */
