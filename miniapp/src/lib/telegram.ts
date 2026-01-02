@@ -217,3 +217,41 @@ export const requestContact = (): Promise<TelegramContact | null> => {
     setTimeout(() => resolve(null), 30000)
   })
 }
+
+// Check if QR Scanner is supported (requires version 6.4+)
+export const isQrScannerSupported = (): boolean => {
+  const webApp = getTelegramWebApp()
+  if (!webApp) return false
+  const version = parseFloat(webApp.version || '0')
+  return version >= 6.4 && typeof webApp.showScanQrPopup === 'function'
+}
+
+// Show QR Scanner
+export const showQrScanner = (text?: string): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const webApp = getTelegramWebApp()
+    if (!webApp || !isQrScannerSupported()) {
+      resolve(null)
+      return
+    }
+
+    webApp.showScanQrPopup({ text: text || 'Наведите камеру на QR-код' }, (qrData: string) => {
+      // Close the scanner
+      webApp.closeScanQrPopup()
+      // Return the scanned data
+      resolve(qrData)
+      // Return true to close popup
+      return true
+    })
+
+    // If user closes scanner without scanning
+    setTimeout(() => {
+      try {
+        webApp.closeScanQrPopup()
+      } catch (e) {
+        // Already closed
+      }
+      resolve(null)
+    }, 60000) // 1 minute timeout
+  })
+}

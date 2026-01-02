@@ -444,6 +444,8 @@ export interface TelegramWebApp {
   switchInlineQuery: (query: string, choose_chat_types?: string[]) => void
   requestContact: (callback: (shared: boolean) => void) => void
   requestWriteAccess: (callback: (access: boolean) => void) => void
+  showScanQrPopup: (params: { text?: string }, callback?: (text: string) => boolean) => void
+  closeScanQrPopup: () => void
 }
 
 declare global {

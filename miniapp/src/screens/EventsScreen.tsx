@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
-import { Html5Qrcode } from 'html5-qrcode'
 import { format, isToday, isTomorrow, addHours, isBefore, isAfter } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
@@ -23,7 +22,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, requestContact } from '@/lib/telegram'
+import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported } from '@/lib/telegram'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PhoneDialog } from '@/components/PhoneDialog'
 import {
@@ -53,92 +52,41 @@ const eventTypeIcons: Record<string, React.ReactNode> = {
 const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void }> = ({ onScan, onClose }) => {
   const [manualCode, setManualCode] = useState('')
   const [isScanning, setIsScanning] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [cameraError, setCameraError] = useState<string | null>(null)
-  const scannerRef = useRef<Html5Qrcode | null>(null)
-  const containerId = 'qr-reader'
+  const qrSupported = isQrScannerSupported()
 
-  useEffect(() => {
-    // Start camera scanner
-    const startScanner = async () => {
-      try {
-        setIsScanning(true)
-        setCameraError(null)
+  const handleScanClick = async () => {
+    if (!qrSupported) {
+      hapticFeedback.error()
+      return
+    }
 
-        const scanner = new Html5Qrcode(containerId)
-        scannerRef.current = scanner
+    setIsScanning(true)
+    hapticFeedback.medium()
 
-        console.log('[QR Scanner] Starting camera...')
+    try {
+      const qrData = await showQrScanner('Наведите камеру на QR-код билета')
 
-        // Попробовать заднюю камеру, если не получится - переднюю
-        const cameraConfig = { facingMode: { ideal: 'environment' } }
-
-        await scanner.start(
-          cameraConfig,
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-          },
-          (decodedText) => {
-            // Success - QR code scanned
-            hapticFeedback.success()
-
-            // Показать белый overlay обработки
-            setIsProcessing(true)
-
-            // НЕМЕДЛЕННО скрыть камеру (ДО остановки)
-            const qrDiv = document.getElementById(containerId)
-            if (qrDiv) {
-              qrDiv.style.display = 'none'
-            }
-
-            // Stop camera and call onScan (не await - чтобы не блокировать)
-            scanner.stop().catch(() => {})
-
-            // Небольшая задержка для плавности, затем закрыть
-            setTimeout(() => {
-              onScan(decodedText)
-            }, 100)
-          },
-          () => {
-            // Ignore scan errors (no QR found)
-          }
-        )
-
-        console.log('[QR Scanner] Camera started successfully')
-      } catch (err: any) {
-        console.error('[QR Scanner] Camera error:', err)
-        const errorMsg = err?.message || 'Не удалось запустить камеру'
-        setCameraError(errorMsg)
-        setIsScanning(false)
-
-        // Показать toast с ошибкой
-        console.error('Ошибка камеры:', errorMsg)
+      if (qrData) {
+        // Success - QR code scanned
+        hapticFeedback.success()
+        onScan(qrData)
+      } else {
+        // User closed scanner without scanning
+        hapticFeedback.light()
       }
+    } catch (error) {
+      console.error('[QR Scanner] Error:', error)
+      hapticFeedback.error()
+    } finally {
+      setIsScanning(false)
     }
-
-    startScanner()
-
-    return () => {
-      // Cleanup on unmount
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {})
-      }
-    }
-  }, [onScan])
-
-  const handleClose = () => {
-    if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {})
-    }
-    onClose()
   }
 
   return (
     <div className="fixed inset-0 bg-bg z-50 flex flex-col">
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3">
-        <button onClick={handleClose} className="text-gray-400 flex items-center gap-2">
+        <button onClick={onClose} className="text-gray-400 flex items-center gap-2">
           <ArrowLeft size={20} />
           Закрыть сканер
         </button>
@@ -152,36 +100,36 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
         </h1>
 
       <Card className="mb-6">
-        {/* Camera view */}
-        <div className="relative aspect-square rounded-xl overflow-hidden mb-4">
-          <div
-            id={containerId}
-            className="w-full h-full bg-black"
-          />
-
-          {/* Loading overlay пока камера запускается */}
-          {isScanning && !cameraError && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <div className="text-center text-white">
-                <Loader2 size={32} className="animate-spin mx-auto mb-2" />
-                <p className="text-sm">Запуск камеры...</p>
+        {qrSupported ? (
+          <div className="text-center py-8">
+            <div className="mb-6">
+              <div className="w-24 h-24 mx-auto bg-accent/10 rounded-full flex items-center justify-center mb-4">
+                <ScanLine size={48} className="text-accent" />
               </div>
+              <h3 className="font-semibold mb-2">Готов к сканированию</h3>
+              <p className="text-gray-400 text-sm">
+                Нажмите кнопку ниже, чтобы открыть сканер QR-кодов
+              </p>
             </div>
-          )}
-        </div>
-
-        {isScanning && !cameraError && (
-          <p className="text-center text-accent text-sm flex items-center justify-center gap-2">
-            <Loader2 size={16} className="animate-spin" />
-            Наведите камеру на QR-код билета
-          </p>
-        )}
-
-        {cameraError && (
-          <div className="text-center">
-            <p className="text-red-400 text-sm mb-3">{cameraError}</p>
+            <Button
+              onClick={handleScanClick}
+              disabled={isScanning}
+              isLoading={isScanning}
+              size="lg"
+              className="w-full"
+            >
+              <Camera size={20} />
+              {isScanning ? 'Сканирование...' : 'Сканировать QR-код'}
+            </Button>
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <X size={48} className="text-red-400 mx-auto mb-3" />
+            <p className="text-red-400 text-sm mb-3">
+              QR сканер недоступен в вашей версии Telegram
+            </p>
             <p className="text-gray-400 text-xs">
-              Используйте ручной ввод кода ниже
+              Обновите Telegram или используйте ручной ввод кода ниже
             </p>
           </div>
         )}
@@ -203,16 +151,6 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
         </div>
       </Card>
       </div>{/* End scrollable content */}
-
-      {/* White processing overlay - покрывает ВЕСЬ экран поверх чёрного */}
-      {isProcessing && (
-        <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 size={48} className="animate-spin text-accent mx-auto mb-4" />
-            <p className="text-accent font-semibold text-lg">Проверка билета...</p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
