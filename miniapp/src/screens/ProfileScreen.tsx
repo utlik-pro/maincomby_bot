@@ -52,6 +52,95 @@ const RANK_ICONS: Record<UserRank, React.ReactNode> = {
   general: <Crown size={14} className="text-yellow-300" />,
 }
 
+// Profile themes based on role/tier/badges
+type ProfileTheme = {
+  headerGradient: string
+  avatarRing: string
+  avatarGlow: string
+  accentColor: string
+  badge?: { icon: React.ReactNode; label: string; color: string }
+}
+
+const PROFILE_THEMES: Record<string, ProfileTheme> = {
+  // Core team - MAIN branded gold/lime
+  core: {
+    headerGradient: 'bg-gradient-to-b from-[#c8ff00]/30 via-[#c8ff00]/10 to-transparent',
+    avatarRing: 'ring-4 ring-[#c8ff00] ring-offset-2 ring-offset-bg',
+    avatarGlow: 'shadow-[0_0_30px_rgba(200,255,0,0.4)]',
+    accentColor: 'text-[#c8ff00]',
+    badge: { icon: <Star size={12} />, label: 'CORE TEAM', color: 'bg-[#c8ff00] text-black' },
+  },
+  // VIP - Gold premium
+  vip: {
+    headerGradient: 'bg-gradient-to-b from-yellow-500/30 via-amber-500/10 to-transparent',
+    avatarRing: 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-bg',
+    avatarGlow: 'shadow-[0_0_30px_rgba(250,204,21,0.4)]',
+    accentColor: 'text-yellow-400',
+    badge: { icon: <Crown size={12} />, label: 'VIP', color: 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black' },
+  },
+  // Speaker - Purple
+  speaker: {
+    headerGradient: 'bg-gradient-to-b from-purple-500/30 via-purple-500/10 to-transparent',
+    avatarRing: 'ring-4 ring-purple-400 ring-offset-2 ring-offset-bg',
+    avatarGlow: 'shadow-[0_0_30px_rgba(168,85,247,0.4)]',
+    accentColor: 'text-purple-400',
+    badge: { icon: <Award size={12} />, label: 'SPEAKER', color: 'bg-purple-500 text-white' },
+  },
+  // Partner - Teal
+  partner: {
+    headerGradient: 'bg-gradient-to-b from-teal-500/30 via-teal-500/10 to-transparent',
+    avatarRing: 'ring-4 ring-teal-400 ring-offset-2 ring-offset-bg',
+    avatarGlow: 'shadow-[0_0_30px_rgba(45,212,191,0.3)]',
+    accentColor: 'text-teal-400',
+    badge: { icon: <Medal size={12} />, label: 'PARTNER', color: 'bg-teal-500 text-white' },
+  },
+  // Sponsor - Orange/Gold
+  sponsor: {
+    headerGradient: 'bg-gradient-to-b from-orange-500/30 via-orange-500/10 to-transparent',
+    avatarRing: 'ring-4 ring-orange-400 ring-offset-2 ring-offset-bg',
+    avatarGlow: 'shadow-[0_0_30px_rgba(251,146,60,0.4)]',
+    accentColor: 'text-orange-400',
+    badge: { icon: <Trophy size={12} />, label: 'SPONSOR', color: 'bg-gradient-to-r from-orange-400 to-yellow-500 text-black' },
+  },
+  // Pro subscriber - Accent lime
+  pro: {
+    headerGradient: 'bg-gradient-to-b from-accent/20 via-accent/5 to-transparent',
+    avatarRing: 'ring-2 ring-accent ring-offset-1 ring-offset-bg',
+    avatarGlow: 'shadow-[0_0_20px_rgba(200,255,0,0.2)]',
+    accentColor: 'text-accent',
+    badge: { icon: <Crown size={12} />, label: 'PRO', color: 'bg-accent text-black' },
+  },
+  // Default - subtle
+  default: {
+    headerGradient: 'bg-gradient-to-b from-accent/10 to-transparent',
+    avatarRing: '',
+    avatarGlow: '',
+    accentColor: 'text-accent',
+  },
+}
+
+// Determine theme priority: core > vip badge > speaker > partner > sponsor > pro tier > default
+function getProfileTheme(
+  teamRole: string | null | undefined,
+  tier: SubscriptionTier,
+  badges: UserBadge[]
+): ProfileTheme {
+  // Check team role first (highest priority)
+  if (teamRole === 'core') return PROFILE_THEMES.core
+  if (teamRole === 'speaker') return PROFILE_THEMES.speaker
+  if (teamRole === 'partner') return PROFILE_THEMES.partner
+  if (teamRole === 'sponsor') return PROFILE_THEMES.sponsor
+
+  // Check for VIP badge
+  const hasVipBadge = badges.some(b => b.badge?.slug === 'vip')
+  if (hasVipBadge) return PROFILE_THEMES.vip
+
+  // Check subscription tier
+  if (tier === 'pro') return PROFILE_THEMES.pro
+
+  return PROFILE_THEMES.default
+}
+
 const ProfileScreen: React.FC = () => {
   const { user, profile, getRank, getSubscriptionTier, setActiveTab, setProfile } = useAppStore()
   const { addToast } = useToastStore()
@@ -160,6 +249,9 @@ const ProfileScreen: React.FC = () => {
   const rankInfo = RANK_LABELS[rank]
   const tier = getSubscriptionTier()
   const limits = SUBSCRIPTION_LIMITS[tier]
+
+  // Get profile theme based on role/tier/badges
+  const theme = getProfileTheme(user?.team_role, tier, userBadges)
 
   // Subscription plans
   const plans: { tier: SubscriptionTier; name: string; price: string; features: string[] }[] = [
@@ -426,36 +518,40 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <div className="pb-6">
-      {/* Header with gradient background */}
-      <div className="bg-gradient-to-b from-accent/10 to-transparent p-6 text-center">
-        {/* Avatar - tap 5 times for easter egg */}
+      {/* Header with themed gradient background */}
+      <div className={`${theme.headerGradient} p-6 text-center`}>
+        {/* Avatar with themed ring and glow - tap 5 times for easter egg */}
         <div className="relative inline-block cursor-pointer" onClick={handleAvatarTap}>
-          <Avatar
-            src={profile?.photo_url}
-            name={user?.first_name || 'User'}
-            size="xl"
-            className="mx-auto mb-4"
-          />
-          {tier !== 'free' && (
-            <div className="absolute -bottom-1 -right-1 bg-accent text-bg p-1 rounded-full">
-              {tier === 'pro' ? <Crown size={14} /> : <Star size={14} />}
+          <div className={`rounded-full ${theme.avatarRing} ${theme.avatarGlow}`}>
+            <Avatar
+              src={profile?.photo_url}
+              name={user?.first_name || 'User'}
+              size="xl"
+              className="mx-auto"
+            />
+          </div>
+          {/* Theme badge on avatar */}
+          {theme.badge && (
+            <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${theme.badge.color} px-2 py-0.5 rounded-full flex items-center gap-1 text-xs font-bold whitespace-nowrap`}>
+              {theme.badge.icon}
+              {theme.badge.label}
             </div>
           )}
         </div>
 
-        <h1 className="text-xl font-bold">
+        <h1 className="text-xl font-bold mt-4">
           {user?.first_name} {user?.last_name}
         </h1>
 
-        {/* Team Badge */}
-        {user?.team_role && TEAM_BADGES[user.team_role] && (
+        {/* Team Badge (if different from theme badge) */}
+        {user?.team_role && TEAM_BADGES[user.team_role] && !theme.badge && (
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold mt-2 ${TEAM_BADGES[user.team_role].color} text-white`}>
             <span>{TEAM_BADGES[user.team_role].icon}</span>
             <span>{TEAM_BADGES[user.team_role].label}</span>
           </div>
         )}
 
-        {profile?.occupation && <p className="text-accent mt-1">{profile.occupation}</p>}
+        {profile?.occupation && <p className={`${theme.accentColor} mt-1`}>{profile.occupation}</p>}
 
         {/* Company inline */}
         {userCompany && <CompanyInline userCompany={userCompany} />}
