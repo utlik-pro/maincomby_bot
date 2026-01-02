@@ -53,6 +53,7 @@ const eventTypeIcons: Record<string, React.ReactNode> = {
 const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void }> = ({ onScan, onClose }) => {
   const [manualCode, setManualCode] = useState('')
   const [isScanning, setIsScanning] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const containerId = 'qr-reader'
@@ -77,6 +78,9 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
             // Success - QR code scanned
             hapticFeedback.success()
 
+            // Показать белый overlay обработки
+            setIsProcessing(true)
+
             // НЕМЕДЛЕННО скрыть камеру (ДО остановки)
             const qrDiv = document.getElementById(containerId)
             if (qrDiv) {
@@ -85,7 +89,11 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
 
             // Stop camera and call onScan (не await - чтобы не блокировать)
             scanner.stop().catch(() => {})
-            onScan(decodedText)
+
+            // Небольшая задержка для плавности, затем закрыть
+            setTimeout(() => {
+              onScan(decodedText)
+            }, 100)
           },
           () => {
             // Ignore scan errors (no QR found)
@@ -169,6 +177,16 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
         </div>
       </Card>
       </div>{/* End scrollable content */}
+
+      {/* White processing overlay - покрывает ВЕСЬ экран поверх чёрного */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 size={48} className="animate-spin text-accent mx-auto mb-4" />
+            <p className="text-accent font-semibold text-lg">Проверка билета...</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
