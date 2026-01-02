@@ -68,8 +68,13 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
         const scanner = new Html5Qrcode(containerId)
         scannerRef.current = scanner
 
+        console.log('[QR Scanner] Starting camera...')
+
+        // Попробовать заднюю камеру, если не получится - переднюю
+        const cameraConfig = { facingMode: { ideal: 'environment' } }
+
         await scanner.start(
-          { facingMode: 'environment' },
+          cameraConfig,
           {
             fps: 10,
             qrbox: { width: 250, height: 250 },
@@ -99,10 +104,16 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
             // Ignore scan errors (no QR found)
           }
         )
+
+        console.log('[QR Scanner] Camera started successfully')
       } catch (err: any) {
-        console.error('Camera error:', err)
-        setCameraError(err?.message || 'Не удалось запустить камеру')
+        console.error('[QR Scanner] Camera error:', err)
+        const errorMsg = err?.message || 'Не удалось запустить камеру'
+        setCameraError(errorMsg)
         setIsScanning(false)
+
+        // Показать toast с ошибкой
+        console.error('Ошибка камеры:', errorMsg)
       }
     }
 
@@ -142,10 +153,22 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
 
       <Card className="mb-6">
         {/* Camera view */}
-        <div
-          id={containerId}
-          className="aspect-square bg-black rounded-xl overflow-hidden mb-4"
-        />
+        <div className="relative aspect-square rounded-xl overflow-hidden mb-4">
+          <div
+            id={containerId}
+            className="w-full h-full bg-black"
+          />
+
+          {/* Loading overlay пока камера запускается */}
+          {isScanning && !cameraError && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Loader2 size={32} className="animate-spin mx-auto mb-2" />
+                <p className="text-sm">Запуск камеры...</p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {isScanning && !cameraError && (
           <p className="text-center text-accent text-sm flex items-center justify-center gap-2">
@@ -155,9 +178,12 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
         )}
 
         {cameraError && (
-          <p className="text-center text-red-400 text-sm">
-            {cameraError}
-          </p>
+          <div className="text-center">
+            <p className="text-red-400 text-sm mb-3">{cameraError}</p>
+            <p className="text-gray-400 text-xs">
+              Используйте ручной ввод кода ниже
+            </p>
+          </div>
         )}
       </Card>
 
