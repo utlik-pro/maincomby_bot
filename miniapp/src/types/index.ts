@@ -202,6 +202,134 @@ export interface XPTransaction {
   created_at: string
 }
 
+// ============================================
+// Extended Profile System Types
+// ============================================
+
+// Social link types
+export type LinkType =
+  | 'linkedin'
+  | 'github'
+  | 'gitlab'
+  | 'behance'
+  | 'dribbble'
+  | 'instagram'
+  | 'telegram_channel'
+  | 'portfolio'
+  | 'website'
+
+export const LINK_TYPE_CONFIG: Record<LinkType, { label: string; icon: string; placeholder: string; color: string }> = {
+  linkedin: { label: 'LinkedIn', icon: 'Linkedin', placeholder: 'linkedin.com/in/username', color: '#0A66C2' },
+  github: { label: 'GitHub', icon: 'Github', placeholder: 'github.com/username', color: '#181717' },
+  gitlab: { label: 'GitLab', icon: 'Gitlab', placeholder: 'gitlab.com/username', color: '#FC6D26' },
+  behance: { label: 'Behance', icon: 'Palette', placeholder: 'behance.net/username', color: '#1769FF' },
+  dribbble: { label: 'Dribbble', icon: 'Dribbble', placeholder: 'dribbble.com/username', color: '#EA4C89' },
+  instagram: { label: 'Instagram', icon: 'Instagram', placeholder: 'instagram.com/username', color: '#E4405F' },
+  telegram_channel: { label: 'Telegram', icon: 'Send', placeholder: 't.me/channel', color: '#26A5E4' },
+  portfolio: { label: 'Portfolio', icon: 'Briefcase', placeholder: 'portfolio.com', color: '#c8ff00' },
+  website: { label: 'Website', icon: 'Globe', placeholder: 'example.com', color: '#6B7280' },
+}
+
+// Custom badge (created by admin)
+export interface CustomBadge {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  emoji: string | null
+  color: string
+  xp_reward: number
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
+
+// User's awarded badge
+export interface UserBadge {
+  id: string
+  user_id: number
+  badge_id: string
+  awarded_by: number | null
+  awarded_reason: string | null
+  awarded_at: string
+  expires_at: string | null
+  is_featured: boolean
+  // Joined badge data
+  badge?: CustomBadge
+}
+
+// Company (created by admin)
+export interface Company {
+  id: string
+  name: string
+  logo_url: string | null
+  website_url: string | null
+  description: string | null
+  industry: string | null
+  is_verified: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Industry options
+export type Industry =
+  | 'IT'
+  | 'Marketing'
+  | 'Finance'
+  | 'Education'
+  | 'Healthcare'
+  | 'Retail'
+  | 'Manufacturing'
+  | 'Consulting'
+  | 'Media'
+  | 'Other'
+
+export const INDUSTRY_LABELS: Record<Industry, string> = {
+  IT: 'IT / Технологии',
+  Marketing: 'Маркетинг',
+  Finance: 'Финансы',
+  Education: 'Образование',
+  Healthcare: 'Здоровье',
+  Retail: 'Ритейл',
+  Manufacturing: 'Производство',
+  Consulting: 'Консалтинг',
+  Media: 'Медиа',
+  Other: 'Другое',
+}
+
+// User-Company relationship
+export interface UserCompany {
+  id: string
+  user_id: number
+  company_id: string
+  role: string | null
+  is_primary: boolean
+  joined_at: string
+  // Joined company data
+  company?: Company
+}
+
+// User social/portfolio link
+export interface UserLink {
+  id: string
+  user_id: number
+  link_type: LinkType
+  url: string
+  title: string | null
+  is_public: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+// Extended profile with all relations
+export interface ExtendedProfile extends UserProfile {
+  badges?: UserBadge[]
+  company?: UserCompany
+  links?: UserLink[]
+}
+
 // Subscription limits
 export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, {
   dailySwipes: number

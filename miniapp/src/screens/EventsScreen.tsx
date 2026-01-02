@@ -417,6 +417,52 @@ const EventsScreen: React.FC = () => {
     enabled: !!user,
   })
 
+  // Real-time subscription for check-in notifications
+  useEffect(() => {
+    if (!user) return
+
+    const { createClient } = require('@supabase/supabase-js')
+    const supabase = createClient(
+      import.meta.env.VITE_SUPABASE_URL,
+      import.meta.env.VITE_SUPABASE_ANON_KEY
+    )
+
+    // Subscribe to changes on bot_registrations for this user
+    const channel = supabase
+      .channel('checkin-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bot_registrations',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          // Check if status changed to 'attended'
+          if (payload.new?.status === 'attended' && payload.old?.status !== 'attended') {
+            hapticFeedback.success()
+
+            // Show success notification
+            addToast('Вы успешно прошли чекин!', 'success')
+
+            // Award XP
+            addPoints(XP_REWARDS.EVENT_CHECKIN)
+            addToast(`+${XP_REWARDS.EVENT_CHECKIN} XP за посещение!`, 'xp', XP_REWARDS.EVENT_CHECKIN)
+
+            // Refresh registrations to update UI
+            queryClient.invalidateQueries({ queryKey: ['registrations'] })
+          }
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, addToast, addPoints, queryClient])
+
   // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async (eventId: number) => {

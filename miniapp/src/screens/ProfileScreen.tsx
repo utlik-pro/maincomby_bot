@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -30,9 +30,12 @@ import {
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen } from '@/lib/telegram'
-import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers } from '@/lib/supabase'
+import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
-import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole } from '@/types'
+import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
+import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
+import { SocialLinks } from '@/components/SocialLinks'
+import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
 
@@ -79,6 +82,33 @@ const ProfileScreen: React.FC = () => {
     queryFn: getTeamMembers,
     staleTime: 300000, // 5 minutes
   })
+
+  // Fetch user badges
+  const { data: userBadges = [] } = useQuery({
+    queryKey: ['userBadges', user?.id],
+    queryFn: () => (user ? getUserBadges(user.id) : []),
+    enabled: !!user,
+    staleTime: 60000,
+  })
+
+  // Fetch user company
+  const { data: userCompany } = useQuery({
+    queryKey: ['userCompany', user?.id],
+    queryFn: () => (user ? getUserCompany(user.id) : null),
+    enabled: !!user,
+    staleTime: 60000,
+  })
+
+  // Fetch user links
+  const { data: userLinks = [] } = useQuery({
+    queryKey: ['userLinks', user?.id],
+    queryFn: () => (user ? getUserLinks(user.id) : []),
+    enabled: !!user,
+    staleTime: 60000,
+  })
+
+  // Selected badge for detail popup
+  const [selectedBadge, setSelectedBadge] = useState<UserBadge | null>(null)
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -427,10 +457,20 @@ const ProfileScreen: React.FC = () => {
 
         {profile?.occupation && <p className="text-accent mt-1">{profile.occupation}</p>}
 
-        <p className="text-gray-400 text-sm flex items-center justify-center gap-1">
+        {/* Company inline */}
+        {userCompany && <CompanyInline userCompany={userCompany} />}
+
+        <p className="text-gray-400 text-sm flex items-center justify-center gap-1 mt-1">
           <MapPin size={14} />
           {profile?.city || 'Не указан'}
         </p>
+
+        {/* Social links inline */}
+        {userLinks.length > 0 && (
+          <div className="flex justify-center mt-3">
+            <SocialLinks links={userLinks} compact showEmpty={false} />
+          </div>
+        )}
 
         {/* Stats */}
         <div className="flex justify-center gap-8 mt-4">
@@ -527,6 +567,30 @@ const ProfileScreen: React.FC = () => {
             </h3>
             <p>{profile.can_help_with}</p>
           </Card>
+        )}
+
+        {/* Badges */}
+        {userBadges.length > 0 && (
+          <div className="mb-4">
+            <BadgeGrid
+              badges={userBadges}
+              onBadgeClick={(badge) => setSelectedBadge(badge)}
+            />
+          </div>
+        )}
+
+        {/* Company card (full) */}
+        {userCompany && (
+          <div className="mb-4">
+            <CompanyCard userCompany={userCompany} />
+          </div>
+        )}
+
+        {/* Social links (full) */}
+        {userLinks.length > 0 && (
+          <div className="mb-4">
+            <SocialLinks links={userLinks} />
+          </div>
         )}
 
         {/* Menu */}
@@ -648,6 +712,16 @@ const ProfileScreen: React.FC = () => {
           MAIN Community v1.0.0
         </p>
       </div>
+
+      {/* Badge detail popup */}
+      <AnimatePresence>
+        {selectedBadge && (
+          <BadgeDetail
+            badge={selectedBadge}
+            onClose={() => setSelectedBadge(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

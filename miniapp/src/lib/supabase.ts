@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndpkxustvcijykzxqxrn.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -581,4 +582,190 @@ export async function getTeamMembers() {
 
   if (error) throw error
   return data
+}
+
+// ============================================
+// Extended Profile: Badges, Companies, Links
+// ============================================
+
+// Custom Badges
+export async function getCustomBadges(): Promise<CustomBadge[]> {
+  const { data, error } = await getSupabase()
+    .from('custom_badges')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getUserBadges(userId: number): Promise<UserBadge[]> {
+  const { data, error } = await getSupabase()
+    .from('user_badges')
+    .select(`
+      *,
+      badge:custom_badges(*)
+    `)
+    .eq('user_id', userId)
+    .order('awarded_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getFeaturedBadges(userId: number): Promise<UserBadge[]> {
+  const { data, error } = await getSupabase()
+    .from('user_badges')
+    .select(`
+      *,
+      badge:custom_badges(*)
+    `)
+    .eq('user_id', userId)
+    .eq('is_featured', true)
+    .order('awarded_at', { ascending: false })
+    .limit(4)
+
+  if (error) throw error
+  return data || []
+}
+
+// Check if badge is still valid (not expired)
+export function isBadgeValid(badge: UserBadge): boolean {
+  if (!badge.expires_at) return true
+  return new Date(badge.expires_at) > new Date()
+}
+
+// Companies
+export async function getCompanies(): Promise<Company[]> {
+  const { data, error } = await getSupabase()
+    .from('companies')
+    .select('*')
+    .eq('is_active', true)
+    .order('name', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getCompanyById(companyId: string): Promise<Company | null> {
+  const { data, error } = await getSupabase()
+    .from('companies')
+    .select('*')
+    .eq('id', companyId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
+export async function getUserCompany(userId: number): Promise<UserCompany | null> {
+  const { data, error } = await getSupabase()
+    .from('user_companies')
+    .select(`
+      *,
+      company:companies(*)
+    `)
+    .eq('user_id', userId)
+    .eq('is_primary', true)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
+export async function setUserCompany(userId: number, companyId: string, role: string | null): Promise<UserCompany> {
+  const supabase = getSupabase()
+
+  // First, remove any existing primary company
+  await supabase
+    .from('user_companies')
+    .delete()
+    .eq('user_id', userId)
+    .eq('is_primary', true)
+
+  // Insert new company relationship
+  const { data, error } = await supabase
+    .from('user_companies')
+    .insert({
+      user_id: userId,
+      company_id: companyId,
+      role,
+      is_primary: true,
+    })
+    .select(`
+      *,
+      company:companies(*)
+    `)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function removeUserCompany(userId: number): Promise<void> {
+  const { error } = await getSupabase()
+    .from('user_companies')
+    .delete()
+    .eq('user_id', userId)
+    .eq('is_primary', true)
+
+  if (error) throw error
+}
+
+// User Links
+export async function getUserLinks(userId: number): Promise<UserLink[]> {
+  const { data, error } = await getSupabase()
+    .from('user_links')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_public', true)
+    .order('sort_order', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function setUserLink(userId: number, linkType: LinkType, url: string, title?: string): Promise<UserLink> {
+  const { data, error } = await getSupabase()
+    .from('user_links')
+    .upsert({
+      user_id: userId,
+      link_type: linkType,
+      url,
+      title: title || null,
+      is_public: true,
+    }, { onConflict: 'user_id,link_type' })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function removeUserLink(userId: number, linkType: LinkType): Promise<void> {
+  const { error } = await getSupabase()
+    .from('user_links')
+    .delete()
+    .eq('user_id', userId)
+    .eq('link_type', linkType)
+
+  if (error) throw error
+}
+
+// Extended profile with all relations
+export async function getExtendedProfile(userId: number) {
+  const [profile, badges, company, links] = await Promise.all([
+    getProfile(userId),
+    getUserBadges(userId),
+    getUserCompany(userId),
+    getUserLinks(userId),
+  ])
+
+  return {
+    ...profile,
+    badges: badges.filter(isBadgeValid),
+    company,
+    links,
+  }
 }
