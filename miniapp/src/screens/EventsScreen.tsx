@@ -220,7 +220,7 @@ const TicketView: React.FC<{
 
         {registration.status === 'attended' ? (
           <Badge variant="success" className="text-base px-4 py-2">
-            <Check size={16} className="mr-1" />
+            <Check size={16} />
             Вы на мероприятии
           </Badge>
         ) : canCheckIn ? (

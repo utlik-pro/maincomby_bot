@@ -60,7 +60,7 @@ const badgeVariants = {
 }
 
 export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', className = '' }) => (
-  <span className={`px-2.5 py-1 rounded-xl text-xs font-semibold ${badgeVariants[variant]} ${className}`}>
+  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold ${badgeVariants[variant]} ${className}`}>
     {children}
   </span>
 )
