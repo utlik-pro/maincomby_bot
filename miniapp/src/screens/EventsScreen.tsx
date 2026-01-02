@@ -432,9 +432,11 @@ const EventsScreen: React.FC = () => {
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+    console.log('[Realtime] Setting up subscription for user:', user.id)
+
     // Subscribe to changes on bot_registrations for this user
     const channel = supabase
-      .channel('checkin-notifications')
+      .channel(`checkin-notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -444,8 +446,11 @@ const EventsScreen: React.FC = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload: any) => {
+          console.log('[Realtime] Received update:', payload)
+
           // Check if status changed to 'attended'
           if (payload.new?.status === 'attended' && payload.old?.status !== 'attended') {
+            console.log('[Realtime] Check-in detected!')
             hapticFeedback.success()
 
             // Show success notification
@@ -460,13 +465,28 @@ const EventsScreen: React.FC = () => {
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('[Realtime] Subscription status:', status)
+      })
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('[Realtime] Cleaning up subscription')
       supabase.removeChannel(channel)
     }
   }, [user, addToast, addPoints, queryClient])
+
+  // Fallback polling mechanism in case Realtime doesn't work
+  useEffect(() => {
+    if (!user) return
+
+    // Poll registrations every 5 seconds when on events screen
+    const pollInterval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['registrations'] })
+    }, 5000)
+
+    return () => clearInterval(pollInterval)
+  }, [user, queryClient])
 
   // Registration mutation
   const registerMutation = useMutation({
