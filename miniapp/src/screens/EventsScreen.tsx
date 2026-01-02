@@ -53,6 +53,7 @@ const eventTypeIcons: Record<string, React.ReactNode> = {
 const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void }> = ({ onScan, onClose }) => {
   const [manualCode, setManualCode] = useState('')
   const [isScanning, setIsScanning] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const containerId = 'qr-reader'
@@ -73,10 +74,19 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
             fps: 10,
             qrbox: { width: 250, height: 250 },
           },
-          (decodedText) => {
+          async (decodedText) => {
             // Success - QR code scanned
             hapticFeedback.success()
-            scanner.stop()
+            setIsScanning(false)
+            setIsProcessing(true)
+
+            // Stop and hide camera
+            await scanner.stop().catch(() => {})
+            const qrDiv = document.getElementById(containerId)
+            if (qrDiv) {
+              qrDiv.style.display = 'none'
+            }
+
             onScan(decodedText)
           },
           () => {
@@ -125,23 +135,35 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
         </h1>
 
       <Card className="mb-6">
-        {/* Camera view */}
-        <div
-          id={containerId}
-          className="aspect-square bg-black rounded-xl overflow-hidden mb-4"
-        />
+        {/* Processing state - показать вместо камеры */}
+        {isProcessing ? (
+          <div className="aspect-square flex items-center justify-center bg-accent/10 rounded-xl mb-4">
+            <div className="text-center">
+              <Loader2 size={48} className="animate-spin text-accent mx-auto mb-4" />
+              <p className="text-accent font-semibold">Проверка билета...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Camera view */}
+            <div
+              id={containerId}
+              className="aspect-square bg-black rounded-xl overflow-hidden mb-4"
+            />
 
-        {isScanning && !cameraError && (
-          <p className="text-center text-accent text-sm flex items-center justify-center gap-2">
-            <Loader2 size={16} className="animate-spin" />
-            Наведите камеру на QR-код билета
-          </p>
-        )}
+            {isScanning && !cameraError && (
+              <p className="text-center text-accent text-sm flex items-center justify-center gap-2">
+                <Loader2 size={16} className="animate-spin" />
+                Наведите камеру на QR-код билета
+              </p>
+            )}
 
-        {cameraError && (
-          <p className="text-center text-red-400 text-sm">
-            {cameraError}
-          </p>
+            {cameraError && (
+              <p className="text-center text-red-400 text-sm">
+                {cameraError}
+              </p>
+            )}
+          </>
         )}
       </Card>
 
