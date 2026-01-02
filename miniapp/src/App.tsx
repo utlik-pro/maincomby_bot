@@ -20,7 +20,7 @@ const OnboardingScreen = React.lazy(() => import('@/screens/OnboardingScreen'))
 const LoadingScreen: React.FC = () => (
   <div className="min-h-screen flex flex-col items-center justify-center p-4">
     <img
-      src="/logo.svg"
+      src="/logo.png"
       alt="MAIN Community"
       className="w-20 h-20 mb-4 animate-pulse"
     />

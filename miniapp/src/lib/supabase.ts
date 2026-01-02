@@ -257,6 +257,14 @@ async function syncRegistrationToLeads(supabase: SupabaseClient, eventId: number
 
   if (!botEvent) return
 
+  // Find matching web event by title to get UUID
+  const { data: webEvents } = await supabase
+    .from('events')
+    .select('id')
+    .eq('title', botEvent.title)
+
+  const webEventId = webEvents?.[0]?.id || null
+
   // Get user info
   const { data: user } = await supabase
     .from('bot_users')
@@ -266,23 +274,27 @@ async function syncRegistrationToLeads(supabase: SupabaseClient, eventId: number
 
   if (!user) return
 
-  // Check if lead already exists by telegram ID placeholder email
+  // Check if lead already exists by telegram_id or placeholder email
   const placeholderEmail = `tg_${user.tg_user_id}@telegram.placeholder`
   const { data: existingLead } = await supabase
     .from('leads')
     .select('id')
-    .eq('email', placeholderEmail)
+    .or(`email.eq.${placeholderEmail},telegram_id.eq.${user.tg_user_id}`)
     .maybeSingle()
 
   if (existingLead) return
 
-  // Create lead (using email as unique identifier for Telegram users)
+  // Create lead with event_id for admin panel filtering
   await supabase.from('leads').insert({
+    event_id: webEventId,
     name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown',
     email: placeholderEmail,
     phone: user.phone_number,
+    telegram_username: user.username,
+    telegram_id: user.tg_user_id,
+    source: 'telegram_miniapp',
     status: 'registered',
-    notes: `Telegram: @${user.username || 'N/A'} | Mini App | ${botEvent.title}`,
+    notes: `Mini App | ${botEvent.title}`,
   })
 }
 

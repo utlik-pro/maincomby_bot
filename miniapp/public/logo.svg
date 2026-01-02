@@ -1,7 +1,22 @@
 <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="200" fill="#0a0a0a"/>
-  <path d="M40 160 Q40 80 70 50 Q90 30 100 60 Q110 90 100 120 Q90 150 100 160"
-        stroke="#c8ff00" stroke-width="28" stroke-linecap="round" fill="none"/>
-  <path d="M100 60 Q110 30 130 50 Q160 80 160 160"
-        stroke="#c8ff00" stroke-width="28" stroke-linecap="round" fill="none"/>
+  <!-- MAIN Community Logo - Lime Green M -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d4ff00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c8ff00;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Left part of M -->
+  <path d="M30 160 C30 160 30 70 50 50 C65 35 80 45 85 65 C95 105 90 130 85 150 C82 160 78 165 85 165"
+        fill="url(#logoGradient)"/>
+  <!-- Middle connector -->
+  <path d="M85 65 C95 40 105 40 115 65"
+        fill="url(#logoGradient)"/>
+  <!-- Right part of M -->
+  <path d="M115 65 C120 45 135 35 150 50 C170 70 170 160 170 160 L150 160 C150 160 150 80 140 65 C130 50 120 55 115 75 C108 105 110 130 115 150 C118 160 115 165 115 165"
+        fill="url(#logoGradient)"/>
+  <!-- Simplified M shape -->
+  <path d="M35 155 Q35 75 55 55 Q75 35 90 70 Q100 100 100 100 Q100 100 110 70 Q125 35 145 55 Q165 75 165 155
+           L145 155 Q145 85 135 70 Q125 55 115 75 Q105 95 100 115 Q95 95 85 75 Q75 55 65 70 Q55 85 55 155 Z"
+        fill="url(#logoGradient)"/>
 </svg>

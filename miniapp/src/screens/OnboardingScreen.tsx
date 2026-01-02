@@ -93,7 +93,7 @@ const OnboardingScreen: React.FC = () => {
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className={`mb-8 ${slide.color}`}
+              className={`mb-8 ${slide.color} flex items-center justify-center`}
             >
               {slide.icon}
             </motion.div>
