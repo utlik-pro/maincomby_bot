@@ -66,7 +66,7 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 )
 
 const App: React.FC = () => {
-  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, hasCompletedOnboarding, profile } = useAppStore()
+  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, profile } = useAppStore()
   const { addToast } = useToastStore()
 
   // Easter eggs - speed runner (visit all tabs quickly)
@@ -223,10 +223,8 @@ const App: React.FC = () => {
     return <NotTelegramScreen />
   }
 
-  // Show onboarding for users who haven't completed it yet
-  const shouldShowOnboarding = !hasCompletedOnboarding
-
-  if (shouldShowOnboarding) {
+  // Show onboarding for users who haven't seen current version
+  if (shouldShowOnboarding()) {
     return (
       <div className="bg-bg min-h-screen text-white max-w-lg mx-auto">
         <React.Suspense fallback={<LoadingScreen />}>

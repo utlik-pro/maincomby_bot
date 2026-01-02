@@ -41,7 +41,7 @@ const slides: OnboardingSlide[] = [
 
 const OnboardingScreen: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const { setOnboardingComplete, setActiveTab } = useAppStore()
+  const { completeOnboarding, setActiveTab } = useAppStore()
 
   const isLastSlide = currentSlide === slides.length - 1
 
@@ -49,7 +49,7 @@ const OnboardingScreen: React.FC = () => {
     hapticFeedback.light()
     if (isLastSlide) {
       hapticFeedback.success()
-      setOnboardingComplete(true)
+      completeOnboarding()
       setActiveTab('profile') // Направляем на профиль после онбординга
     } else {
       setCurrentSlide((prev) => prev + 1)
@@ -58,7 +58,7 @@ const OnboardingScreen: React.FC = () => {
 
   const handleSkip = () => {
     hapticFeedback.light()
-    setOnboardingComplete(true)
+    completeOnboarding()
   }
 
   const slide = slides[currentSlide]

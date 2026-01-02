@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { User, UserProfile, SubscriptionTier, UserRank, RANK_THRESHOLDS } from '@/types'
 
+// Onboarding version - increment this to show onboarding to all users again
+export const CURRENT_ONBOARDING_VERSION = 2
+
 // Calculate rank from XP
 export function calculateRank(xp: number): UserRank {
   if (xp >= RANK_THRESHOLDS.general) return 'general'
@@ -43,7 +46,7 @@ interface AppState {
   // UI state
   activeTab: 'home' | 'events' | 'network' | 'achievements' | 'profile'
   isVolunteerMode: boolean
-  hasCompletedOnboarding: boolean
+  onboardingVersion: number
   lastSeenEventId: number | null
 
   // Actions
@@ -52,10 +55,13 @@ interface AppState {
   setLoading: (loading: boolean) => void
   setActiveTab: (tab: AppState['activeTab']) => void
   setVolunteerMode: (mode: boolean) => void
-  setOnboardingComplete: (complete: boolean) => void
+  completeOnboarding: () => void
   setLastSeenEventId: (eventId: number) => void
   addPoints: (amount: number) => void
   logout: () => void
+
+  // Computed
+  shouldShowOnboarding: () => boolean
 
   // Computed
   getRank: () => UserRank
@@ -75,7 +81,7 @@ export const useAppStore = create<AppState>()(
       isLoading: true,
       activeTab: 'home',
       isVolunteerMode: false,
-      hasCompletedOnboarding: false,
+      onboardingVersion: 0,
       lastSeenEventId: null,
 
       // Actions
@@ -90,15 +96,21 @@ export const useAppStore = create<AppState>()(
       setLoading: (isLoading) => set({ isLoading }),
       setActiveTab: (activeTab) => set({ activeTab }),
       setVolunteerMode: (isVolunteerMode) => set({ isVolunteerMode }),
-      setOnboardingComplete: (hasCompletedOnboarding) => set({ hasCompletedOnboarding }),
+      completeOnboarding: () => set({ onboardingVersion: CURRENT_ONBOARDING_VERSION }),
       setLastSeenEventId: (lastSeenEventId) => set({ lastSeenEventId }),
+
+      // Computed - check if onboarding should be shown
+      shouldShowOnboarding: () => {
+        const { onboardingVersion } = get()
+        return onboardingVersion < CURRENT_ONBOARDING_VERSION
+      },
       addPoints: (amount) => {
         const { user } = get()
         if (user) {
           set({ user: { ...user, points: Math.max(0, (user.points || 0) + amount) } })
         }
       },
-      logout: () => set({ user: null, profile: null, isAuthenticated: false, hasCompletedOnboarding: false, lastSeenEventId: null }),
+      logout: () => set({ user: null, profile: null, isAuthenticated: false, onboardingVersion: 0, lastSeenEventId: null }),
 
       // Computed
       getRank: () => {
@@ -147,7 +159,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         activeTab: state.activeTab,
         isVolunteerMode: state.isVolunteerMode,
-        hasCompletedOnboarding: state.hasCompletedOnboarding,
+        onboardingVersion: state.onboardingVersion,
         lastSeenEventId: state.lastSeenEventId,
       }),
     }
