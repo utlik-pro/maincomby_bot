@@ -226,10 +226,7 @@ const App: React.FC = () => {
   // Show onboarding for users who haven't seen current version
   if (shouldShowOnboarding()) {
     return (
-      <div
-        className="bg-bg min-h-screen text-white max-w-lg mx-auto"
-        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
+      <div className="bg-bg min-h-screen text-white max-w-lg mx-auto">
         <React.Suspense fallback={<LoadingScreen />}>
           <OnboardingScreen />
         </React.Suspense>
@@ -256,10 +253,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div
-      className="bg-bg min-h-screen text-white max-w-lg mx-auto"
-      style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-    >
+    <div className="bg-bg min-h-screen text-white max-w-lg mx-auto">
       <ToastContainer />
 
       <React.Suspense fallback={<LoadingScreen />}>

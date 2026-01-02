@@ -26,10 +26,19 @@
 }
 
 /* Fixed viewport for Telegram Mini App */
-html, body, #root {
+html, body {
   height: 100%;
   height: 100dvh; /* Dynamic viewport height for mobile */
   overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  /* iOS Safe Area support for fullscreen mode */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 body {
