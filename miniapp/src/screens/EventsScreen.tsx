@@ -179,7 +179,7 @@ const TicketView: React.FC<{
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-24">
         <Card className="text-center p-6">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
           <Ticket size={32} className="text-accent" />

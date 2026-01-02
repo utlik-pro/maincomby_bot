@@ -5,6 +5,7 @@ import { initTelegramApp, getTelegramUser, isTelegramWebApp } from '@/lib/telegr
 import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
+import { LogoHeader } from '@/components/LogoHeader'
 import { Skeleton } from '@/components/ui'
 import { useSpeedRunner } from '@/lib/easterEggs'
 
@@ -254,6 +255,7 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-bg min-h-screen text-white max-w-lg mx-auto">
+      <LogoHeader />
       <ToastContainer />
 
       <React.Suspense fallback={<LoadingScreen />}>
