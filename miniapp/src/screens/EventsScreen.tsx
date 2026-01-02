@@ -73,14 +73,18 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
             fps: 10,
             qrbox: { width: 250, height: 250 },
           },
-          async (decodedText) => {
+          (decodedText) => {
             // Success - QR code scanned
             hapticFeedback.success()
 
-            // Stop camera
-            await scanner.stop().catch(() => {})
+            // НЕМЕДЛЕННО скрыть камеру (ДО остановки)
+            const qrDiv = document.getElementById(containerId)
+            if (qrDiv) {
+              qrDiv.style.display = 'none'
+            }
 
-            // Immediately call onScan which will close the scanner
+            // Stop camera and call onScan (не await - чтобы не блокировать)
+            scanner.stop().catch(() => {})
             onScan(decodedText)
           },
           () => {
