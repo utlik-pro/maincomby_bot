@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import {
+  Bell,
   Flame,
   Calendar,
   Trophy,
@@ -11,7 +12,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { Badge, Card, Progress } from '@/components/ui'
+import { Avatar, Badge, Card, Progress } from '@/components/ui'
 import { RANK_LABELS } from '@/types'
 import { useTapEasterEgg } from '@/lib/easterEggs'
 
@@ -26,15 +27,43 @@ const HomeScreen: React.FC = () => {
 
   return (
     <div className="pb-6">
-      {/* Header with centered logo */}
-      <div className="pt-6 pb-4 flex justify-center">
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={handleLogoTap}
-          className="w-20 h-20 rounded-full bg-accent flex items-center justify-center"
-        >
-          <span className="text-bg font-bold text-4xl">M</span>
-        </motion.button>
+      {/* Header with Profile */}
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Avatar
+            src={profile?.photo_url}
+            name={user?.first_name || 'User'}
+            size="lg"
+            badge={user?.subscription_tier === 'pro' ? 'PRO' : user?.subscription_tier === 'light' ? 'LIGHT' : undefined}
+          />
+          <div>
+            <div className="font-semibold text-lg">{user?.first_name || 'Пользователь'}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-accent text-sm font-medium flex items-center gap-1">
+                <Star size={14} className="fill-accent" />
+                {rankInfo.ru}
+              </span>
+              <span className="text-gray-500 text-sm">{user?.points || 0} XP</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          {/* Hidden easter egg - tap logo 6 times */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleLogoTap}
+            className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center"
+          >
+            <span className="text-accent font-bold text-lg">M</span>
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="w-10 h-10 rounded-xl bg-bg-card flex items-center justify-center"
+          >
+            <Bell size={20} className="text-gray-400" />
+          </motion.button>
+        </div>
       </div>
 
       {/* XP Progress to next rank */}
