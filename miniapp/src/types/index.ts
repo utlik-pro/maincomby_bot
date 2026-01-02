@@ -446,6 +446,9 @@ export interface TelegramWebApp {
   requestWriteAccess: (callback: (access: boolean) => void) => void
   showScanQrPopup: (params: { text?: string }, callback?: (text: string) => boolean) => void
   closeScanQrPopup: () => void
+  isFullscreen: boolean
+  requestFullscreen: () => void
+  exitFullscreen: () => void
 }
 
 declare global {

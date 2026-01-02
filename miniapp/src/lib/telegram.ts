@@ -141,6 +141,9 @@ export const initTelegramApp = () => {
     webApp.ready()
     webApp.expand()
 
+    // Request fullscreen to hide Telegram header (v8.0+ only)
+    requestFullscreen()
+
     // Set theme colors
     document.documentElement.style.setProperty('--tg-theme-bg-color', webApp.themeParams.bg_color || '#0a0a0a')
     document.documentElement.style.setProperty('--tg-theme-text-color', webApp.themeParams.text_color || '#ffffff')
@@ -254,4 +257,53 @@ export const showQrScanner = (text?: string): Promise<string | null> => {
       resolve(null)
     }, 60000) // 1 minute timeout
   })
+}
+
+// Check if fullscreen API is supported (requires version 8.0+)
+export const isFullscreenSupported = (): boolean => {
+  const webApp = getTelegramWebApp()
+  if (!webApp) return false
+  const version = parseFloat(webApp.version || '0')
+  return version >= 8.0 && typeof webApp.requestFullscreen === 'function'
+}
+
+// Request fullscreen mode (hides Telegram header)
+export const requestFullscreen = (): void => {
+  const webApp = getTelegramWebApp()
+  if (!webApp) {
+    console.warn('[Telegram] WebApp not available, cannot request fullscreen')
+    return
+  }
+
+  if (!isFullscreenSupported()) {
+    console.info('[Telegram] Fullscreen API not supported (requires Telegram 8.0+)')
+    return
+  }
+
+  try {
+    webApp.requestFullscreen()
+    console.log('[Telegram] Fullscreen requested')
+  } catch (error) {
+    console.error('[Telegram] Failed to request fullscreen:', error)
+  }
+}
+
+// Exit fullscreen mode
+export const exitFullscreen = (): void => {
+  const webApp = getTelegramWebApp()
+  if (!webApp || !isFullscreenSupported()) return
+
+  try {
+    webApp.exitFullscreen()
+    console.log('[Telegram] Exited fullscreen')
+  } catch (error) {
+    console.error('[Telegram] Failed to exit fullscreen:', error)
+  }
+}
+
+// Check if app is currently in fullscreen mode
+export const isFullscreen = (): boolean => {
+  const webApp = getTelegramWebApp()
+  if (!webApp) return false
+  return webApp.isFullscreen === true
 }
