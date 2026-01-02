@@ -36,6 +36,7 @@ import {
   createOrUpdateUser,
   getUserByTelegramId,
 } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { Event, EventRegistration, XP_REWARDS } from '@/types'
 
@@ -421,11 +422,15 @@ const EventsScreen: React.FC = () => {
   useEffect(() => {
     if (!user) return
 
-    const { createClient } = require('@supabase/supabase-js')
-    const supabase = createClient(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_ANON_KEY
-    )
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndpkxustvcijykzxqxrn.supabase.co'
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+    if (!supabaseAnonKey) {
+      console.warn('Supabase key not configured - real-time notifications disabled')
+      return
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
     // Subscribe to changes on bot_registrations for this user
     const channel = supabase
