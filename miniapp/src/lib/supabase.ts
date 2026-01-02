@@ -660,18 +660,26 @@ export async function getCompanyById(companyId: string): Promise<Company | null>
 }
 
 export async function getUserCompany(userId: number): Promise<UserCompany | null> {
-  const { data, error } = await getSupabase()
-    .from('user_companies')
-    .select(`
-      *,
-      company:companies(*)
-    `)
-    .eq('user_id', userId)
-    .eq('is_primary', true)
-    .single()
+  try {
+    const { data, error } = await getSupabase()
+      .from('user_companies')
+      .select(`
+        *,
+        company:companies(*)
+      `)
+      .eq('user_id', userId)
+      .eq('is_primary', true)
+      .single()
 
-  if (error && error.code !== 'PGRST116') throw error
-  return data
+    if (error && error.code !== 'PGRST116') {
+      console.warn('[getUserCompany] Error fetching user company:', error)
+      return null
+    }
+    return data
+  } catch (err) {
+    console.warn('[getUserCompany] Table may not exist:', err)
+    return null
+  }
 }
 
 export async function setUserCompany(userId: number, companyId: string, role: string | null): Promise<UserCompany> {
@@ -715,15 +723,23 @@ export async function removeUserCompany(userId: number): Promise<void> {
 
 // User Links
 export async function getUserLinks(userId: number): Promise<UserLink[]> {
-  const { data, error } = await getSupabase()
-    .from('user_links')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('is_public', true)
-    .order('sort_order', { ascending: true })
+  try {
+    const { data, error } = await getSupabase()
+      .from('user_links')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_public', true)
+      .order('sort_order', { ascending: true })
 
-  if (error) throw error
-  return data || []
+    if (error) {
+      console.warn('[getUserLinks] Error fetching user links:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    console.warn('[getUserLinks] Table may not exist:', err)
+    return []
+  }
 }
 
 export async function setUserLink(userId: number, linkType: LinkType, url: string, title?: string): Promise<UserLink> {
