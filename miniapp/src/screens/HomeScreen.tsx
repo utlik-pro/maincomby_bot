@@ -13,12 +13,15 @@ import {
   Zap,
   Crown,
   ChevronRight,
+  MessageCircle,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Avatar, Badge, Card, Progress } from '@/components/ui'
 import { RANK_LABELS } from '@/types'
 import { useTapEasterEgg } from '@/lib/easterEggs'
-import { getUnreadNotificationsCount, getLeaderboard, getUserStats } from '@/lib/supabase'
+import { getUnreadNotificationsCount, getLeaderboard, getUserStats, requestConsultation } from '@/lib/supabase'
+import { useToastStore } from '@/lib/store'
+import { openTelegramLink } from '@/lib/telegram'
 import NotificationsScreen from './NotificationsScreen'
 
 // Avatar ring styles based on role/tier
@@ -33,9 +36,28 @@ const getAvatarRing = (teamRole?: string | null, tier?: string) => {
 
 const HomeScreen: React.FC = () => {
   const { user, profile, setActiveTab, getRank, getRankProgress, getSubscriptionTier } = useAppStore()
+  const { addToast } = useToastStore()
   const { handleTap: handleLogoTap } = useTapEasterEgg('logo_taps', 6)
   const tier = getSubscriptionTier()
   const [showNotifications, setShowNotifications] = useState(false)
+
+  // Handle consultation request
+  const handleConsultation = async () => {
+    if (!user) return
+
+    try {
+      // Send notification to Dmitry
+      await requestConsultation(user.id, user.first_name || 'User', user.username)
+      addToast('Дмитрий получил уведомление!', 'success')
+
+      // Open Telegram chat with Dmitry
+      openTelegramLink('https://t.me/dmitryutlik')
+    } catch (err) {
+      console.error('Consultation request failed:', err)
+      // Still open the link even if notification failed
+      openTelegramLink('https://t.me/dmitryutlik')
+    }
+  }
 
   // Fetch unread notifications count
   const { data: unreadCount = 0 } = useQuery({
@@ -218,6 +240,32 @@ const HomeScreen: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* Consultation Banner */}
+      <div className="px-4 mb-6">
+        <Card
+          onClick={handleConsultation}
+          className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-400/30"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+              <MessageCircle size={24} className="text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-purple-300">Консультация от главы MAIN</div>
+              <div className="text-xs text-gray-400">
+                Дмитрий Утлик — задай вопрос лично
+              </div>
+            </div>
+            <motion.div
+              whileTap={{ scale: 0.95 }}
+              className="bg-purple-500 text-white px-3 py-2 rounded-xl text-sm font-semibold"
+            >
+              Написать
+            </motion.div>
+          </div>
+        </Card>
+      </div>
 
       {/* Subscription Banner */}
       {user?.subscription_tier === 'free' && (

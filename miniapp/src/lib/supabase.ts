@@ -931,3 +931,48 @@ export async function getExtendedProfile(userId: number) {
     links,
   }
 }
+
+// ============ CONSULTATIONS ============
+
+const DMITRY_UTLIK_TG_ID = 1379584180
+const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8302587804:AAH2ZIjWA9QQLzXlOiDUpYQiM8bw6NuO8nw'
+
+// Request consultation from Dmitry Utlik
+export async function requestConsultation(userId: number, userName: string, userUsername?: string | null) {
+  // Record consultation request in database
+  const { data, error } = await getSupabase()
+    .from('consultation_requests')
+    .insert({
+      user_id: userId,
+      consultant_tg_id: DMITRY_UTLIK_TG_ID,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single()
+
+  // If table doesn't exist, just send notification anyway
+  if (error && !error.message.includes('does not exist')) {
+    console.warn('[requestConsultation] DB error:', error)
+  }
+
+  // Send notification to Dmitry via Telegram Bot API
+  try {
+    const userLink = userUsername ? `@${userUsername}` : `ID: ${userId}`
+    const message = `🎯 *Новая заявка на консультацию!*\n\n👤 От: ${userName} (${userLink})\n📅 Время: ${new Date().toLocaleString('ru-RU')}\n\n_Пользователь перешёл в чат с вами через mini app_`
+
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: DMITRY_UTLIK_TG_ID,
+        text: message,
+        parse_mode: 'Markdown',
+      }),
+    })
+  } catch (err) {
+    console.error('[requestConsultation] Failed to send notification:', err)
+  }
+
+  return data
+}
