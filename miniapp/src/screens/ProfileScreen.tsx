@@ -230,8 +230,49 @@ const ProfileScreen: React.FC = () => {
     // Easter egg unlocked - toast is shown by the hook
   })
 
+  // Validate profile fields before saving
+  const validateProfileFields = (): string | null => {
+    // Bio validation (max 500 chars)
+    if (editForm.bio.length > 500) {
+      return 'Био должно быть не более 500 символов'
+    }
+
+    // Occupation validation (max 100 chars)
+    if (editForm.occupation.length > 100) {
+      return 'Профессия должна быть не более 100 символов'
+    }
+
+    // Skills validation (max 10 tags, each max 30 chars)
+    if (editForm.skills.length > 10) {
+      return 'Максимум 10 навыков'
+    }
+    const invalidSkill = editForm.skills.find(s => s.length > 30)
+    if (invalidSkill) {
+      return 'Каждый навык не более 30 символов'
+    }
+
+    // Interests validation (max 10 tags, each max 30 chars)
+    if (editForm.interests.length > 10) {
+      return 'Максимум 10 интересов'
+    }
+    const invalidInterest = editForm.interests.find(i => i.length > 30)
+    if (invalidInterest) {
+      return 'Каждый интерес не более 30 символов'
+    }
+
+    return null
+  }
+
   const handleSaveProfile = async () => {
     if (!user) return
+
+    // Validate fields before saving
+    const validationError = validateProfileFields()
+    if (validationError) {
+      hapticFeedback.error()
+      addToast(validationError, 'error')
+      return
+    }
 
     setIsSaving(true)
     try {
@@ -254,7 +295,6 @@ const ProfileScreen: React.FC = () => {
       hapticFeedback.success()
       addToast('Профиль сохранён!', 'success')
     } catch (error) {
-      console.error('Save profile error:', error)
       hapticFeedback.error()
       addToast('Ошибка сохранения', 'error')
     } finally {
@@ -347,9 +387,15 @@ const ProfileScreen: React.FC = () => {
             <label className="text-sm text-gray-400 mb-1 block">Профессия / Должность</label>
             <Input
               value={editForm.occupation}
-              onChange={(e) => setEditForm({ ...editForm, occupation: e.target.value })}
+              onChange={(e) => setEditForm({ ...editForm, occupation: e.target.value.slice(0, 100) })}
               placeholder="Например: Founder & CEO"
+              maxLength={100}
             />
+            <div className="flex justify-end mt-1">
+              <span className={`text-xs ${editForm.occupation.length >= 90 ? 'text-yellow-400' : 'text-gray-500'} ${editForm.occupation.length >= 100 ? 'text-danger' : ''}`}>
+                {editForm.occupation.length}/100
+              </span>
+            </div>
           </div>
 
           {/* Company Selector */}
@@ -376,10 +422,16 @@ const ProfileScreen: React.FC = () => {
             <label className="text-sm text-gray-400 mb-1 block">О себе</label>
             <textarea
               value={editForm.bio}
-              onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+              onChange={(e) => setEditForm({ ...editForm, bio: e.target.value.slice(0, 500) })}
               placeholder="Расскажите о себе..."
+              maxLength={500}
               className="w-full bg-bg-card rounded-xl p-3 text-white placeholder-gray-500 border border-transparent focus:border-accent focus:outline-none min-h-[100px] resize-none"
             />
+            <div className="flex justify-end mt-1">
+              <span className={`text-xs ${editForm.bio.length >= 450 ? 'text-yellow-400' : 'text-gray-500'} ${editForm.bio.length >= 500 ? 'text-danger' : ''}`}>
+                {editForm.bio.length}/500
+              </span>
+            </div>
           </div>
 
           <div>
