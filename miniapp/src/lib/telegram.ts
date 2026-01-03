@@ -408,3 +408,78 @@ export const sendPushNotification = async (
     return false
   }
 }
+
+// ============ NOTIFICATION HELPERS ============
+
+// Notify about new match
+export const notifyNewMatch = async (
+  userTgId: number,
+  matchName: string
+): Promise<boolean> => {
+  return sendPushNotification(userTgId, {
+    type: 'match',
+    title: 'Новый матч!',
+    message: `Вы понравились друг другу с ${matchName}! Откройте приложение, чтобы начать общение.`,
+  })
+}
+
+// Notify about upcoming event (24h before)
+export const notifyEventReminder = async (
+  userTgId: number,
+  eventTitle: string,
+  eventDate: string,
+  eventLocation?: string
+): Promise<boolean> => {
+  const date = new Date(eventDate)
+  const formattedDate = date.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return sendPushNotification(userTgId, {
+    type: 'reminder',
+    title: 'Напоминание о событии',
+    message: `Завтра: *${eventTitle}*\n📆 ${formattedDate}${eventLocation ? `\n📍 ${eventLocation}` : ''}\n\nНе забудьте!`,
+  })
+}
+
+// Notify about event starting soon (1h before)
+export const notifyEventStartingSoon = async (
+  userTgId: number,
+  eventTitle: string,
+  eventLocation?: string
+): Promise<boolean> => {
+  return sendPushNotification(userTgId, {
+    type: 'event',
+    title: 'Событие скоро начнётся!',
+    message: `*${eventTitle}* начнётся через 1 час!${eventLocation ? `\n📍 ${eventLocation}` : ''}\n\nУвидимся!`,
+  })
+}
+
+// Notify about new achievement
+export const notifyAchievement = async (
+  userTgId: number,
+  achievementTitle: string,
+  achievementEmoji: string,
+  xpReward: number
+): Promise<boolean> => {
+  return sendPushNotification(userTgId, {
+    type: 'achievement',
+    title: 'Новое достижение!',
+    message: `${achievementEmoji} Вы получили достижение *${achievementTitle}*!\n\n+${xpReward} XP`,
+  })
+}
+
+// Notify when someone likes you (for premium users who can see likes)
+export const notifyNewLike = async (
+  userTgId: number,
+  likerName: string
+): Promise<boolean> => {
+  return sendPushNotification(userTgId, {
+    type: 'match',
+    title: 'Кто-то вас лайкнул!',
+    message: `${likerName} проявил(а) интерес к вашему профилю. Лайкните в ответ, чтобы начать общение!`,
+  })
+}

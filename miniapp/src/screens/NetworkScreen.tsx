@@ -16,13 +16,14 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, notifyNewMatch } from '@/lib/telegram'
 import {
   getApprovedProfiles,
   createSwipe,
   checkMutualLike,
   createMatch,
   getUserMatches,
+  getUserById,
 } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { SUBSCRIPTION_LIMITS, UserProfile, User as UserType } from '@/types'
@@ -66,7 +67,11 @@ const NetworkScreen: React.FC = () => {
 
   // Swipe mutation
   const swipeMutation = useMutation({
-    mutationFn: async ({ targetUserId, action }: { targetUserId: number; action: 'like' | 'skip' | 'superlike' }) => {
+    mutationFn: async ({ targetUserId, targetUser, action }: {
+      targetUserId: number
+      targetUser: UserType | null
+      action: 'like' | 'skip' | 'superlike'
+    }) => {
       if (!user) throw new Error('No user')
 
       await createSwipe(user.id, targetUserId, action)
@@ -75,7 +80,17 @@ const NetworkScreen: React.FC = () => {
         const isMutual = await checkMutualLike(user.id, targetUserId)
         if (isMutual) {
           await createMatch(user.id, targetUserId)
-          return { match: true }
+
+          // Send notifications to both users
+          const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Участник'
+          const theirName = `${targetUser?.first_name || ''} ${targetUser?.last_name || ''}`.trim() || 'Участник'
+
+          // Notify the other user
+          if (targetUser?.tg_user_id) {
+            notifyNewMatch(targetUser.tg_user_id, myName).catch(console.error)
+          }
+
+          return { match: true, matchName: theirName }
         }
       }
 
@@ -86,7 +101,7 @@ const NetworkScreen: React.FC = () => {
 
       if (result.match) {
         hapticFeedback.success()
-        addToast('У вас новый матч!', 'success')
+        addToast(`Матч с ${result.matchName}!`, 'success')
         queryClient.invalidateQueries({ queryKey: ['matches'] })
       }
     },
@@ -111,6 +126,7 @@ const NetworkScreen: React.FC = () => {
 
       await swipeMutation.mutateAsync({
         targetUserId: currentProfile.user_id,
+        targetUser: currentProfile.user,
         action,
       })
 

@@ -31,6 +31,17 @@ export async function getUserByTelegramId(tgUserId: number) {
   return data
 }
 
+export async function getUserById(userId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
 export async function createOrUpdateUser(userData: {
   tg_user_id: number
   username?: string | null
