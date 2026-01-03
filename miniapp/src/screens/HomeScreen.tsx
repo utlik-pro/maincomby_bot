@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
 import {
   Bell,
   Flame,
@@ -15,10 +16,36 @@ import { useAppStore } from '@/lib/store'
 import { Avatar, Badge, Card, Progress } from '@/components/ui'
 import { RANK_LABELS } from '@/types'
 import { useTapEasterEgg } from '@/lib/easterEggs'
+import { getUnreadNotificationsCount } from '@/lib/supabase'
+import NotificationsScreen from './NotificationsScreen'
+
+// Avatar ring styles based on role/tier
+const getAvatarRing = (teamRole?: string | null, tier?: string) => {
+  if (teamRole === 'core') return 'ring-4 ring-[#c8ff00] ring-offset-2 ring-offset-bg shadow-[0_0_20px_rgba(200,255,0,0.3)]'
+  if (teamRole === 'speaker') return 'ring-4 ring-purple-400 ring-offset-2 ring-offset-bg'
+  if (teamRole === 'partner') return 'ring-4 ring-teal-400 ring-offset-2 ring-offset-bg'
+  if (teamRole === 'sponsor') return 'ring-4 ring-orange-400 ring-offset-2 ring-offset-bg'
+  if (tier === 'pro') return 'ring-2 ring-accent ring-offset-1 ring-offset-bg'
+  return ''
+}
 
 const HomeScreen: React.FC = () => {
-  const { user, profile, setActiveTab, getRank, getRankProgress } = useAppStore()
+  const { user, profile, setActiveTab, getRank, getRankProgress, getSubscriptionTier } = useAppStore()
   const { handleTap: handleLogoTap } = useTapEasterEgg('logo_taps', 6)
+  const tier = getSubscriptionTier()
+  const [showNotifications, setShowNotifications] = useState(false)
+
+  // Fetch unread notifications count
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unreadCount', user?.id],
+    queryFn: () => (user ? getUnreadNotificationsCount(user.id) : 0),
+    enabled: !!user,
+  })
+
+  // Show notifications screen
+  if (showNotifications) {
+    return <NotificationsScreen onClose={() => setShowNotifications(false)} />
+  }
 
   const rank = getRank()
   const rankInfo = RANK_LABELS[rank]
@@ -30,12 +57,14 @@ const HomeScreen: React.FC = () => {
       {/* Header with Profile */}
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Avatar
-            src={profile?.photo_url}
-            name={user?.first_name || 'User'}
-            size="lg"
-            badge={user?.subscription_tier === 'pro' ? 'PRO' : user?.subscription_tier === 'light' ? 'LIGHT' : undefined}
-          />
+          <div className={`rounded-full ${getAvatarRing(user?.team_role, tier)}`}>
+            <Avatar
+              src={profile?.photo_url}
+              name={user?.first_name || 'User'}
+              size="lg"
+              badge={user?.subscription_tier === 'pro' ? 'PRO' : user?.subscription_tier === 'light' ? 'LIGHT' : undefined}
+            />
+          </div>
           <div>
             <div className="font-semibold text-lg">{user?.first_name || 'Пользователь'}</div>
             <div className="flex items-center gap-2">
@@ -59,9 +88,15 @@ const HomeScreen: React.FC = () => {
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.9 }}
-            className="w-10 h-10 rounded-xl bg-bg-card flex items-center justify-center"
+            onClick={() => setShowNotifications(true)}
+            className="w-10 h-10 rounded-xl bg-bg-card flex items-center justify-center relative"
           >
             <Bell size={20} className="text-gray-400" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-danger text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </motion.button>
         </div>
       </div>
@@ -112,7 +147,10 @@ const HomeScreen: React.FC = () => {
             <div className="text-2xl font-bold text-accent">0</div>
             <div className="text-xs text-gray-400">Событий</div>
           </Card>
-          <Card className="text-center py-3">
+          <Card className="text-center py-3 relative">
+            <div className="absolute -top-2 -right-2 bg-accent text-bg text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+              NEW
+            </div>
             <div className="text-2xl font-bold text-success">0</div>
             <div className="text-xs text-gray-400">Матчей</div>
           </Card>
