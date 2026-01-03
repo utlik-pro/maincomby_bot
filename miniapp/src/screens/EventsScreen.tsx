@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
-import { format, isToday, isTomorrow, addHours, isBefore, isAfter } from 'date-fns'
+import { format, addHours, isBefore, isAfter } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
   ArrowLeft,
@@ -26,6 +26,7 @@ import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported } from '@/lib/telegram'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PhoneDialog } from '@/components/PhoneDialog'
+import { EventCard } from '@/components/EventCard'
 import {
   getActiveEvents,
   getUserRegistrations,
@@ -666,13 +667,6 @@ const EventsScreen: React.FC = () => {
     return registrations?.find((r: any) => r.event_id === eventId && r.status !== 'cancelled')
   }
 
-  const formatEventDate = (date: string) => {
-    const d = new Date(date)
-    if (isToday(d)) return 'Сегодня'
-    if (isTomorrow(d)) return 'Завтра'
-    return format(d, 'd MMM', { locale: ru })
-  }
-
   if (showScanner) {
     return (
       <QRScanner
@@ -940,40 +934,13 @@ const EventsScreen: React.FC = () => {
 
               if (filter === 'registered' && !registration) return null
 
-              const IconComponent = eventTypeIcons[event.event_type || 'default'] || eventTypeIcons.default
-
               return (
-                <Card
+                <EventCard
                   key={event.id}
+                  event={event}
+                  isRegistered={!!registration}
                   onClick={() => setSelectedEvent(event)}
-                  highlighted={!!registration}
-                  className="flex gap-3"
-                >
-                  <div className="w-16 h-16 bg-bg rounded-xl flex items-center justify-center flex-shrink-0">
-                    {IconComponent}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
-                      <div className="font-semibold truncate pr-2">{event.title}</div>
-                      {registration && <Check size={16} className="text-accent flex-shrink-0" />}
-                    </div>
-                    <div className="text-sm text-accent mb-1 flex items-center gap-1">
-                      <Clock size={12} />
-                      {formatEventDate(event.event_date)} • {format(new Date(event.event_date), 'HH:mm')}
-                    </div>
-                    <div className="text-xs text-gray-400 truncate flex items-center gap-1">
-                      <MapPin size={12} />
-                      {event.location}
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      {event.price === 0 ? (
-                        <Badge variant="accent">Free</Badge>
-                      ) : (
-                        <Badge>{event.price} BYN</Badge>
-                      )}
-                    </div>
-                  </div>
-                </Card>
+                />
               )
             })}
           </div>
