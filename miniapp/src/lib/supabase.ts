@@ -78,6 +78,8 @@ export async function updateProfile(userId: number, profileData: {
   looking_for?: string | null
   can_help_with?: string | null
   photo_url?: string | null
+  skills?: string[] | null
+  interests?: string[] | null
 }) {
   const { data, error } = await getSupabase()
     .from('bot_profiles')
@@ -100,6 +102,8 @@ export async function createProfile(userId: number, profileData: {
   looking_for?: string | null
   can_help_with?: string | null
   photo_url?: string | null
+  skills?: string[] | null
+  interests?: string[] | null
 }) {
   const { data, error } = await getSupabase()
     .from('bot_profiles')
