@@ -29,7 +29,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen } from '@/lib/telegram'
+import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported } from '@/lib/telegram'
 import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
@@ -149,8 +149,11 @@ const ProfileScreen: React.FC = () => {
   const [showSubscription, setShowSubscription] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showTeamSection, setShowTeamSection] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
 
   // Easter eggs (tap-based)
   const { handleTap: handleAvatarTap } = useTapEasterEgg('avatar_taps', 5)
@@ -459,6 +462,145 @@ const ProfileScreen: React.FC = () => {
     return <NotificationsScreen onClose={() => setShowNotifications(false)} />
   }
 
+  // Settings Screen
+  if (showSettings) {
+    const handleEnableNotifications = async () => {
+      setNotificationsLoading(true)
+      hapticFeedback.medium()
+
+      try {
+        const granted = await requestNotificationPermission()
+        if (granted) {
+          setNotificationsEnabled(true)
+          addToast('Уведомления включены!', 'success')
+          hapticFeedback.success()
+        } else {
+          addToast('Не удалось включить уведомления', 'error')
+          hapticFeedback.error()
+        }
+      } catch (error) {
+        console.error('Failed to enable notifications:', error)
+        addToast('Ошибка при включении уведомлений', 'error')
+      } finally {
+        setNotificationsLoading(false)
+      }
+    }
+
+    return (
+      <div className="pb-6">
+        <button onClick={() => setShowSettings(false)} className="p-4 text-gray-400 flex items-center gap-2">
+          <ArrowLeft size={16} />
+          Назад
+        </button>
+
+        <div className="px-4">
+          <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+            <Settings size={24} className="text-gray-400" />
+            Настройки
+          </h1>
+          <p className="text-gray-400 text-sm mb-6">Управление приложением</p>
+
+          {/* Notifications Section */}
+          <Card className="mb-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Bell size={18} className="text-blue-400" />
+              Push-уведомления
+            </h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Получайте уведомления о новых матчах, событиях и достижениях
+            </p>
+
+            {isCloudNotificationsSupported() ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-bg rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Heart size={18} className="text-pink-400" />
+                    <span className="text-sm">Новые матчи</span>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full ${notificationsEnabled ? 'bg-accent' : 'bg-gray-600'} relative transition-colors`}>
+                    <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${notificationsEnabled ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-bg rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Ticket size={18} className="text-purple-400" />
+                    <span className="text-sm">Напоминания о событиях</span>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full ${notificationsEnabled ? 'bg-accent' : 'bg-gray-600'} relative transition-colors`}>
+                    <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${notificationsEnabled ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-bg rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Trophy size={18} className="text-yellow-400" />
+                    <span className="text-sm">Новые достижения</span>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full ${notificationsEnabled ? 'bg-accent' : 'bg-gray-600'} relative transition-colors`}>
+                    <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${notificationsEnabled ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                  </div>
+                </div>
+
+                {!notificationsEnabled && (
+                  <Button
+                    fullWidth
+                    onClick={handleEnableNotifications}
+                    isLoading={notificationsLoading}
+                    className="mt-4"
+                  >
+                    <Bell size={18} />
+                    Включить уведомления
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4 bg-bg rounded-xl">
+                <Bell size={32} className="mx-auto text-gray-500 mb-2" />
+                <p className="text-sm text-gray-400">
+                  Push-уведомления требуют Telegram 8.0+
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Обновите приложение Telegram
+                </p>
+              </div>
+            )}
+          </Card>
+
+          {/* Add to Home Screen */}
+          {isHomeScreenSupported() && (
+            <Card className="mb-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Smartphone size={18} className="text-accent" />
+                Быстрый доступ
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Добавьте приложение на главный экран для быстрого запуска
+              </p>
+              <Button fullWidth variant="secondary" onClick={addToHomeScreen}>
+                <Smartphone size={18} />
+                Добавить на экран
+              </Button>
+            </Card>
+          )}
+
+          {/* App Info */}
+          <Card>
+            <h3 className="font-semibold mb-3">О приложении</h3>
+            <div className="space-y-2 text-sm text-gray-400">
+              <div className="flex justify-between">
+                <span>Версия</span>
+                <span>1.0.0</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Telegram версия</span>
+                <span>{window.Telegram?.WebApp?.version || 'N/A'}</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   // Team Section
   if (showTeamSection) {
     return (
@@ -705,7 +847,7 @@ const ProfileScreen: React.FC = () => {
             { icon: <Ticket size={20} className="text-purple-400" />, label: 'Мои билеты', badge: null, onClick: () => setActiveTab('events') },
             { icon: <Heart size={20} className="text-pink-400" />, label: 'Мои матчи', badge: null, onClick: () => setActiveTab('network') },
             { icon: <Trophy size={20} className="text-yellow-400" />, label: 'Достижения', badge: null, onClick: () => setActiveTab('achievements') },
-            { icon: <Settings size={20} className="text-gray-400" />, label: 'Настройки', badge: null, onClick: () => {} },
+            { icon: <Settings size={20} className="text-gray-400" />, label: 'Настройки', badge: null, onClick: () => setShowSettings(true) },
           ].map((item, i, arr) => (
             <motion.div
               key={item.label}

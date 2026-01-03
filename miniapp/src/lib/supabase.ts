@@ -932,10 +932,99 @@ export async function getExtendedProfile(userId: number) {
   }
 }
 
+// ============ NOTIFICATIONS ============
+
+const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8302587804:AAH2ZIjWA9QQLzXlOiDUpYQiM8bw6NuO8nw'
+
+// Send push notification to user via Telegram Bot
+export async function sendNotification(
+  userTgId: number,
+  type: 'match' | 'event' | 'achievement' | 'reminder' | 'system',
+  title: string,
+  message: string
+): Promise<boolean> {
+  try {
+    const emoji = {
+      match: '💕',
+      event: '📅',
+      achievement: '🏆',
+      reminder: '⏰',
+      system: '🔔',
+    }[type] || '🔔'
+
+    const text = `${emoji} *${title}*\n\n${message}`
+
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: userTgId,
+        text,
+        parse_mode: 'Markdown',
+      }),
+    })
+
+    const result = await response.json()
+    return result.ok === true
+  } catch (error) {
+    console.error('[sendNotification] Failed:', error)
+    return false
+  }
+}
+
+// Notify user about new match
+export async function notifyNewMatch(userTgId: number, matchName: string): Promise<boolean> {
+  return sendNotification(
+    userTgId,
+    'match',
+    'У тебя новый матч!',
+    `${matchName} тоже хочет познакомиться с тобой! Напиши первым 👋`
+  )
+}
+
+// Notify user about upcoming event
+export async function notifyUpcomingEvent(
+  userTgId: number,
+  eventTitle: string,
+  eventDate: string,
+  hoursUntil: number
+): Promise<boolean> {
+  const timeText = hoursUntil === 1 ? 'через 1 час' : hoursUntil === 24 ? 'завтра' : `через ${hoursUntil} часов`
+  return sendNotification(
+    userTgId,
+    'event',
+    `Напоминание: ${eventTitle}`,
+    `Мероприятие начнётся ${timeText}!\n📍 Не забудь прийти и показать QR-код на входе.`
+  )
+}
+
+// Notify user about new achievement
+export async function notifyAchievement(
+  userTgId: number,
+  achievementTitle: string,
+  xpReward: number
+): Promise<boolean> {
+  return sendNotification(
+    userTgId,
+    'achievement',
+    'Новое достижение!',
+    `Ты получил награду "${achievementTitle}"!\n+${xpReward} XP добавлено к твоему профилю.`
+  )
+}
+
+// Notify user about event reminder (1 hour before)
+export async function notifyEventReminder(userTgId: number, eventTitle: string, location: string): Promise<boolean> {
+  return sendNotification(
+    userTgId,
+    'reminder',
+    'Скоро начало!',
+    `${eventTitle} начнётся через 1 час.\n📍 ${location}\n\nНе забудь открыть билет в приложении!`
+  )
+}
+
 // ============ CONSULTATIONS ============
 
 const DMITRY_UTLIK_TG_ID = 1379584180
-const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8302587804:AAH2ZIjWA9QQLzXlOiDUpYQiM8bw6NuO8nw'
 
 // Request consultation from Dmitry Utlik
 export async function requestConsultation(userId: number, userName: string, userUsername?: string | null) {

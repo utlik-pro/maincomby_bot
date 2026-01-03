@@ -307,3 +307,104 @@ export const isFullscreen = (): boolean => {
   if (!webApp) return false
   return webApp.isFullscreen === true
 }
+
+// ============ CLOUD NOTIFICATIONS ============
+
+// Check if Cloud Notifications are supported (requires version 8.0+)
+export const isCloudNotificationsSupported = (): boolean => {
+  const webApp = getTelegramWebApp()
+  if (!webApp) return false
+  const version = parseFloat(webApp.version || '0')
+  return version >= 8.0
+}
+
+// Request permission for notifications (write access to bot)
+export const requestNotificationPermission = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const webApp = getTelegramWebApp()
+    if (!webApp || !isCloudNotificationsSupported()) {
+      resolve(false)
+      return
+    }
+
+    try {
+      // @ts-ignore - Method might not be in types yet
+      webApp.requestWriteAccess?.((granted: boolean) => {
+        console.log('[Telegram] Write access granted:', granted)
+        resolve(granted)
+      })
+
+      // Fallback timeout
+      setTimeout(() => resolve(false), 30000)
+    } catch (error) {
+      console.error('[Telegram] Failed to request write access:', error)
+      resolve(false)
+    }
+  })
+}
+
+// Check current notification permission status
+export const checkNotificationPermission = (): Promise<'granted' | 'denied' | 'unknown'> => {
+  return new Promise((resolve) => {
+    const webApp = getTelegramWebApp()
+    if (!webApp || !isCloudNotificationsSupported()) {
+      resolve('unknown')
+      return
+    }
+
+    // Check if we have write access (bot can message user)
+    // This is indicated by initDataUnsafe.user.allows_write_to_pm
+    const user = webApp.initDataUnsafe?.user
+    if (user?.allows_write_to_pm) {
+      resolve('granted')
+    } else {
+      resolve('denied')
+    }
+  })
+}
+
+// Notification types
+export type NotificationType = 'match' | 'event' | 'achievement' | 'reminder' | 'system'
+
+export interface NotificationPayload {
+  type: NotificationType
+  title: string
+  message: string
+  data?: Record<string, any>
+}
+
+// Send notification via Bot API
+const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8302587804:AAH2ZIjWA9QQLzXlOiDUpYQiM8bw6NuO8nw'
+
+export const sendPushNotification = async (
+  userTgId: number,
+  notification: NotificationPayload
+): Promise<boolean> => {
+  try {
+    const emoji = {
+      match: '💕',
+      event: '📅',
+      achievement: '🏆',
+      reminder: '⏰',
+      system: '🔔',
+    }[notification.type] || '🔔'
+
+    const text = `${emoji} *${notification.title}*\n\n${notification.message}`
+
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: userTgId,
+        text,
+        parse_mode: 'Markdown',
+      }),
+    })
+
+    const result = await response.json()
+    return result.ok === true
+  } catch (error) {
+    console.error('[Telegram] Failed to send notification:', error)
+    return false
+  }
+}

@@ -378,6 +378,7 @@ export interface TelegramUser {
   language_code?: string
   is_premium?: boolean
   photo_url?: string
+  allows_write_to_pm?: boolean
 }
 
 export interface TelegramWebApp {
