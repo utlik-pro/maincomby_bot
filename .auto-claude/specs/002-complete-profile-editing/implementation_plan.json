@@ -1,0 +1,434 @@
+{
+  "feature": "Complete Profile Editing",
+  "workflow_type": "feature",
+  "workflow_rationale": "Feature implementation that completes partial profile editing functionality. Adds skills/interests tags, social links editing, and company selection UI while enhancing existing profile fields with proper validation.",
+  "phases": [
+    {
+      "id": "phase-1-database",
+      "name": "Database Schema Migration",
+      "type": "setup",
+      "description": "Add skills field to bot_profiles table in Supabase",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Add skills TEXT[] field to bot_profiles table",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Run SQL in Supabase: ALTER TABLE bot_profiles ADD COLUMN IF NOT EXISTS skills TEXT[]; Verify column exists in table schema"
+          },
+          "notes": "Created migrations/add_skills_to_bot_profiles.sql with ALTER TABLE bot_profiles ADD COLUMN IF NOT EXISTS skills TEXT[]. User must run SQL in Supabase SQL Editor to apply.",
+          "status": "completed",
+          "updated_at": "2026-01-03T06:56:19.015697+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-foundation",
+      "name": "Foundation - Types & API Functions",
+      "type": "implementation",
+      "description": "Update TypeScript types and Supabase API functions for new profile fields",
+      "depends_on": [
+        "phase-1-database"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Update UserProfile type with skills field",
+          "service": "main",
+          "files_to_modify": [
+            "src/types/index.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/types/index.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm run build",
+            "expected": "No TypeScript errors"
+          },
+          "notes": "Add skills?: string[] | null to UserProfile interface (line 136). Interests already exists at line 136.",
+          "status": "pending"
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Update updateProfile and createProfile functions to handle skills/interests",
+          "service": "main",
+          "files_to_modify": [
+            "src/lib/supabase.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/lib/supabase.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm run build",
+            "expected": "No TypeScript errors"
+          },
+          "notes": "Update updateProfile (line 74-94) and createProfile (line 96-117) function signatures to accept skills and interests arrays",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-components",
+      "name": "UI Components",
+      "type": "implementation",
+      "description": "Create reusable components for tags, social links editing, and company selection",
+      "depends_on": [
+        "phase-2-foundation"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Create TagInput component for skills and interests",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/components/TagInput.tsx"
+          ],
+          "patterns_from": [
+            "src/components/ui/index.tsx",
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Import TagInput in ProfileScreen, render with test data, verify tags display and add/remove works"
+          },
+          "notes": "Implement tag badge rendering, add button, remove button, keyboard support (Enter to add), max 10 tags, 30 chars per tag, duplicate prevention. Follow Tailwind patterns from ui/index.tsx",
+          "status": "pending"
+        },
+        {
+          "id": "subtask-3-2",
+          "description": "Create SocialLinksEdit component for editing links",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/components/SocialLinksEdit.tsx"
+          ],
+          "patterns_from": [
+            "src/components/SocialLinks.tsx",
+            "src/lib/supabase.ts"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Render component with test user ID, verify add/edit/remove link functionality with validation"
+          },
+          "notes": "Use existing setUserLink/removeUserLink functions from supabase.ts. Add validation for LinkedIn (linkedin.com/in/), GitHub (github.com/), Telegram (t.me/). Display existing links with edit/remove buttons.",
+          "status": "pending"
+        },
+        {
+          "id": "subtask-3-3",
+          "description": "Create CompanySelector component for company affiliation",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/components/CompanySelector.tsx"
+          ],
+          "patterns_from": [
+            "src/components/CompanyCard.tsx",
+            "src/lib/supabase.ts"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Render component with test user ID, verify company selection and role editing works"
+          },
+          "notes": "Use getCompanies to fetch list, setUserCompany to save selection. Allow role input (max 100 chars). Display current company from getUserCompany with edit/remove options.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-4-integration",
+      "name": "ProfileScreen Integration",
+      "type": "integration",
+      "description": "Integrate new components into ProfileScreen edit form and wire up state/API",
+      "depends_on": [
+        "phase-3-components"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Add skills and interests TagInput fields to edit form",
+          "service": "main",
+          "files_to_modify": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Enter edit mode, verify skills and interests tag inputs render and update editForm state"
+          },
+          "notes": "Add to editForm state (line 214-220): skills: profile?.skills || [], interests: profile?.interests || []. Add TagInput components to edit mode UI (after line 392). Update handleSaveProfile to include skills/interests.",
+          "status": "pending"
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Add SocialLinksEdit component to edit form",
+          "service": "main",
+          "files_to_modify": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Enter edit mode, verify social links editor renders, can add/edit/remove links with validation"
+          },
+          "notes": "Add SocialLinksEdit after tag inputs in edit mode. Pass user.id and onSave callback. Social links save independently via setUserLink, not through main profile save.",
+          "status": "pending"
+        },
+        {
+          "id": "subtask-4-3",
+          "description": "Add CompanySelector component to edit form",
+          "service": "main",
+          "files_to_modify": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Enter edit mode, verify company selector renders, can select company and add role"
+          },
+          "notes": "Add CompanySelector in edit form after occupation field. Pass user.id and update callback. Company saves independently via setUserCompany.",
+          "status": "pending"
+        },
+        {
+          "id": "subtask-4-4",
+          "description": "Display skills and interests in profile view mode",
+          "service": "main",
+          "files_to_modify": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000",
+            "checks": [
+              "Skills display as tag badges",
+              "Interests display as tag badges",
+              "Tags only show when data exists"
+            ]
+          },
+          "notes": "Add Card components for skills and interests in view mode (after line 816) following pattern from bio/looking_for cards. Render tags as Badge components.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-5-validation",
+      "name": "Validation & Error Handling",
+      "type": "implementation",
+      "description": "Add comprehensive validation, error messages, and edge case handling",
+      "depends_on": [
+        "phase-4-integration"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Add validation for all profile fields with character limits",
+          "service": "main",
+          "files_to_modify": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Test: bio > 500 chars shows error, tags > 30 chars rejected, max 10 tags enforced, invalid social URLs rejected"
+          },
+          "notes": "Add character counters for bio (500), occupation (100). Validate in handleSaveProfile before API call. Show errors via addToast with error type.",
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Add loading states and error handling for all save operations",
+          "service": "main",
+          "files_to_modify": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/screens/ProfileScreen.tsx"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify: Save button shows loader, toast appears on success/error, form doesn't close on error"
+          },
+          "notes": "Existing isSaving state (line 153) handles profile save. Add loading states to social links and company save operations. Show hapticFeedback on success/error.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-6-verification",
+      "name": "End-to-End Verification",
+      "type": "integration",
+      "description": "Comprehensive testing of complete profile editing flow",
+      "depends_on": [
+        "phase-5-validation"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "End-to-end test of complete profile editing",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Navigate to profile tab",
+              "Click edit button",
+              "Update bio, occupation, city",
+              "Add 3 skills tags, add 3 interests tags",
+              "Select company and add role",
+              "Add LinkedIn, GitHub, Telegram links",
+              "Click save",
+              "Verify all fields display in view mode",
+              "Refresh page - verify data persists"
+            ]
+          },
+          "notes": "Full flow testing. Verify React Query cache invalidation, Zustand state updates, Supabase persistence, no console errors.",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 6,
+    "total_subtasks": 11,
+    "services_involved": [
+      "main"
+    ],
+    "parallelism": {
+      "max_parallel_phases": 1,
+      "parallel_groups": [],
+      "recommended_workers": 1,
+      "speedup_estimate": "Sequential execution required due to phase dependencies"
+    },
+    "startup_command": "cd /Users/admin/maincomby_bot/miniapp && npm run dev"
+  },
+  "verification_strategy": {
+    "risk_level": "medium",
+    "skip_validation": false,
+    "test_creation_phase": "post_implementation",
+    "test_types_required": [
+      "unit",
+      "integration"
+    ],
+    "security_scanning_required": false,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "All existing tests pass",
+      "Profile editing UI is complete and functional",
+      "Data persists to Supabase correctly",
+      "No console errors during profile operations",
+      "Form validation prevents invalid data submission"
+    ],
+    "verification_steps": [
+      {
+        "name": "TypeScript Build",
+        "command": "npm run build",
+        "expected_outcome": "Build succeeds with no TypeScript errors",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Development Server",
+        "command": "npm run dev",
+        "expected_outcome": "Server starts without errors on port 3000",
+        "type": "test",
+        "required": true,
+        "blocking": false
+      },
+      {
+        "name": "Manual Browser Testing",
+        "command": "Open http://localhost:3000 in browser",
+        "expected_outcome": "Profile editing works end-to-end, all fields save and display",
+        "type": "manual",
+        "required": true,
+        "blocking": true
+      }
+    ],
+    "reasoning": "Medium risk change requiring careful validation. Modifies existing profile editing code. Adds new database field (skills) and new UI components. Risk of breaking existing profile functionality."
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": false,
+      "commands": [],
+      "minimum_coverage": null,
+      "notes": "No test suite exists in project. Manual testing via browser required."
+    },
+    "integration_tests": {
+      "required": false,
+      "commands": [],
+      "services_to_test": [],
+      "notes": "No integration tests exist. Manual E2E testing required."
+    },
+    "e2e_tests": {
+      "required": false,
+      "commands": [],
+      "flows": [],
+      "notes": "No E2E test framework. Manual browser verification via subtask-6-1."
+    },
+    "browser_verification": {
+      "required": true,
+      "pages": [
+        {
+          "url": "http://localhost:3000",
+          "checks": [
+            "Profile tab renders",
+            "Edit button works",
+            "All form fields render in edit mode",
+            "Skills/interests tag inputs work (add/remove)",
+            "Social links editor works (add/edit/remove with validation)",
+            "Company selector works",
+            "Save button persists data",
+            "View mode displays all saved data",
+            "Page refresh preserves data",
+            "No console errors"
+          ]
+        }
+      ]
+    },
+    "database_verification": {
+      "required": true,
+      "checks": [
+        "skills-field-exists: Verify skills TEXT[] column exists in bot_profiles table",
+        "profile-data-persists: Update profile, check Supabase dashboard shows correct data",
+        "links-saved: Add social links, verify user_links table has correct entries",
+        "company-saved: Set company, verify user_companies table has correct entry"
+      ]
+    }
+  },
+  "qa_signoff": null,
+  "last_updated": "2026-01-03T06:56:19.015710+00:00"
+}

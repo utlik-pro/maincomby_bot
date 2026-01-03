@@ -1,0 +1,132 @@
+=== AUTO-BUILD PROGRESS ===
+
+Project: MAIN Community Mini App - Complete Profile Editing
+Workspace: /Users/admin/maincomby_bot/miniapp
+Spec: 002-complete-profile-editing
+Started: 2026-01-03
+
+Workflow Type: feature
+Rationale: Feature implementation that completes partial profile editing functionality. Adds skills/interests tags, social links editing, and company selection UI while enhancing existing profile fields with proper validation.
+
+Session 1 (Planner):
+- Completed PHASE 0: Deep codebase investigation
+- Created context.json with investigation findings
+- Created implementation_plan.json with 6 phases and 11 subtasks
+- Created init.sh setup script
+- Total Phases: 6
+- Total Subtasks: 11
+
+Phase Summary:
+- Phase 1 (Database Schema Migration): 1 subtask - Add skills field to bot_profiles
+- Phase 2 (Foundation - Types & API Functions): 2 subtasks - Update TypeScript types and Supabase functions
+- Phase 3 (UI Components): 3 subtasks - Create TagInput, SocialLinksEdit, CompanySelector components
+- Phase 4 (ProfileScreen Integration): 4 subtasks - Wire components into edit form and view mode
+- Phase 5 (Validation & Error Handling): 2 subtasks - Add validation and loading states
+- Phase 6 (End-to-End Verification): 1 subtask - Complete E2E testing
+
+Services Involved:
+- main: React TypeScript frontend with Supabase backend (port 3000)
+
+Key Investigation Findings:
+1. Profile editing partially exists in ProfileScreen.tsx (lines 297-404)
+2. Database table is bot_profiles (NOT profiles as spec suggested)
+3. Social links use separate user_links table (NOT JSONB field)
+4. Company uses separate user_companies table
+5. Skills field needs migration - doesn't exist yet
+6. Interests field exists but has no UI implementation
+7. Avatar is auto-synced from Telegram - no manual sync needed
+8. Display name from Telegram (not editable)
+
+Files to Modify:
+- src/screens/ProfileScreen.tsx (edit form and view mode)
+- src/types/index.ts (UserProfile type)
+- src/lib/supabase.ts (updateProfile/createProfile functions)
+
+Files to Create:
+- src/components/TagInput.tsx (skills/interests tag editor)
+- src/components/SocialLinksEdit.tsx (social links editor)
+- src/components/CompanySelector.tsx (company selection)
+
+Patterns to Follow:
+- Form state: ProfileScreen.tsx (lines 214-402) - editForm state + handleSaveProfile
+- Database: supabase.ts - getSupabase() client with async/await
+- State: Zustand + React Query (useQuery for server state)
+- Components: Framer-motion animations + Tailwind styling
+- Validation: Character limits with addToast for errors
+
+Parallelism Analysis:
+- Max parallel phases: 1
+- Recommended workers: 1
+- Speedup estimate: Sequential execution required due to phase dependencies
+- No parallel groups (phases have linear dependencies)
+
+=== STARTUP COMMAND ===
+
+To continue building this spec, run:
+
+  cd /Users/admin/maincomby_bot/miniapp
+  npm run dev
+
+Or use the init script:
+
+  ./.auto-claude/specs/002-complete-profile-editing/init.sh
+
+Frontend will be available at: http://localhost:3000
+
+=== VERIFICATION STRATEGY ===
+
+Risk Level: medium
+Test Types Required: unit, integration
+Security Scanning: No
+Staging Deployment: No
+
+Acceptance Criteria:
+- Profile editing UI is complete and functional
+- Data persists to Supabase correctly
+- No console errors during profile operations
+- Form validation prevents invalid data submission
+
+Verification Steps:
+1. TypeScript Build (npm run build) - must succeed with no errors [blocking]
+2. Development Server (npm run dev) - must start on port 3000
+3. Manual Browser Testing - complete E2E profile editing flow [blocking]
+
+Browser Checks:
+- Profile tab renders
+- Edit button works
+- All form fields render in edit mode
+- Skills/interests tag inputs work (add/remove)
+- Social links editor works (add/edit/remove with validation)
+- Company selector works
+- Save button persists data
+- View mode displays all saved data
+- Page refresh preserves data
+- No console errors
+
+Database Checks:
+- skills TEXT[] column exists in bot_profiles table
+- Profile data persists correctly
+- user_links table has social link entries
+- user_companies table has company entry
+
+=== END SESSION 1 ===
+
+=== SESSION 2: Implementation ===
+
+Started: 2026-01-03
+
+--- subtask-1-1: Add skills TEXT[] field to bot_profiles table ---
+Status: COMPLETED
+
+Actions:
+- Created migrations/add_skills_to_bot_profiles.sql
+- SQL adds 'skills TEXT[]' column to bot_profiles using 'ADD COLUMN IF NOT EXISTS'
+- Follows pattern from add_miniapp_columns.sql which added interests column
+- Includes verification query and documentation comment
+
+Verification:
+- Migration file created and follows existing patterns
+- User must run SQL in Supabase SQL Editor to apply:
+  ALTER TABLE bot_profiles ADD COLUMN IF NOT EXISTS skills TEXT[];
+
+Next: subtask-2-1 (Update UserProfile type with skills field)
