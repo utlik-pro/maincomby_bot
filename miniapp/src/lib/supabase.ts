@@ -315,19 +315,38 @@ export async function getUserRegistrations(userId: number) {
 
 // Get checked-in attendees for an event (for volunteers/admins)
 export async function getEventCheckins(eventId: number) {
-  const { data, error } = await getSupabase()
+  const supabase = getSupabase()
+
+  // Get registrations with attended status
+  const { data: registrations, error } = await supabase
     .from('bot_registrations')
-    .select(`
-      *,
-      user:bot_users(id, first_name, last_name, username, tg_user_id),
-      profile:bot_profiles(photo_url)
-    `)
+    .select('*')
     .eq('event_id', eventId)
     .eq('status', 'attended')
     .order('checked_in_at', { ascending: false })
 
   if (error) throw error
-  return data || []
+  if (!registrations || registrations.length === 0) return []
+
+  // Get user details for each registration
+  const userIds = registrations.map(r => r.user_id)
+
+  const { data: users } = await supabase
+    .from('bot_users')
+    .select('id, first_name, last_name, username, tg_user_id')
+    .in('id', userIds)
+
+  const { data: profiles } = await supabase
+    .from('bot_profiles')
+    .select('user_id, photo_url')
+    .in('user_id', userIds)
+
+  // Combine data
+  return registrations.map(reg => ({
+    ...reg,
+    user: users?.find(u => u.id === reg.user_id) || null,
+    profile: profiles?.find(p => p.user_id === reg.user_id) || null,
+  }))
 }
 
 // Get all registrations for an event (for volunteers/admins)
