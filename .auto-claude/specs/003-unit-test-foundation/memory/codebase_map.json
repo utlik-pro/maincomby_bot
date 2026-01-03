@@ -19,7 +19,27 @@
       "description": "Unit tests for RANK_THRESHOLDS (9 ranks from 0-20000 XP), RANK_LABELS (Russian names + emojis), and XP_REWARDS (7 action types: 5-50 XP). Tests verify structure, values, ordering, gaps, and progression scenarios.",
       "category": "testing",
       "discovered_at": "2026-01-03T18:42:23.789865+00:00"
+    },
+    "miniapp/src/components/EventCard.tsx": {
+      "description": "Extracted EventCard component with props: event (Event type), isRegistered (boolean), onClick (callback). Handles event type icons, date formatting (Today/Tomorrow/d MMM), and displays title, time, location, price badge.",
+      "category": "component",
+      "discovered_at": "2026-01-03T20:02:56.139903+00:00"
+    },
+    "miniapp/src/components/__tests__/ProfileCard.test.tsx": {
+      "description": "ProfileCard component tests with 70+ test cases. Mocks framer-motion, Avatar, Badge, CompanyInline, SocialLinks. Tests: null user state, name rendering, profile details (occupation/city), stats (XP/events/matches), rank badges (all 9 ranks with Russian labels), theme badges (core/vip/speaker/partner/sponsor/pro), team role badges, company/social links display, avatar/rank tap interactions. Also tests getProfileTheme() priority and PROFILE_THEMES structure.",
+      "category": "testing",
+      "discovered_at": "2026-01-03T20:07:57.429417+00:00"
+    },
+    "miniapp/src/components/__tests__/EventCard.test.tsx": {
+      "description": "EventCard component tests with 40+ test cases. Mocks framer-motion, Card, Badge, and date-fns. Tests: basic rendering (title/location), registration status (highlighted card), event type icons (meetup/workshop/conference/hackathon/default), date formatting (Today/Tomorrow/d MMM in Russian), price display (Free/BYN), click handling with keyboard accessibility, edge cases (null location, long text). Uses createMockEvent factory function.",
+      "category": "testing",
+      "discovered_at": "2026-01-03T20:15:24.400862+00:00"
+    },
+    "miniapp/src/lib/__tests__/supabase.test.ts": {
+      "description": "Added Auth Error Handling tests section with 35+ test cases covering: authentication errors (PGRST301, 42501, PGRST302), authorization errors (RLS violations), network errors (timeout, DNS, SSL), rate limiting (429), database constraints (23503, 23514, 23502), server errors (5xx), error object preservation, concurrent request handling. Key pattern: getUserByTelegramId/getUserById return null for PGRST116 but throw for all other errors; createOrUpdateUser throws for ALL errors including PGRST116.",
+      "category": "tests",
+      "discovered_at": "2026-01-03T20:28:33.128208+00:00"
     }
   },
-  "last_updated": "2026-01-03T18:42:23.789875+00:00"
+  "last_updated": "2026-01-03T20:28:33.128222+00:00"
 }
