@@ -34,6 +34,7 @@ import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembe
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
+import { CompanySelector } from '@/components/CompanySelector'
 import { SocialLinks } from '@/components/SocialLinks'
 import { SocialLinksEdit } from '@/components/SocialLinksEdit'
 import { TagInput } from '@/components/TagInput'
@@ -350,6 +351,17 @@ const ProfileScreen: React.FC = () => {
               placeholder="Например: Founder & CEO"
             />
           </div>
+
+          {/* Company Selector */}
+          {user && (
+            <CompanySelector
+              userId={user.tg_user_id}
+              userCompany={userCompany || null}
+              onCompanyChange={(updatedCompany) => {
+                queryClient.setQueryData(['userCompany', user.id], updatedCompany)
+              }}
+            />
+          )}
 
           <div>
             <label className="text-sm text-gray-400 mb-1 block">Город</label>
