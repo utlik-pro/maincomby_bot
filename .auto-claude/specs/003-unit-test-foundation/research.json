@@ -1,0 +1,525 @@
+{
+  "integrations_researched": [
+    {
+      "name": "Vitest",
+      "type": "library",
+      "purpose": "Primary test runner - Vite-native, fast unit test framework",
+      "verified_package": {
+        "name": "vitest",
+        "install_command": "npm install -D vitest",
+        "version": "latest (recommend ^1.0.0+)",
+        "verified": true,
+        "compatibility_note": "Already using Vite 5.4.2, Vitest shares same config pipeline"
+      },
+      "api_patterns": {
+        "imports": [
+          "import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'",
+          "import { test } from 'vitest'"
+        ],
+        "initialization": "Tests run via `vitest` CLI command",
+        "key_functions": [
+          "describe(name, fn) - Test suite grouping",
+          "it(name, fn) / test(name, fn) - Individual test case",
+          "expect(value) - Assertions",
+          "vi.fn() - Mock function creation",
+          "vi.spyOn(object, method) - Spy on methods",
+          "beforeEach(fn), afterEach(fn) - Setup/teardown hooks"
+        ],
+        "verified_against": "Standard Vitest API patterns"
+      },
+      "configuration": {
+        "config_file": "vitest.config.ts",
+        "key_options": {
+          "globals": "true (enables global test APIs without imports)",
+          "environment": "'happy-dom' or 'jsdom' (for React component testing)",
+          "setupFiles": "['./src/test/setup.ts'] (for global test setup)",
+          "coverage": {
+            "provider": "'v8' or 'istanbul'",
+            "reporter": "['text', 'json', 'html']"
+          }
+        },
+        "env_vars": [],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "ci_integration": "Simple - run `vitest run` in CI pipeline"
+      },
+      "gotchas": [
+        "Must install DOM environment separately (happy-dom or jsdom)",
+        "globals: true conflicts with TypeScript - need @vitest/globals types",
+        "Coverage config requires separate provider package (@vitest/coverage-v8 or @vitest/coverage-istanbul)",
+        "React Testing Library needs environment: 'happy-dom' or 'jsdom' in config"
+      ],
+      "research_sources": [
+        "Vitest official documentation patterns",
+        "Existing project uses Vite 5.4.2 (compatible)"
+      ]
+    },
+    {
+      "name": "React Testing Library",
+      "type": "library",
+      "purpose": "Component testing utilities for React - user-centric testing approach",
+      "verified_package": {
+        "name": "@testing-library/react",
+        "install_command": "npm install -D @testing-library/react",
+        "version": "latest (recommend ^14.0.0+)",
+        "verified": true,
+        "peer_dependencies": {
+          "react": "^18.0.0 (SATISFIED - project has 18.3.1)",
+          "react-dom": "^18.0.0 (SATISFIED - project has 18.3.1)"
+        }
+      },
+      "api_patterns": {
+        "imports": [
+          "import { render, screen, waitFor, fireEvent } from '@testing-library/react'",
+          "import userEvent from '@testing-library/user-event'"
+        ],
+        "initialization": "const { container, getByText } = render(<Component />)",
+        "key_functions": [
+          "render(component) - Render component to virtual DOM",
+          "screen.getByRole(role, options) - Query by ARIA role",
+          "screen.getByText(text) - Query by text content",
+          "screen.getByLabelText(label) - Query by label",
+          "screen.queryBy* - Returns null if not found (vs getBy* throws)",
+          "screen.findBy* - Async queries, waits for element",
+          "waitFor(callback) - Wait for async updates",
+          "cleanup() - Unmount components (auto with Vitest)"
+        ],
+        "verified_against": "React Testing Library standard patterns"
+      },
+      "configuration": {
+        "setupFiles": [
+          "May need to extend expect with @testing-library/jest-dom matchers",
+          "Setup in vitest.config.ts or separate setup file"
+        ],
+        "env_vars": [],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false
+      },
+      "gotchas": [
+        "Automatic cleanup with Vitest - no manual cleanup() needed",
+        "Use screen queries over destructured render return",
+        "Prefer getByRole over getByTestId for accessibility",
+        "fireEvent vs userEvent - prefer userEvent for realistic interactions",
+        "Must wrap state updates in act() if testing outside RTL utilities"
+      ],
+      "research_sources": [
+        "React Testing Library documentation",
+        "Kent C. Dodds testing best practices"
+      ]
+    },
+    {
+      "name": "@testing-library/jest-dom",
+      "type": "library",
+      "purpose": "Custom DOM matchers for better assertions (toBeInTheDocument, toHaveClass, etc.)",
+      "verified_package": {
+        "name": "@testing-library/jest-dom",
+        "install_command": "npm install -D @testing-library/jest-dom",
+        "version": "latest (recommend ^6.0.0+)",
+        "verified": true,
+        "compatibility_note": "Works with Vitest despite name - Jest API compatible"
+      },
+      "api_patterns": {
+        "imports": [
+          "import '@testing-library/jest-dom' (in setup file or individual tests)"
+        ],
+        "initialization": "Import once in setup file to extend expect globally",
+        "key_functions": [
+          "expect(element).toBeInTheDocument()",
+          "expect(element).toHaveTextContent(text)",
+          "expect(element).toHaveClass(className)",
+          "expect(element).toBeVisible()",
+          "expect(element).toBeDisabled()",
+          "expect(element).toHaveAttribute(attr, value)",
+          "expect(element).toHaveValue(value)"
+        ],
+        "verified_against": "Standard jest-dom matchers"
+      },
+      "configuration": {
+        "setupFiles": [
+          "Create src/test/setup.ts with: import '@testing-library/jest-dom'",
+          "Reference in vitest.config.ts setupFiles array"
+        ],
+        "env_vars": [],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false
+      },
+      "gotchas": [
+        "Must import in setup file or each test file to extend matchers",
+        "TypeScript users need @types/testing-library__jest-dom for type safety",
+        "Some matchers (toBeInTheDocument) require element to be in document.body"
+      ],
+      "research_sources": [
+        "@testing-library/jest-dom GitHub repository",
+        "Vitest + RTL setup guides"
+      ]
+    },
+    {
+      "name": "@testing-library/user-event",
+      "type": "library",
+      "purpose": "Simulate realistic user interactions (better than fireEvent)",
+      "verified_package": {
+        "name": "@testing-library/user-event",
+        "install_command": "npm install -D @testing-library/user-event",
+        "version": "latest (recommend ^14.0.0+)",
+        "verified": true,
+        "note": "Separate package from @testing-library/react"
+      },
+      "api_patterns": {
+        "imports": [
+          "import userEvent from '@testing-library/user-event'"
+        ],
+        "initialization": "const user = userEvent.setup()",
+        "key_functions": [
+          "userEvent.setup() - Create user event instance (v14+ pattern)",
+          "user.click(element) - Simulate click",
+          "user.type(element, text) - Simulate typing",
+          "user.clear(element) - Clear input field",
+          "user.selectOptions(select, values) - Select dropdown options",
+          "user.upload(input, file) - Upload file",
+          "user.hover(element) - Hover over element"
+        ],
+        "verified_against": "User Event v14+ API"
+      },
+      "configuration": {
+        "env_vars": [],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false
+      },
+      "gotchas": [
+        "V14+ requires userEvent.setup() before use (breaking change from v13)",
+        "All methods are async - must await user interactions",
+        "More realistic than fireEvent but slower - use for integration tests",
+        "Setup once per test: const user = userEvent.setup()"
+      ],
+      "research_sources": [
+        "User Event v14 migration guide",
+        "Testing Library documentation"
+      ]
+    },
+    {
+      "name": "happy-dom",
+      "type": "library",
+      "purpose": "Lightweight DOM environment for Vitest (faster alternative to jsdom)",
+      "verified_package": {
+        "name": "happy-dom",
+        "install_command": "npm install -D happy-dom",
+        "version": "latest (recommend ^12.0.0+)",
+        "verified": true,
+        "alternative": {
+          "name": "jsdom",
+          "install_command": "npm install -D jsdom",
+          "note": "More accurate but slower than happy-dom"
+        }
+      },
+      "api_patterns": {
+        "imports": [],
+        "initialization": "Configured via Vitest config, not imported directly",
+        "key_functions": [],
+        "verified_against": "Vitest environment configuration"
+      },
+      "configuration": {
+        "vitest_config": {
+          "environment": "'happy-dom'",
+          "note": "Enables DOM APIs (document, window, etc.) in tests"
+        },
+        "env_vars": [],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false
+      },
+      "gotchas": [
+        "Choose happy-dom for speed, jsdom for accuracy",
+        "Must be configured in vitest.config.ts - not imported in tests",
+        "Some DOM APIs may not be fully implemented in happy-dom",
+        "React Testing Library requires one of these environments"
+      ],
+      "research_sources": [
+        "Vitest environment configuration docs",
+        "happy-dom vs jsdom comparisons"
+      ],
+      "recommendation": "Start with happy-dom for speed, switch to jsdom only if compatibility issues arise"
+    },
+    {
+      "name": "@vitest/coverage-v8",
+      "type": "library",
+      "purpose": "Code coverage provider using V8 engine (faster than istanbul)",
+      "verified_package": {
+        "name": "@vitest/coverage-v8",
+        "install_command": "npm install -D @vitest/coverage-v8",
+        "version": "Match Vitest version",
+        "verified": true,
+        "alternative": {
+          "name": "@vitest/coverage-istanbul",
+          "note": "More accurate but slower"
+        }
+      },
+      "api_patterns": {
+        "imports": [],
+        "initialization": "Configured via vitest.config.ts coverage section",
+        "key_functions": [],
+        "verified_against": "Vitest coverage configuration"
+      },
+      "configuration": {
+        "vitest_config": {
+          "coverage": {
+            "provider": "'v8'",
+            "reporter": "['text', 'json', 'html']",
+            "exclude": [
+              "'node_modules/'",
+              "'src/test/'",
+              "'**/*.test.{ts,tsx}'",
+              "'**/*.spec.{ts,tsx}'"
+            ]
+          }
+        },
+        "scripts": {
+          "test:coverage": "vitest run --coverage"
+        },
+        "env_vars": [],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "output": "coverage/ directory with HTML report"
+      },
+      "gotchas": [
+        "Must install coverage provider separately from Vitest",
+        "V8 coverage may miss some edge cases vs Istanbul",
+        "Coverage directory should be added to .gitignore",
+        "Use --coverage flag or coverage.enabled: true in config"
+      ],
+      "research_sources": [
+        "Vitest coverage documentation"
+      ],
+      "recommendation": "Use v8 provider for speed unless accuracy issues found"
+    },
+    {
+      "name": "@vitest/ui",
+      "type": "library",
+      "purpose": "Optional UI dashboard for Vitest (dev tool)",
+      "verified_package": {
+        "name": "@vitest/ui",
+        "install_command": "npm install -D @vitest/ui",
+        "version": "Match Vitest version",
+        "verified": true,
+        "optional": true
+      },
+      "api_patterns": {
+        "imports": [],
+        "initialization": "Run with --ui flag",
+        "key_functions": [],
+        "verified_against": "Vitest UI documentation"
+      },
+      "configuration": {
+        "scripts": {
+          "test:ui": "vitest --ui"
+        },
+        "env_vars": [],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "runs_on": "http://localhost:51204 (default port)"
+      },
+      "gotchas": [
+        "Optional - not required for CI/CD",
+        "Useful for local development and debugging",
+        "Adds bundle size - only install if team will use it"
+      ],
+      "research_sources": [
+        "Vitest UI documentation"
+      ],
+      "recommendation": "Optional - install if team prefers visual test runner"
+    },
+    {
+      "name": "Supabase JS SDK (@supabase/supabase-js)",
+      "type": "service",
+      "purpose": "Authentication and backend - requires mocking in tests",
+      "verified_package": {
+        "name": "@supabase/supabase-js",
+        "install_command": "Already installed",
+        "version": "2.45.0 (ALREADY IN PROJECT)",
+        "verified": true
+      },
+      "api_patterns": {
+        "imports": [
+          "import { createClient } from '@supabase/supabase-js'"
+        ],
+        "initialization": "const supabase = createClient(url, anonKey)",
+        "key_functions": [
+          "supabase.auth.signInWithPassword({ email, password })",
+          "supabase.auth.signOut()",
+          "supabase.auth.getSession()",
+          "supabase.auth.onAuthStateChange(callback)"
+        ],
+        "verified_against": "Existing project usage"
+      },
+      "configuration": {
+        "env_vars": [
+          "VITE_SUPABASE_URL",
+          "VITE_SUPABASE_ANON_KEY"
+        ],
+        "test_strategy": {
+          "unit_tests": "Mock supabase client with vi.mock()",
+          "integration_tests": "Use test database or Supabase local development",
+          "component_tests": "Mock auth state in React components"
+        },
+        "dependencies": []
+      },
+      "mocking_strategies": [
+        {
+          "approach": "Vi.mock() - Full module mock",
+          "example": "vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn(() => mockSupabaseClient) }))",
+          "use_case": "Unit tests - isolate business logic",
+          "pros": "Simple, fast, no external dependencies",
+          "cons": "Manual mock maintenance"
+        },
+        {
+          "approach": "Supabase Local Dev (Docker)",
+          "example": "supabase start (requires Docker)",
+          "use_case": "Integration tests - real database",
+          "pros": "Realistic testing, real SQL queries",
+          "cons": "Slower, requires Docker, complex CI setup",
+          "docker_required": true
+        },
+        {
+          "approach": "Test doubles for auth state",
+          "example": "Mock auth context provider in React",
+          "use_case": "Component tests - UI with different auth states",
+          "pros": "Test authenticated/unauthenticated UI states",
+          "cons": "Doesn't test real auth flow"
+        }
+      ],
+      "infrastructure": {
+        "requires_docker": false,
+        "docker_optional": true,
+        "docker_use_case": "Integration tests with real Supabase instance"
+      },
+      "gotchas": [
+        "Supabase client initialization requires env vars - mock in tests",
+        "Auth state is async - use waitFor() in tests",
+        "onAuthStateChange creates subscriptions - cleanup in afterEach()",
+        "Session storage persists - may need to clear between tests",
+        "Supabase local dev requires Docker (optional for integration tests)"
+      ],
+      "research_sources": [
+        "Existing project package.json",
+        "Supabase testing patterns",
+        "Community mocking examples"
+      ],
+      "recommendation": "Start with vi.mock() for unit/component tests. Consider Supabase local dev for integration tests if team has Docker experience."
+    }
+  ],
+  "unverified_claims": [],
+  "additional_dependencies": {
+    "typescript_types": [
+      {
+        "package": "@types/node",
+        "reason": "May be needed for test file resolution",
+        "install_command": "npm install -D @types/node",
+        "optional": true
+      }
+    ],
+    "recommended_but_optional": [
+      {
+        "package": "@vitest/ui",
+        "reason": "Visual test runner for development",
+        "priority": "low"
+      }
+    ]
+  },
+  "configuration_files_needed": [
+    {
+      "file": "vitest.config.ts",
+      "purpose": "Vitest configuration",
+      "required": true,
+      "example_content": {
+        "import": "import { defineConfig } from 'vitest/config'",
+        "export": "export default defineConfig({ test: { globals: true, environment: 'happy-dom', setupFiles: ['./src/test/setup.ts'], coverage: { provider: 'v8', reporter: ['text', 'json', 'html'] } } })"
+      }
+    },
+    {
+      "file": "src/test/setup.ts",
+      "purpose": "Global test setup - import jest-dom matchers",
+      "required": true,
+      "example_content": "import '@testing-library/jest-dom'"
+    },
+    {
+      "file": ".gitignore additions",
+      "purpose": "Ignore test artifacts",
+      "required": true,
+      "additions": [
+        "coverage/",
+        "*.log"
+      ]
+    }
+  ],
+  "package_json_scripts_needed": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "ci_integration_requirements": {
+    "test_command": "npm run test:run",
+    "coverage_command": "npm run test:coverage",
+    "node_version": "18+ (matches React 18)",
+    "cache_dependencies": "node_modules/",
+    "artifacts": [
+      "coverage/"
+    ],
+    "environment_variables": [
+      "VITE_SUPABASE_URL (mocked or test instance)",
+      "VITE_SUPABASE_ANON_KEY (mocked or test instance)"
+    ]
+  },
+  "recommendations": [
+    "Install happy-dom over jsdom for faster test execution (can switch later if needed)",
+    "Use @vitest/coverage-v8 over istanbul for faster coverage reporting",
+    "Start with vi.mock() for Supabase - defer Docker-based integration tests until unit tests are solid",
+    "Enable globals: true in Vitest config for simpler test syntax (no imports needed)",
+    "Create test utilities in src/test/utils.ts for common render patterns (authenticated user, etc.)",
+    "Set up pre-commit hook to run tests (optional but recommended)",
+    "Configure coverage thresholds once baseline is established (start without thresholds)",
+    "@vitest/ui is optional - install only if team wants visual test runner"
+  ],
+  "risk_factors": [
+    {
+      "risk": "Supabase mocking complexity",
+      "mitigation": "Start simple with vi.mock(), document patterns in test utils",
+      "severity": "medium"
+    },
+    {
+      "risk": "No existing test patterns to follow",
+      "mitigation": "Create comprehensive examples for each test type (unit, component, integration)",
+      "severity": "low"
+    },
+    {
+      "risk": "TypeScript configuration for Vitest globals",
+      "mitigation": "Add 'vitest/globals' to tsconfig.json types array",
+      "severity": "low"
+    }
+  ],
+  "critical_installation_order": [
+    "1. vitest (core framework)",
+    "2. @testing-library/react (component testing)",
+    "3. @testing-library/jest-dom (matchers)",
+    "4. @testing-library/user-event (user interactions)",
+    "5. happy-dom (DOM environment)",
+    "6. @vitest/coverage-v8 (coverage reporting)",
+    "7. @vitest/ui (optional - visual runner)"
+  ],
+  "total_packages_to_install": 6,
+  "total_optional_packages": 1,
+  "estimated_install_size": "~50MB (without @vitest/ui)",
+  "created_at": "2026-01-03T00:00:00Z"
+}

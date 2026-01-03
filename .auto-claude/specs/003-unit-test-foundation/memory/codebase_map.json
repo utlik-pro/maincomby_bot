@@ -1,0 +1,25 @@
+{
+  "discovered_files": {
+    "miniapp/package.json": {
+      "description": "Testing infrastructure added: vitest ^2.1.8, @testing-library/react ^16.1.0, @testing-library/jest-dom ^6.6.3, @testing-library/user-event ^14.5.2, happy-dom ^15.11.7, @vitest/coverage-v8 ^2.1.8. Test scripts: 'test', 'test:ui', 'test:coverage'",
+      "category": "testing",
+      "discovered_at": "2026-01-03T18:27:03.614070+00:00"
+    },
+    "miniapp/src/test/setup.ts": {
+      "description": "Test setup file that imports @testing-library/jest-dom for enhanced DOM matchers. Referenced in vitest.config.ts setupFiles. Provides assertions like toBeInTheDocument(), toBeVisible(), toHaveTextContent().",
+      "category": "testing",
+      "discovered_at": "2026-01-03T18:30:35.282022+00:00"
+    },
+    "miniapp/src/lib/__tests__/store.test.ts": {
+      "description": "Extended with calculateRankProgress tests (54 new tests). Function returns { current: UserRank, next: UserRank | null, progress: number }. Progress is 0-100 representing % toward next rank. Max rank (general) returns null next and 100% progress. Negative XP clamps to 0% progress.",
+      "category": "test",
+      "discovered_at": "2026-01-03T18:38:51.869282+00:00"
+    },
+    "miniapp/src/types/__tests__/ranks.test.ts": {
+      "description": "Unit tests for RANK_THRESHOLDS (9 ranks from 0-20000 XP), RANK_LABELS (Russian names + emojis), and XP_REWARDS (7 action types: 5-50 XP). Tests verify structure, values, ordering, gaps, and progression scenarios.",
+      "category": "testing",
+      "discovered_at": "2026-01-03T18:42:23.789865+00:00"
+    }
+  },
+  "last_updated": "2026-01-03T18:42:23.789875+00:00"
+}

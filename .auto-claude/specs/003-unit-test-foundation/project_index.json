@@ -1,0 +1,228 @@
+{
+  "project_root": "/Users/admin/maincomby_bot/miniapp",
+  "project_type": "single",
+  "services": {
+    "main": {
+      "name": "main",
+      "path": "/Users/admin/maincomby_bot/miniapp",
+      "language": "TypeScript",
+      "framework": "React",
+      "type": "frontend",
+      "package_manager": "npm",
+      "default_port": 3000,
+      "build_tool": "Vite",
+      "styling": "Tailwind CSS",
+      "state_management": "Zustand",
+      "dev_command": "npm run dev",
+      "key_directories": {
+        "src": {
+          "path": "src",
+          "purpose": "Source code"
+        }
+      },
+      "entry_point": "src/App.tsx",
+      "dependencies": [
+        "lucide-react",
+        "@supabase/supabase-js",
+        "@tanstack/react-query",
+        "framer-motion",
+        "qrcode.react",
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "zustand",
+        "html5-qrcode",
+        "date-fns"
+      ],
+      "dev_dependencies": [
+        "@types/react",
+        "@types/react-dom",
+        "@typescript-eslint/eslint-plugin",
+        "@typescript-eslint/parser",
+        "@vitejs/plugin-react",
+        "autoprefixer",
+        "eslint",
+        "postcss",
+        "tailwindcss",
+        "typescript"
+      ],
+      "environment": {
+        "variables": {
+          "VITE_SUPABASE_URL": {
+            "value": "https://ndpkxustvcijykzxqxrn.supabase.co",
+            "source": ".env.production",
+            "type": "url",
+            "sensitive": false,
+            "required": true
+          },
+          "VITE_SUPABASE_ANON_KEY": {
+            "value": "<REDACTED>",
+            "source": ".env.production",
+            "type": "string",
+            "sensitive": true,
+            "required": true
+          },
+          "BOT_TOKEN": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "ADMIN_IDS": {
+            "value": "1379584180,8061713882,566172330",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "DATABASE_URL": {
+            "value": "sqlite+aiosqlite:///./bot.db",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "SUPABASE_URL": {
+            "value": "https://ndpkxustvcijykzxqxrn.supabase.co",
+            "source": "../.env",
+            "type": "url",
+            "sensitive": false,
+            "required": false
+          },
+          "SUPABASE_SERVICE_ROLE_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "NEWS_RSS_FEEDS": {
+            "value": "https://habr.com/ru/rss/best/daily/,https://tproger.ru/rss",
+            "source": "../.env",
+            "type": "url",
+            "sensitive": false,
+            "required": false
+          },
+          "TIMEZONE": {
+            "value": "Europe/Moscow",
+            "source": "../.env",
+            "type": "path",
+            "sensitive": false,
+            "required": false
+          },
+          "OPENAI_API_KEY": {
+            "value": "<REDACTED>",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": true,
+            "required": false
+          },
+          "OPENAI_MODEL": {
+            "value": "gpt-5-chat-latest",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WELCOME_CHAT_ID": {
+            "value": "-1001186851947  # ID \u0447\u0430\u0442\u0430 maincomby",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "WELCOME_THREAD_ID": {
+            "value": "3  # ID \u0432\u0435\u0442\u043a\u0438 \u0434\u043b\u044f \u043f\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0439",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "CHECK_SUBSCRIPTION_CHANNEL_ID": {
+            "value": "-1002494730191  # ID \u043a\u0430\u043d\u0430\u043b\u0430 @maincomby",
+            "source": "../.env",
+            "type": "string",
+            "sensitive": false,
+            "required": false
+          },
+          "CHECK_SUBSCRIPTION_CHANNEL_URL": {
+            "value": "https://t.me/maincomby  # URL \u043a\u0430\u043d\u0430\u043b\u0430 \u0434\u043b\u044f \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0438",
+            "source": "../.env",
+            "type": "url",
+            "sensitive": false,
+            "required": false
+          },
+          "TELEGRAM_BOT_TOKEN": {
+            "value": null,
+            "source": ".env.example",
+            "type": "string",
+            "sensitive": true,
+            "required": true
+          }
+        },
+        "required_count": 3,
+        "optional_count": 0,
+        "detected_count": 16
+      },
+      "api": {
+        "routes": [
+          {
+            "path": "/deploy",
+            "methods": [
+              "POST"
+            ],
+            "file": ".worktrees/001-/webhook_server.py",
+            "framework": "Flask",
+            "requires_auth": false
+          },
+          {
+            "path": "/health",
+            "methods": [
+              "GET"
+            ],
+            "file": ".worktrees/001-/webhook_server.py",
+            "framework": "Flask",
+            "requires_auth": false
+          },
+          {
+            "path": "/deploy",
+            "methods": [
+              "POST"
+            ],
+            "file": ".worktrees/002-complete-profile-editing/webhook_server.py",
+            "framework": "Flask",
+            "requires_auth": false
+          },
+          {
+            "path": "/health",
+            "methods": [
+              "GET"
+            ],
+            "file": ".worktrees/002-complete-profile-editing/webhook_server.py",
+            "framework": "Flask",
+            "requires_auth": false
+          }
+        ],
+        "total_routes": 4,
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "protected_routes": []
+      },
+      "monitoring": {
+        "health_checks": [
+          "/health",
+          "/health"
+        ]
+      }
+    }
+  },
+  "infrastructure": {
+    "deployment": "Vercel"
+  },
+  "conventions": {
+    "typescript": true
+  }
+}
