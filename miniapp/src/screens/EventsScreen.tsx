@@ -419,6 +419,13 @@ const EventsScreen: React.FC = () => {
     enabled: !!selectedCheckinsEvent && canAccessScanner(),
   })
 
+  // Auto-select first event for checkins when events load
+  useEffect(() => {
+    if (filter === 'checkins' && events && events.length > 0 && !selectedCheckinsEvent) {
+      setSelectedCheckinsEvent(events[0].id)
+    }
+  }, [filter, events, selectedCheckinsEvent])
+
   // Real-time subscription for check-in notifications
   useEffect(() => {
     if (!user) return
