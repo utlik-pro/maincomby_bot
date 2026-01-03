@@ -137,6 +137,7 @@ const App: React.FC = () => {
             is_visible: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            skills: ['business', 'networking'],
             interests: ['entrepreneurship', 'tech'],
             telegram_username: 'admin',
             linkedin_url: null,
