@@ -196,8 +196,9 @@
             "type": "manual",
             "instructions": "Enter edit mode, verify social links editor renders, can add/edit/remove links with validation"
           },
-          "notes": "Add SocialLinksEdit after tag inputs in edit mode. Pass user.id and onSave callback. Social links save independently via setUserLink, not through main profile save.",
-          "status": "pending"
+          "notes": "Added SocialLinksEdit component to ProfileScreen edit form. Import added for SocialLinksEdit and useQueryClient. Component placed after TagInput fields, passing userId (tg_user_id), userLinks, and onLinksChange callback that updates React Query cache for instant UI updates. Social links save independently via setUserLink/removeUserLink functions. Committed as 15b697b.",
+          "status": "completed",
+          "updated_at": "2026-01-03T07:14:31.713673+00:00"
         },
         {
           "id": "subtask-4-3",
@@ -214,8 +215,9 @@
             "type": "manual",
             "instructions": "Enter edit mode, verify company selector renders, can select company and add role"
           },
-          "notes": "Add CompanySelector in edit form after occupation field. Pass user.id and update callback. Company saves independently via setUserCompany.",
-          "status": "pending"
+          "notes": "Added CompanySelector component to ProfileScreen edit form. Import added at line 37. Component placed after occupation field (lines 355-364), passing userId (user.tg_user_id), userCompany from React Query, and onCompanyChange callback that updates React Query cache for instant UI updates. Company saves independently via setUserCompany/removeUserCompany functions. Committed as cf14fb2.",
+          "status": "completed",
+          "updated_at": "2026-01-03T07:16:33.970069+00:00"
         },
         {
           "id": "subtask-4-4",
@@ -436,5 +438,5 @@
     }
   },
   "qa_signoff": null,
-  "last_updated": "2026-01-03T07:12:04.080762+00:00"
+  "last_updated": "2026-01-03T07:16:33.970079+00:00"
 }

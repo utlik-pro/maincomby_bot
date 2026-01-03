@@ -865,6 +865,40 @@ const ProfileScreen: React.FC = () => {
           </Card>
         )}
 
+        {/* Skills */}
+        {profile?.skills && profile.skills.length > 0 && (
+          <Card className="mb-4">
+            <h3 className="text-sm text-gray-400 mb-2">Навыки</h3>
+            <div className="flex flex-wrap gap-2">
+              {profile.skills.map((skill, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Interests */}
+        {profile?.interests && profile.interests.length > 0 && (
+          <Card className="mb-4">
+            <h3 className="text-sm text-gray-400 mb-2">Интересы</h3>
+            <div className="flex flex-wrap gap-2">
+              {profile.interests.map((interest, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-sm"
+                >
+                  {interest}
+                </span>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {/* Badges */}
         {userBadges.length > 0 && (
           <div className="mb-4">
