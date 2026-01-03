@@ -90,6 +90,11 @@ const NetworkScreen: React.FC = () => {
             notifyNewMatch(targetUser.tg_user_id, myName).catch(console.error)
           }
 
+          // Notify current user too (via their tg_user_id)
+          if (user.tg_user_id) {
+            notifyNewMatch(user.tg_user_id, theirName).catch(console.error)
+          }
+
           return { match: true, matchName: theirName }
         }
       }
