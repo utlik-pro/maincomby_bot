@@ -1,0 +1,69 @@
+{
+  "task_description": "# Complete Profile Editing\n\nEnable users to fully edit their profile including bio, occupation, skills, interests, and social links. Currently profile editing is partially implemented and needs completion.\n\n## Rationale\nUsers cannot present themselves professionally without complete profile editing. This is a basic expectation and blocks effective networking - users need to showcase their skills and interests to find relevant connections.\n\n## User Stories\n- As a community member, I want to update my bio so that other members understand who I am\n- As a startup founder, I want to add my company and role so potential collaborators can find me\n- As a developer, I want to link my GitHub profile so others can see my work\n\n## Acceptance Criteria\n- [ ] Users can edit their display name and bio\n- [ ] Users can update their occupation and company\n- [ ] Users can add/remove skills and interests tags\n- [ ] Users can link social profiles (LinkedIn, GitHub, Telegram)\n- [ ] Profile changes persist to Supabase database\n- [ ] Form validates input and shows appropriate errors\n- [ ] Profile photo can be updated via Telegram avatar sync\n",
+  "scoped_services": ["main"],
+  "files_to_modify": {
+    "main": [
+      "src/screens/ProfileScreen.tsx",
+      "src/types/index.ts",
+      "src/lib/supabase.ts"
+    ]
+  },
+  "files_to_create": {
+    "main": [
+      "src/components/TagInput.tsx",
+      "src/components/SocialLinksEdit.tsx",
+      "src/components/CompanySelector.tsx"
+    ]
+  },
+  "files_to_reference": [
+    "src/components/SocialLinks.tsx",
+    "src/components/ui/index.tsx",
+    "src/lib/store.ts"
+  ],
+  "patterns": {
+    "form_pattern": "ProfileScreen.tsx (lines 214-402) shows existing edit form with state management, save handler, and Supabase integration",
+    "database_pattern": "supabase.ts uses getSupabase() client, async/await, and error handling with 'PGRST116' code check",
+    "state_pattern": "Zustand store for local state, React Query useQuery for server state with queryKey arrays",
+    "component_pattern": "Framer-motion for animations, Tailwind for styling, lucide-react for icons",
+    "validation_pattern": "Client-side validation with character limits, error messages via useToastStore"
+  },
+  "existing_implementations": {
+    "description": "Profile editing partially exists in ProfileScreen.tsx with bio, occupation, city, looking_for, can_help_with fields. Social links display exists but no edit UI. Company and skills/interests are missing.",
+    "relevant_files": [
+      "src/screens/ProfileScreen.tsx",
+      "src/lib/supabase.ts",
+      "src/components/SocialLinks.tsx",
+      "src/types/index.ts"
+    ],
+    "database_schema": {
+      "profiles_table": "bot_profiles (NOT 'profiles' - actual table name differs from spec)",
+      "existing_fields": ["bio", "occupation", "city", "looking_for", "can_help_with", "photo_url", "interests (TEXT[])", "linkedin_url", "telegram_username"],
+      "missing_fields": ["skills (TEXT[]) - needs migration"],
+      "related_tables": ["user_links (for social links)", "user_companies (for company affiliation)"]
+    },
+    "existing_functions": {
+      "profile": ["getProfile", "updateProfile", "createProfile"],
+      "links": ["getUserLinks", "setUserLink", "removeUserLink"],
+      "company": ["getUserCompany", "setUserCompany", "removeUserCompany"]
+    }
+  },
+  "implementation_notes": {
+    "key_discoveries": [
+      "Social links use separate user_links table, not JSONB field in profiles",
+      "Company uses separate user_companies table",
+      "Skills field doesn't exist yet - needs schema migration",
+      "Interests field exists but no UI implementation",
+      "Avatar is auto-synced from Telegram, no manual sync button needed",
+      "Display name comes from Telegram (first_name/last_name) - not editable in profile"
+    ],
+    "architecture_decisions": [
+      "Use existing updateProfile pattern from ProfileScreen.tsx",
+      "Create separate TagInput component for skills/interests",
+      "Create SocialLinksEdit component to wrap existing SocialLinks",
+      "Add company selector using existing getUserCompany/setUserCompany",
+      "Follow existing validation pattern with character limits"
+    ]
+  },
+  "created_at": "2026-01-03T09:45:17.189017",
+  "updated_at": "2026-01-03T10:15:00.000000"
+}

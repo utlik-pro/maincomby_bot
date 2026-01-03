@@ -35,6 +35,7 @@ import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
 import { SocialLinks } from '@/components/SocialLinks'
+import { TagInput } from '@/components/TagInput'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
@@ -217,6 +218,8 @@ const ProfileScreen: React.FC = () => {
     city: profile?.city || 'Минск',
     looking_for: profile?.looking_for || '',
     can_help_with: profile?.can_help_with || '',
+    skills: profile?.skills || [],
+    interests: profile?.interests || [],
   })
 
   // Secret code easter egg - triggers when user types "MAIN" in bio
@@ -390,6 +393,26 @@ const ProfileScreen: React.FC = () => {
               className="w-full bg-bg-card rounded-xl p-3 text-white placeholder-gray-500 border border-transparent focus:border-accent focus:outline-none min-h-[80px] resize-none"
             />
           </div>
+
+          {/* Skills */}
+          <TagInput
+            tags={editForm.skills}
+            onTagsChange={(skills) => setEditForm({ ...editForm, skills })}
+            label="Навыки"
+            placeholder="Добавить навык..."
+            maxTags={10}
+            maxTagLength={30}
+          />
+
+          {/* Interests */}
+          <TagInput
+            tags={editForm.interests}
+            onTagsChange={(interests) => setEditForm({ ...editForm, interests })}
+            label="Интересы"
+            placeholder="Добавить интерес..."
+            maxTags={10}
+            maxTagLength={30}
+          />
 
           <Button
             fullWidth
@@ -780,6 +803,8 @@ const ProfileScreen: React.FC = () => {
               city: profile?.city || 'Минск',
               looking_for: profile?.looking_for || '',
               can_help_with: profile?.can_help_with || '',
+              skills: profile?.skills || [],
+              interests: profile?.interests || [],
             })
             setIsEditing(true)
           }}

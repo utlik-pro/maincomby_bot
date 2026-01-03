@@ -1,0 +1,70 @@
+{
+  "complexity": "standard",
+  "workflow_type": "feature",
+  "confidence": 0.85,
+  "reasoning": "Completing partially implemented profile editing requires adding missing fields (company, skills/interests tags, social links) to existing edit form. Multiple files affected but contained scope within profile feature. All tech (React, Supabase, Zustand) already integrated - no research needed.",
+
+  "analysis": {
+    "scope": {
+      "estimated_files": 5,
+      "estimated_services": 1,
+      "is_cross_cutting": false,
+      "notes": "ProfileScreen.tsx edit form, Supabase query functions, possible new TagInput component, SocialLinks edit component, types updates. Single frontend service."
+    },
+    "integrations": {
+      "external_services": [],
+      "new_dependencies": [],
+      "research_needed": false,
+      "notes": "Supabase already integrated. No new external services. Database schema already has interests array, user_links table, and user_companies table."
+    },
+    "infrastructure": {
+      "docker_changes": false,
+      "database_changes": false,
+      "config_changes": false,
+      "notes": "No infrastructure changes. Database schema already exists with user_profile.interests, user_links, user_companies tables. No new env vars needed."
+    },
+    "knowledge": {
+      "patterns_exist": true,
+      "research_required": false,
+      "unfamiliar_tech": [],
+      "notes": "Codebase already has: React form patterns (editForm state in ProfileScreen), Supabase CRUD patterns (updateProfile/createProfile), Zustand state management, tag/array handling patterns likely exist."
+    },
+    "risk": {
+      "level": "medium",
+      "concerns": [
+        "Array field handling for skills/interests tags",
+        "Social link URL validation",
+        "Multiple related tables (user_links, user_companies) coordination",
+        "Form state management for complex nested data"
+      ],
+      "notes": "User profile data requires careful validation. Multiple database tables need coordinated updates. Tag management adds UI complexity but follows existing patterns."
+    }
+  },
+
+  "recommended_phases": [
+    "discovery",
+    "requirements",
+    "context",
+    "spec_writing",
+    "planning",
+    "validation"
+  ],
+
+  "flags": {
+    "needs_research": false,
+    "needs_self_critique": false,
+    "needs_infrastructure_setup": false
+  },
+
+  "validation_recommendations": {
+    "risk_level": "medium",
+    "skip_validation": false,
+    "minimal_mode": false,
+    "test_types_required": ["unit", "integration"],
+    "security_scan_required": false,
+    "staging_deployment_required": false,
+    "reasoning": "Profile editing with database persistence requires unit tests for validation logic and integration tests for Supabase operations. No auth/security changes, so no security scan needed."
+  },
+
+  "created_at": "2026-01-03T00:00:00Z"
+}
