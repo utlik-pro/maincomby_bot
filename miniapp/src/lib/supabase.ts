@@ -313,6 +313,40 @@ export async function getUserRegistrations(userId: number) {
   return data
 }
 
+// Get checked-in attendees for an event (for volunteers/admins)
+export async function getEventCheckins(eventId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_registrations')
+    .select(`
+      *,
+      user:bot_users(id, first_name, last_name, username, tg_user_id),
+      profile:bot_profiles(photo_url)
+    `)
+    .eq('event_id', eventId)
+    .eq('status', 'attended')
+    .order('checked_in_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+// Get all registrations for an event (for volunteers/admins)
+export async function getEventRegistrations(eventId: number) {
+  const { data, error } = await getSupabase()
+    .from('bot_registrations')
+    .select(`
+      *,
+      user:bot_users(id, first_name, last_name, username, tg_user_id),
+      profile:bot_profiles(photo_url)
+    `)
+    .eq('event_id', eventId)
+    .neq('status', 'cancelled')
+    .order('registered_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
 // Cancel registration
 export async function cancelEventRegistration(registrationId: number, userId: number) {
   const supabase = getSupabase()

@@ -20,6 +20,7 @@ import {
   Megaphone,
   Lightbulb,
   Loader2,
+  UserCheck,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported } from '@/lib/telegram'
@@ -35,6 +36,7 @@ import {
   createOrUpdateUser,
   getUserByTelegramId,
   checkAndUnlockAchievements,
+  getEventCheckins,
 } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
@@ -383,7 +385,8 @@ const EventsScreen: React.FC = () => {
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
-  const [filter, setFilter] = useState<'all' | 'registered'>('all')
+  const [filter, setFilter] = useState<'all' | 'registered' | 'checkins'>('all')
+  const [selectedCheckinsEvent, setSelectedCheckinsEvent] = useState<number | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [showTicket, setShowTicket] = useState<{ registration: EventRegistration; event: Event } | null>(null)
   const [showScanner, setShowScanner] = useState(false)
@@ -407,6 +410,13 @@ const EventsScreen: React.FC = () => {
     queryKey: ['registrations', user?.id],
     queryFn: () => (user ? getUserRegistrations(user.id) : []),
     enabled: !!user,
+  })
+
+  // Fetch event checkins (for core team/volunteers)
+  const { data: checkins, isLoading: checkinsLoading } = useQuery({
+    queryKey: ['eventCheckins', selectedCheckinsEvent],
+    queryFn: () => (selectedCheckinsEvent ? getEventCheckins(selectedCheckinsEvent) : []),
+    enabled: !!selectedCheckinsEvent && canAccessScanner(),
   })
 
   // Real-time subscription for check-in notifications
@@ -756,11 +766,17 @@ const EventsScreen: React.FC = () => {
         {[
           { id: 'all' as const, label: 'Все', icon: Calendar },
           { id: 'registered' as const, label: 'Мои', icon: Ticket },
+          ...(canAccessScanner() ? [{ id: 'checkins' as const, label: 'Check-ins', icon: UserCheck }] : []),
         ].map((f) => (
           <motion.button
             key={f.id}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setFilter(f.id)}
+            onClick={() => {
+              setFilter(f.id)
+              if (f.id === 'checkins' && events && events.length > 0 && !selectedCheckinsEvent) {
+                setSelectedCheckinsEvent(events[0].id)
+              }
+            }}
             className={`
               px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex items-center gap-2
               ${filter === f.id ? 'bg-accent text-bg' : 'bg-bg-card text-white'}
@@ -771,6 +787,87 @@ const EventsScreen: React.FC = () => {
           </motion.button>
         ))}
       </div>
+
+      {/* Check-ins (for core team/volunteers) */}
+      {filter === 'checkins' && canAccessScanner() && (
+        <div className="px-4 mb-6 pb-20">
+          {/* Event selector */}
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center gap-2">
+              <Calendar size={14} />
+              Выберите событие
+            </h3>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {events?.map((event: Event) => (
+                <motion.button
+                  key={event.id}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedCheckinsEvent(event.id)}
+                  className={`
+                    px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap
+                    ${selectedCheckinsEvent === event.id ? 'bg-accent text-bg' : 'bg-bg-card text-white'}
+                  `}
+                >
+                  {event.title}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Checkins list */}
+          <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+            <UserCheck size={14} />
+            Зачекиненные ({checkins?.length || 0})
+          </h3>
+
+          {checkinsLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+            </div>
+          ) : checkins && checkins.length > 0 ? (
+            <div className="space-y-2">
+              {checkins.map((reg: any) => {
+                const profileData = Array.isArray(reg.profile) ? reg.profile[0] : reg.profile
+                const userData = Array.isArray(reg.user) ? reg.user[0] : reg.user
+                return (
+                  <Card key={reg.id} className="flex items-center gap-3">
+                    <Avatar
+                      src={profileData?.photo_url}
+                      name={userData?.first_name || 'User'}
+                      size="sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">
+                        {userData?.first_name} {userData?.last_name || ''}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        @{userData?.username || 'no_username'}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {reg.checked_in_at
+                        ? format(new Date(reg.checked_in_at), 'HH:mm', { locale: ru })
+                        : '—'}
+                    </div>
+                    <Badge variant="success" className="flex-shrink-0">
+                      <Check size={12} />
+                    </Badge>
+                  </Card>
+                )
+              })}
+            </div>
+          ) : (
+            <Card>
+              <div className="text-center text-gray-400 py-6">
+                <UserCheck size={32} className="mx-auto mb-2 opacity-50" />
+                <div className="text-sm">Пока никто не прошёл чекин</div>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* My Tickets */}
       {filter === 'registered' && (
@@ -821,7 +918,8 @@ const EventsScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Events List */}
+      {/* Events List (hide when checkins filter is active) */}
+      {filter !== 'checkins' && (
       <div className="px-4">
         {isLoading ? (
           <div className="space-y-4">
@@ -880,6 +978,7 @@ const EventsScreen: React.FC = () => {
           />
         )}
       </div>
+      )}
     </div>
   )
 }
