@@ -233,18 +233,22 @@ const NetworkScreen: React.FC = () => {
           Назад
         </button>
 
-        <div className="text-center mb-6">
-          <Avatar src={p.photo_url} name={p.user?.first_name} size="xl" className="mx-auto mb-4" />
-          <h2 className="text-xl font-bold">{p.user?.first_name} {p.user?.last_name}</h2>
-          <p className="text-accent flex items-center justify-center gap-1">
-            <Briefcase size={14} />
-            {p.occupation || 'Участник'}
-          </p>
-          <p className="text-gray-400 flex items-center justify-center gap-1">
-            <MapPin size={14} />
-            {p.city}
-          </p>
-        </div>
+        <Card className="mb-6">
+          <div className="flex gap-4 items-center">
+            <Avatar src={p.photo_url} name={p.user?.first_name} size="xl" />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold truncate">{p.user?.first_name} {p.user?.last_name}</h2>
+              <p className="text-accent flex items-center gap-1">
+                <Briefcase size={14} />
+                <span className="truncate">{p.occupation || 'Участник'}</span>
+              </p>
+              <p className="text-gray-400 flex items-center gap-1">
+                <MapPin size={14} />
+                {p.city}
+              </p>
+            </div>
+          </div>
+        </Card>
 
         <div className="space-y-4">
           {p.bio && (
