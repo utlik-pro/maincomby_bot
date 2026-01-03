@@ -48,12 +48,14 @@ interface AppState {
   isVolunteerMode: boolean
   onboardingVersion: number
   lastSeenEventId: number | null
+  deepLinkTarget: string | null // For handling deep links like 'matches'
 
   // Actions
   setUser: (user: User | null) => void
   setProfile: (profile: UserProfile | null) => void
   setLoading: (loading: boolean) => void
   setActiveTab: (tab: AppState['activeTab']) => void
+  setDeepLinkTarget: (target: string | null) => void
   setVolunteerMode: (mode: boolean) => void
   completeOnboarding: () => void
   setLastSeenEventId: (eventId: number) => void
@@ -83,8 +85,10 @@ export const useAppStore = create<AppState>()(
       isVolunteerMode: false,
       onboardingVersion: 0,
       lastSeenEventId: null,
+      deepLinkTarget: null,
 
       // Actions
+      setDeepLinkTarget: (target) => set({ deepLinkTarget: target }),
       setUser: (user) => {
         // Ensure points are never negative in UI
         if (user && user.points < 0) {
@@ -110,7 +114,7 @@ export const useAppStore = create<AppState>()(
           set({ user: { ...user, points: Math.max(0, (user.points || 0) + amount) } })
         }
       },
-      logout: () => set({ user: null, profile: null, isAuthenticated: false, onboardingVersion: 0, lastSeenEventId: null }),
+      logout: () => set({ user: null, profile: null, isAuthenticated: false, onboardingVersion: 0, lastSeenEventId: null, deepLinkTarget: null }),
 
       // Computed
       getRank: () => {

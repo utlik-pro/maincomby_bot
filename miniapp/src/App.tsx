@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
-import { initTelegramApp, getTelegramUser, isTelegramWebApp } from '@/lib/telegram'
+import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp } from '@/lib/telegram'
 import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
@@ -67,7 +67,7 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 )
 
 const App: React.FC = () => {
-  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, profile } = useAppStore()
+  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, profile, setActiveTab, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
 
   // Easter eggs - speed runner (visit all tabs quickly)
@@ -213,6 +213,37 @@ const App: React.FC = () => {
 
     init()
   }, [setLoading, setUser, setProfile, addToast])
+
+  // Handle deep links (startapp parameter)
+  useEffect(() => {
+    if (isLoading) return
+
+    const webApp = getTelegramWebApp()
+    // @ts-ignore - start_param might not be in types
+    const startParam = webApp?.initDataUnsafe?.start_param
+
+    if (startParam) {
+      // Map startapp parameter to tab
+      const screenMap: Record<string, typeof activeTab> = {
+        'home': 'home',
+        'events': 'events',
+        'network': 'network',
+        'matches': 'network', // matches is part of network screen
+        'achievements': 'achievements',
+        'profile': 'profile',
+        'notifications': 'home', // notifications shown on home
+      }
+
+      const targetTab = screenMap[startParam]
+      if (targetTab) {
+        setActiveTab(targetTab)
+        // Set deep link target for specific sub-screens
+        if (startParam === 'matches' || startParam === 'notifications') {
+          setDeepLinkTarget(startParam)
+        }
+      }
+    }
+  }, [isLoading, setActiveTab, setDeepLinkTarget])
 
   // Show loading screen
   if (isLoading) {

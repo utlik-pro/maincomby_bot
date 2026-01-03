@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { motion, PanInfo, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -33,7 +33,7 @@ type ProfileWithUser = UserProfile & { user: UserType }
 type SwipeDirection = 'left' | 'right' | null
 
 const NetworkScreen: React.FC = () => {
-  const { user, getSubscriptionTier, getDailySwipesRemaining, profile } = useAppStore()
+  const { user, getSubscriptionTier, getDailySwipesRemaining, profile, deepLinkTarget, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -41,6 +41,14 @@ const NetworkScreen: React.FC = () => {
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection>(null)
   const [showMatches, setShowMatches] = useState(false)
   const [showProfileDetail, setShowProfileDetail] = useState<ProfileWithUser | null>(null)
+
+  // Handle deep link to show matches
+  useEffect(() => {
+    if (deepLinkTarget === 'matches') {
+      setShowMatches(true)
+      setDeepLinkTarget(null) // Clear after handling
+    }
+  }, [deepLinkTarget, setDeepLinkTarget])
 
   const tier = getSubscriptionTier()
   const limits = SUBSCRIPTION_LIMITS[tier]

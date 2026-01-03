@@ -376,9 +376,13 @@ export interface NotificationPayload {
 // Send notification via Bot API (@maincomapp_bot - the Mini App bot)
 const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8234859307:AAFjLWiY4DCZOnHBIJHS_V72mrMWoHqim4c'
 
+// Deep link screens
+export type DeepLinkScreen = 'home' | 'events' | 'network' | 'matches' | 'achievements' | 'profile' | 'notifications'
+
 export const sendPushNotification = async (
   userTgId: number,
-  notification: NotificationPayload
+  notification: NotificationPayload,
+  deepLink?: { screen: DeepLinkScreen; buttonText?: string }
 ): Promise<boolean> => {
   try {
     const emoji = {
@@ -391,14 +395,26 @@ export const sendPushNotification = async (
 
     const text = `${emoji} *${notification.title}*\n\n${notification.message}`
 
+    const body: Record<string, unknown> = {
+      chat_id: userTgId,
+      text,
+      parse_mode: 'Markdown',
+    }
+
+    // Add inline button with deep link if specified
+    if (deepLink) {
+      body.reply_markup = {
+        inline_keyboard: [[{
+          text: deepLink.buttonText || 'Открыть',
+          url: `https://t.me/maincomapp_bot/app?startapp=${deepLink.screen}`
+        }]]
+      }
+    }
+
     const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: userTgId,
-        text,
-        parse_mode: 'Markdown',
-      }),
+      body: JSON.stringify(body),
     })
 
     const result = await response.json()
@@ -416,11 +432,15 @@ export const notifyNewMatch = async (
   userTgId: number,
   matchName: string
 ): Promise<boolean> => {
-  return sendPushNotification(userTgId, {
-    type: 'match',
-    title: 'Новый матч!',
-    message: `Вы понравились друг другу с ${matchName}! Откройте приложение, чтобы начать общение.`,
-  })
+  return sendPushNotification(
+    userTgId,
+    {
+      type: 'match',
+      title: 'Новый матч!',
+      message: `Вы понравились друг другу с ${matchName}!`,
+    },
+    { screen: 'matches', buttonText: '💬 Открыть матчи' }
+  )
 }
 
 // Notify about upcoming event (24h before)
