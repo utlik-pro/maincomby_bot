@@ -373,8 +373,8 @@ export interface NotificationPayload {
   data?: Record<string, any>
 }
 
-// Send notification via Bot API
-const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8302587804:AAH2ZIjWA9QQLzXlOiDUpYQiM8bw6NuO8nw'
+// Send notification via Bot API (@maincomapp_bot - the Mini App bot)
+const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8234859307:AAFjLWiY4DCZOnHBIJHS_V72mrMWoHqim4c'
 
 export const sendPushNotification = async (
   userTgId: number,
