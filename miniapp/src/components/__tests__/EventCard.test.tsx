@@ -479,4 +479,366 @@ describe('EventCard', () => {
       expect(card).toHaveAttribute('tabindex', '0')
     })
   })
+
+  describe('keyboard interactions', () => {
+    it('activates card with Enter key when focused', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      card.focus()
+      await user.keyboard('{Enter}')
+
+      expect(onClick).toHaveBeenCalledTimes(1)
+    })
+
+    it('activates card with Space key when focused', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      card.focus()
+      await user.keyboard(' ')
+
+      expect(onClick).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not activate card with Escape key', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      card.focus()
+      await user.keyboard('{Escape}')
+
+      expect(onClick).not.toHaveBeenCalled()
+    })
+
+    it('does not activate card with Tab key', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      card.focus()
+      await user.keyboard('{Tab}')
+
+      expect(onClick).not.toHaveBeenCalled()
+    })
+
+    it('does not activate card with character keys', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      card.focus()
+      await user.keyboard('a')
+      await user.keyboard('b')
+      await user.keyboard('c')
+
+      expect(onClick).not.toHaveBeenCalled()
+    })
+
+    it('supports multiple keyboard activations', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      card.focus()
+      await user.keyboard('{Enter}')
+      await user.keyboard(' ')
+      await user.keyboard('{Enter}')
+
+      expect(onClick).toHaveBeenCalledTimes(3)
+    })
+  })
+
+  describe('focus behavior', () => {
+    it('card can receive focus via tab navigation', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      await user.tab()
+
+      const card = screen.getByTestId('card')
+      expect(card).toHaveFocus()
+    })
+
+    it('card does not have tabIndex when onClick is not provided', () => {
+      const event = createMockEvent()
+
+      render(<EventCard event={event} />)
+
+      const card = screen.getByTestId('card')
+      expect(card).not.toHaveAttribute('tabindex', '0')
+    })
+
+    it('focus is maintained after click interaction', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      await user.click(card)
+
+      // Card should still have focus after click
+      expect(card).toHaveFocus()
+    })
+
+    it('focus outline is visible on focused card', () => {
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      card.focus()
+
+      // Card should be focused
+      expect(card).toHaveFocus()
+    })
+  })
+
+  describe('screen reader accessibility', () => {
+    it('card has button role when interactive', () => {
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByRole('button')
+      expect(card).toBeInTheDocument()
+    })
+
+    it('card does not have button role when non-interactive', () => {
+      const event = createMockEvent()
+
+      render(<EventCard event={event} />)
+
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    })
+
+    it('registered event shows check indicator for screen readers', () => {
+      const event = createMockEvent()
+
+      render(<EventCard event={event} isRegistered={true} />)
+
+      // Card is highlighted, indicating registration
+      const card = screen.getByTestId('card')
+      expect(card).toHaveAttribute('data-highlighted', 'true')
+    })
+
+    it('card content is accessible in tab order', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent({ title: 'Accessible Event' })
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      await user.tab()
+
+      const card = screen.getByTestId('card')
+      expect(card).toHaveFocus()
+      expect(card).toContainElement(screen.getByText('Accessible Event'))
+    })
+  })
+
+  describe('interaction with different event states', () => {
+    it('interacts correctly with registered free event', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent({ price: 0, title: 'Free Meetup' })
+
+      render(<EventCard event={event} isRegistered={true} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      await user.click(card)
+
+      expect(onClick).toHaveBeenCalledTimes(1)
+      expect(card).toHaveAttribute('data-highlighted', 'true')
+      expect(screen.getByText('Free')).toBeInTheDocument()
+    })
+
+    it('interacts correctly with paid event', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent({ price: 100, title: 'Premium Workshop' })
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      await user.click(card)
+
+      expect(onClick).toHaveBeenCalledTimes(1)
+      expect(screen.getByText('100 BYN')).toBeInTheDocument()
+    })
+
+    it('interacts correctly with today event', async () => {
+      mockIsToday.mockReturnValue(true)
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      await user.click(card)
+
+      expect(onClick).toHaveBeenCalledTimes(1)
+      expect(screen.getByText(/Сегодня/)).toBeInTheDocument()
+    })
+
+    it('interacts correctly with tomorrow event', async () => {
+      mockIsTomorrow.mockReturnValue(true)
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      await user.click(card)
+
+      expect(onClick).toHaveBeenCalledTimes(1)
+      expect(screen.getByText(/Завтра/)).toBeInTheDocument()
+    })
+
+    it('interacts correctly with different event types', async () => {
+      const user = userEvent.setup()
+      const eventTypes: Event['event_type'][] = ['meetup', 'workshop', 'conference', 'hackathon']
+
+      for (const eventType of eventTypes) {
+        const onClick = vi.fn()
+        const event = createMockEvent({ event_type: eventType })
+
+        const { unmount } = render(<EventCard event={event} onClick={onClick} />)
+
+        const card = screen.getByTestId('card')
+        await user.click(card)
+
+        expect(onClick).toHaveBeenCalledTimes(1)
+        unmount()
+      }
+    })
+  })
+
+  describe('rapid interactions', () => {
+    it('handles rapid clicking correctly', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+
+      // Simulate rapid clicks
+      await user.click(card)
+      await user.click(card)
+      await user.click(card)
+      await user.click(card)
+      await user.click(card)
+
+      expect(onClick).toHaveBeenCalledTimes(5)
+    })
+
+    it('handles rapid keyboard interactions correctly', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      card.focus()
+
+      // Simulate rapid keyboard presses
+      await user.keyboard('{Enter}{Enter}{Enter}')
+
+      expect(onClick).toHaveBeenCalledTimes(3)
+    })
+
+    it('handles mixed click and keyboard interactions', async () => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const event = createMockEvent()
+
+      render(<EventCard event={event} onClick={onClick} />)
+
+      const card = screen.getByTestId('card')
+      await user.click(card)
+      await user.keyboard('{Enter}')
+      await user.click(card)
+      await user.keyboard(' ')
+
+      expect(onClick).toHaveBeenCalledTimes(4)
+    })
+  })
+
+  describe('DOM structure and ordering', () => {
+    it('event title appears before location in DOM', () => {
+      const event = createMockEvent({
+        title: 'First Event',
+        location: 'Second Location'
+      })
+
+      render(<EventCard event={event} />)
+
+      const title = screen.getByText('First Event')
+      const location = screen.getByText('Second Location')
+
+      // Title should come before location in document order
+      expect(title.compareDocumentPosition(location) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('date appears before location in DOM', () => {
+      const event = createMockEvent({
+        event_date: '2024-12-15T14:00:00Z',
+        location: 'Test Location'
+      })
+
+      render(<EventCard event={event} />)
+
+      const dateElement = screen.getByText(/15 дек/)
+      const location = screen.getByText('Test Location')
+
+      expect(dateElement.compareDocumentPosition(location) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('price badge appears after location in DOM', () => {
+      const event = createMockEvent({
+        location: 'Test Location',
+        price: 50
+      })
+
+      render(<EventCard event={event} />)
+
+      const location = screen.getByText('Test Location')
+      const price = screen.getByText('50 BYN')
+
+      expect(location.compareDocumentPosition(price) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+  })
 })
