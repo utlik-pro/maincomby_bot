@@ -1,0 +1,15 @@
+{
+  "discovered_files": {
+    "migrations/add_skills_to_bot_profiles.sql": {
+      "description": "Created SQL migration to add skills TEXT[] column to bot_profiles table. Follows pattern from add_miniapp_columns.sql which added the interests column.",
+      "category": "database",
+      "discovered_at": "2026-01-03T06:56:03.317436+00:00"
+    },
+    "src/components/SocialLinksEdit.tsx": {
+      "description": "Created SocialLinksEdit component for editing social links. Uses setUserLink/removeUserLink from supabase.ts. Supports all LinkType values with URL validation patterns. Props: userId, links (UserLink[]), onLinksChange callback, className. Features inline editing, add new link buttons, delete confirmation.",
+      "category": "component",
+      "discovered_at": "2026-01-03T07:06:21.863527+00:00"
+    }
+  },
+  "last_updated": "2026-01-03T07:06:21.863538+00:00"
+}

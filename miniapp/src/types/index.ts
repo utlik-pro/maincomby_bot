@@ -133,6 +133,7 @@ export interface UserProfile {
   created_at: string
   updated_at: string
   // Extended for Mini App
+  skills: string[] | null
   interests: string[] | null
   telegram_username: string | null
   linkedin_url: string | null

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   MapPin,
@@ -34,7 +34,10 @@ import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembe
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
+import { CompanySelector } from '@/components/CompanySelector'
 import { SocialLinks } from '@/components/SocialLinks'
+import { SocialLinksEdit } from '@/components/SocialLinksEdit'
+import { TagInput } from '@/components/TagInput'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
@@ -144,6 +147,7 @@ function getProfileTheme(
 const ProfileScreen: React.FC = () => {
   const { user, profile, getRank, getSubscriptionTier, setActiveTab, setProfile } = useAppStore()
   const { addToast } = useToastStore()
+  const queryClient = useQueryClient()
 
   const [isEditing, setIsEditing] = useState(false)
   const [showSubscription, setShowSubscription] = useState(false)
@@ -217,6 +221,8 @@ const ProfileScreen: React.FC = () => {
     city: profile?.city || 'Минск',
     looking_for: profile?.looking_for || '',
     can_help_with: profile?.can_help_with || '',
+    skills: profile?.skills || [],
+    interests: profile?.interests || [],
   })
 
   // Secret code easter egg - triggers when user types "MAIN" in bio
@@ -224,8 +230,49 @@ const ProfileScreen: React.FC = () => {
     // Easter egg unlocked - toast is shown by the hook
   })
 
+  // Validate profile fields before saving
+  const validateProfileFields = (): string | null => {
+    // Bio validation (max 500 chars)
+    if (editForm.bio.length > 500) {
+      return 'Био должно быть не более 500 символов'
+    }
+
+    // Occupation validation (max 100 chars)
+    if (editForm.occupation.length > 100) {
+      return 'Профессия должна быть не более 100 символов'
+    }
+
+    // Skills validation (max 10 tags, each max 30 chars)
+    if (editForm.skills.length > 10) {
+      return 'Максимум 10 навыков'
+    }
+    const invalidSkill = editForm.skills.find(s => s.length > 30)
+    if (invalidSkill) {
+      return 'Каждый навык не более 30 символов'
+    }
+
+    // Interests validation (max 10 tags, each max 30 chars)
+    if (editForm.interests.length > 10) {
+      return 'Максимум 10 интересов'
+    }
+    const invalidInterest = editForm.interests.find(i => i.length > 30)
+    if (invalidInterest) {
+      return 'Каждый интерес не более 30 символов'
+    }
+
+    return null
+  }
+
   const handleSaveProfile = async () => {
     if (!user) return
+
+    // Validate fields before saving
+    const validationError = validateProfileFields()
+    if (validationError) {
+      hapticFeedback.error()
+      addToast(validationError, 'error')
+      return
+    }
 
     setIsSaving(true)
     try {
@@ -248,7 +295,6 @@ const ProfileScreen: React.FC = () => {
       hapticFeedback.success()
       addToast('Профиль сохранён!', 'success')
     } catch (error) {
-      console.error('Save profile error:', error)
       hapticFeedback.error()
       addToast('Ошибка сохранения', 'error')
     } finally {
@@ -341,10 +387,27 @@ const ProfileScreen: React.FC = () => {
             <label className="text-sm text-gray-400 mb-1 block">Профессия / Должность</label>
             <Input
               value={editForm.occupation}
-              onChange={(e) => setEditForm({ ...editForm, occupation: e.target.value })}
+              onChange={(e) => setEditForm({ ...editForm, occupation: e.target.value.slice(0, 100) })}
               placeholder="Например: Founder & CEO"
+              maxLength={100}
             />
+            <div className="flex justify-end mt-1">
+              <span className={`text-xs ${editForm.occupation.length >= 90 ? 'text-yellow-400' : 'text-gray-500'} ${editForm.occupation.length >= 100 ? 'text-danger' : ''}`}>
+                {editForm.occupation.length}/100
+              </span>
+            </div>
           </div>
+
+          {/* Company Selector */}
+          {user && (
+            <CompanySelector
+              userId={user.tg_user_id}
+              userCompany={userCompany || null}
+              onCompanyChange={(updatedCompany) => {
+                queryClient.setQueryData(['userCompany', user.id], updatedCompany)
+              }}
+            />
+          )}
 
           <div>
             <label className="text-sm text-gray-400 mb-1 block">Город</label>
@@ -359,10 +422,16 @@ const ProfileScreen: React.FC = () => {
             <label className="text-sm text-gray-400 mb-1 block">О себе</label>
             <textarea
               value={editForm.bio}
-              onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+              onChange={(e) => setEditForm({ ...editForm, bio: e.target.value.slice(0, 500) })}
               placeholder="Расскажите о себе..."
+              maxLength={500}
               className="w-full bg-bg-card rounded-xl p-3 text-white placeholder-gray-500 border border-transparent focus:border-accent focus:outline-none min-h-[100px] resize-none"
             />
+            <div className="flex justify-end mt-1">
+              <span className={`text-xs ${editForm.bio.length >= 450 ? 'text-yellow-400' : 'text-gray-500'} ${editForm.bio.length >= 500 ? 'text-danger' : ''}`}>
+                {editForm.bio.length}/500
+              </span>
+            </div>
           </div>
 
           <div>
@@ -390,6 +459,37 @@ const ProfileScreen: React.FC = () => {
               className="w-full bg-bg-card rounded-xl p-3 text-white placeholder-gray-500 border border-transparent focus:border-accent focus:outline-none min-h-[80px] resize-none"
             />
           </div>
+
+          {/* Skills */}
+          <TagInput
+            tags={editForm.skills}
+            onTagsChange={(skills) => setEditForm({ ...editForm, skills })}
+            label="Навыки"
+            placeholder="Добавить навык..."
+            maxTags={10}
+            maxTagLength={30}
+          />
+
+          {/* Interests */}
+          <TagInput
+            tags={editForm.interests}
+            onTagsChange={(interests) => setEditForm({ ...editForm, interests })}
+            label="Интересы"
+            placeholder="Добавить интерес..."
+            maxTags={10}
+            maxTagLength={30}
+          />
+
+          {/* Social Links */}
+          {user && (
+            <SocialLinksEdit
+              userId={user.tg_user_id}
+              links={userLinks}
+              onLinksChange={(updatedLinks) => {
+                queryClient.setQueryData(['userLinks', user.id], updatedLinks)
+              }}
+            />
+          )}
 
           <Button
             fullWidth
@@ -780,6 +880,8 @@ const ProfileScreen: React.FC = () => {
               city: profile?.city || 'Минск',
               looking_for: profile?.looking_for || '',
               can_help_with: profile?.can_help_with || '',
+              skills: profile?.skills || [],
+              interests: profile?.interests || [],
             })
             setIsEditing(true)
           }}
@@ -812,6 +914,40 @@ const ProfileScreen: React.FC = () => {
               Могу помочь
             </h3>
             <p>{profile.can_help_with}</p>
+          </Card>
+        )}
+
+        {/* Skills */}
+        {profile?.skills && profile.skills.length > 0 && (
+          <Card className="mb-4">
+            <h3 className="text-sm text-gray-400 mb-2">Навыки</h3>
+            <div className="flex flex-wrap gap-2">
+              {profile.skills.map((skill, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Interests */}
+        {profile?.interests && profile.interests.length > 0 && (
+          <Card className="mb-4">
+            <h3 className="text-sm text-gray-400 mb-2">Интересы</h3>
+            <div className="flex flex-wrap gap-2">
+              {profile.interests.map((interest, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-sm"
+                >
+                  {interest}
+                </span>
+              ))}
+            </div>
           </Card>
         )}
 
