@@ -564,6 +564,29 @@ export async function createNotification(
   return notification as AppNotification
 }
 
+// Leaderboard - Top users by XP
+export async function getLeaderboard(limit = 10) {
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .select(`
+      id,
+      tg_user_id,
+      username,
+      first_name,
+      last_name,
+      points,
+      team_role,
+      subscription_tier,
+      profile:bot_profiles(photo_url)
+    `)
+    .gt('points', 0)
+    .order('points', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}
+
 // Team members
 export async function getTeamMembers() {
   const { data, error } = await getSupabase()

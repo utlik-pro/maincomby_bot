@@ -11,12 +11,14 @@ import {
   Rocket,
   PartyPopper,
   Zap,
+  Crown,
+  ChevronRight,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Avatar, Badge, Card, Progress } from '@/components/ui'
 import { RANK_LABELS } from '@/types'
 import { useTapEasterEgg } from '@/lib/easterEggs'
-import { getUnreadNotificationsCount } from '@/lib/supabase'
+import { getUnreadNotificationsCount, getLeaderboard } from '@/lib/supabase'
 import NotificationsScreen from './NotificationsScreen'
 
 // Avatar ring styles based on role/tier
@@ -40,6 +42,12 @@ const HomeScreen: React.FC = () => {
     queryKey: ['unreadCount', user?.id],
     queryFn: () => (user ? getUnreadNotificationsCount(user.id) : 0),
     enabled: !!user,
+  })
+
+  // Fetch leaderboard (top 3 for home screen)
+  const { data: leaderboard = [] } = useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: () => getLeaderboard(3),
   })
 
   // Show notifications screen
@@ -160,6 +168,49 @@ const HomeScreen: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Top Participants */}
+      {leaderboard.length > 0 && (
+        <div className="px-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Crown size={20} className="text-yellow-400" />
+              Топ участников
+            </h2>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveTab('achievements')}
+              className="text-accent text-sm flex items-center gap-1"
+            >
+              Все <ChevronRight size={16} />
+            </motion.button>
+          </div>
+          <Card>
+            <div className="space-y-3">
+              {leaderboard.map((member: any, index: number) => {
+                const profileData = Array.isArray(member.profile) ? member.profile[0] : member.profile
+                const medalColors = ['text-yellow-400', 'text-gray-300', 'text-orange-400']
+                return (
+                  <div key={member.id} className="flex items-center gap-3">
+                    <div className={`w-6 text-center font-bold ${medalColors[index] || 'text-gray-500'}`}>
+                      {index + 1}
+                    </div>
+                    <Avatar
+                      src={profileData?.photo_url}
+                      name={member.first_name}
+                      size="sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{member.first_name}</div>
+                    </div>
+                    <div className="text-accent font-semibold">{member.points} XP</div>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Subscription Banner */}
       {user?.subscription_tier === 'free' && (
