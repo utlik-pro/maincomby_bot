@@ -176,21 +176,45 @@ export async function createMatch(userId1: number, userId2: number) {
 }
 
 export async function getUserMatches(userId: number) {
-  const { data, error } = await getSupabase()
+  const supabase = getSupabase()
+
+  // Get matches
+  const { data: matches, error } = await supabase
     .from('bot_matches')
-    .select(`
-      *,
-      user1:bot_users!bot_matches_user1_id_fkey(*),
-      user2:bot_users!bot_matches_user2_id_fkey(*),
-      profile1:bot_profiles!bot_matches_user1_id_fkey(*),
-      profile2:bot_profiles!bot_matches_user2_id_fkey(*)
-    `)
+    .select('*')
     .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
     .eq('is_active', true)
     .order('matched_at', { ascending: false })
 
   if (error) throw error
-  return data
+  if (!matches || matches.length === 0) return []
+
+  // Get all user IDs from matches
+  const userIds = new Set<number>()
+  matches.forEach(m => {
+    userIds.add(m.user1_id)
+    userIds.add(m.user2_id)
+  })
+
+  // Fetch users and profiles
+  const { data: users } = await supabase
+    .from('bot_users')
+    .select('*')
+    .in('id', Array.from(userIds))
+
+  const { data: profiles } = await supabase
+    .from('bot_profiles')
+    .select('*')
+    .in('user_id', Array.from(userIds))
+
+  // Combine data
+  return matches.map(match => ({
+    ...match,
+    user1: users?.find(u => u.id === match.user1_id) || null,
+    user2: users?.find(u => u.id === match.user2_id) || null,
+    profile1: profiles?.find(p => p.user_id === match.user1_id) || null,
+    profile2: profiles?.find(p => p.user_id === match.user2_id) || null,
+  }))
 }
 
 // Events

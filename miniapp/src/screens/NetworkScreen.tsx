@@ -44,14 +44,17 @@ const NetworkScreen: React.FC = () => {
   const limits = SUBSCRIPTION_LIMITS[tier]
   const swipesRemaining = getDailySwipesRemaining()
 
-  // Fetch profiles to swipe (показываем всех, без фильтра по уже просмотренным)
+  // Fetch profiles to swipe (показываем всех, рандомизируем порядок)
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['swipeProfiles', user?.id],
     queryFn: async () => {
       if (!user) return []
-      return getApprovedProfiles(user.id, profile?.city)
+      const allProfiles = await getApprovedProfiles(user.id, profile?.city)
+      // Shuffle array для рандомного порядка
+      return allProfiles.sort(() => Math.random() - 0.5)
     },
     enabled: !!user,
+    staleTime: 60000, // Кешируем на 1 минуту чтобы не перемешивать при каждом свайпе
   })
 
   // Fetch matches
@@ -317,48 +320,54 @@ const NetworkScreen: React.FC = () => {
             transition={{ duration: 0.3 }}
             className="swipe-card"
           >
-            <Card className="p-6 text-center">
-              <Avatar
-                src={currentProfile.photo_url}
-                name={currentProfile.user?.first_name}
-                size="xl"
-                className="mx-auto mb-4"
-              />
+            <Card className="p-4">
+              {/* Компактная карточка: фото + инфо справа */}
+              <div className="flex gap-4 items-start">
+                {/* Большое фото слева */}
+                <div className="flex-shrink-0">
+                  <Avatar
+                    src={currentProfile.photo_url}
+                    name={currentProfile.user?.first_name}
+                    size="xl"
+                  />
+                </div>
 
-              <h2 className="text-xl font-bold mb-1">
-                {currentProfile.user?.first_name} {currentProfile.user?.last_name}
-              </h2>
-              <p className="text-accent mb-1 flex items-center justify-center gap-1">
-                <Briefcase size={14} />
-                {currentProfile.occupation || 'Участник'}
-              </p>
-              <p className="text-gray-400 text-sm mb-4 flex items-center justify-center gap-1">
-                <MapPin size={14} />
-                {currentProfile.city}
-              </p>
+                {/* Инфо справа */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-bold truncate">
+                    {currentProfile.user?.first_name} {currentProfile.user?.last_name}
+                  </h2>
+                  <p className="text-accent text-sm flex items-center gap-1 mb-1">
+                    <Briefcase size={12} />
+                    <span className="truncate">{currentProfile.occupation || 'Участник'}</span>
+                  </p>
+                  <p className="text-gray-500 text-xs flex items-center gap-1 mb-2">
+                    <MapPin size={10} />
+                    {currentProfile.city}
+                  </p>
 
-              {currentProfile.bio && (
-                <p className="text-gray-400 italic mb-4">"{currentProfile.bio}"</p>
-              )}
+                  {currentProfile.bio && (
+                    <p className="text-gray-400 text-sm italic line-clamp-2">"{currentProfile.bio}"</p>
+                  )}
+                </div>
+              </div>
 
-              {currentProfile.looking_for && (
-                <Card className="bg-bg text-left mb-2">
-                  <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
-                    <Target size={12} />
-                    Ищет
-                  </div>
-                  <div className="text-sm">{currentProfile.looking_for}</div>
-                </Card>
-              )}
-
-              {currentProfile.can_help_with && (
-                <Card className="bg-bg text-left">
-                  <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
-                    <HandshakeIcon size={12} />
-                    Может помочь
-                  </div>
-                  <div className="text-sm">{currentProfile.can_help_with}</div>
-                </Card>
+              {/* Доп инфо под основным блоком */}
+              {(currentProfile.looking_for || currentProfile.can_help_with) && (
+                <div className="mt-3 pt-3 border-t border-bg space-y-2">
+                  {currentProfile.looking_for && (
+                    <div className="flex gap-2">
+                      <Target size={14} className="text-accent flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-gray-300 line-clamp-2">{currentProfile.looking_for}</div>
+                    </div>
+                  )}
+                  {currentProfile.can_help_with && (
+                    <div className="flex gap-2">
+                      <HandshakeIcon size={14} className="text-success flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-gray-300 line-clamp-2">{currentProfile.can_help_with}</div>
+                    </div>
+                  )}
+                </div>
               )}
             </Card>
           </motion.div>
