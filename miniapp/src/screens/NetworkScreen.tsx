@@ -24,6 +24,7 @@ import {
   createMatch,
   getUserMatches,
   getUserById,
+  createNotification,
 } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { SUBSCRIPTION_LIMITS, UserProfile, User as UserType } from '@/types'
@@ -85,12 +86,27 @@ const NetworkScreen: React.FC = () => {
           const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Участник'
           const theirName = `${targetUser?.first_name || ''} ${targetUser?.last_name || ''}`.trim() || 'Участник'
 
-          // Notify the other user
+          // Create in-app notifications for both users
+          createNotification(
+            user.id,
+            'match',
+            'Новый матч!',
+            `Вы понравились друг другу с ${theirName}!`,
+            { matchedUserId: targetUserId }
+          ).catch(console.error)
+
+          createNotification(
+            targetUserId,
+            'match',
+            'Новый матч!',
+            `Вы понравились друг другу с ${myName}!`,
+            { matchedUserId: user.id }
+          ).catch(console.error)
+
+          // Also send Telegram bot notifications
           if (targetUser?.tg_user_id) {
             notifyNewMatch(targetUser.tg_user_id, myName).catch(console.error)
           }
-
-          // Notify current user too (via their tg_user_id)
           if (user.tg_user_id) {
             notifyNewMatch(user.tg_user_id, theirName).catch(console.error)
           }
@@ -108,6 +124,8 @@ const NetworkScreen: React.FC = () => {
         hapticFeedback.success()
         addToast(`Матч с ${result.matchName}!`, 'success')
         queryClient.invalidateQueries({ queryKey: ['matches'] })
+        queryClient.invalidateQueries({ queryKey: ['notifications'] })
+        queryClient.invalidateQueries({ queryKey: ['unreadCount'] })
       }
     },
   })
