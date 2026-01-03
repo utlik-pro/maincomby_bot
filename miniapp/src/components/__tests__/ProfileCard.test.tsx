@@ -677,6 +677,133 @@ describe('ProfileCard', () => {
       // Without onAvatarTap, avatar should not be in buttons
       expect(screen.queryByRole('button', { name: /avatar/i })).not.toBeInTheDocument()
     })
+
+    it('calls onAvatarTap multiple times on repeated clicks', async () => {
+      const user = userEvent.setup()
+      const onAvatarTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="private"
+          theme={PROFILE_THEMES.default}
+          onAvatarTap={onAvatarTap}
+        />
+      )
+
+      const avatarContainer = screen.getByRole('button', { name: /User|John Doe/i })
+      await user.click(avatarContainer)
+      await user.click(avatarContainer)
+      await user.click(avatarContainer)
+
+      expect(onAvatarTap).toHaveBeenCalledTimes(3)
+    })
+
+    it('does not call handler when other keys are pressed', async () => {
+      const user = userEvent.setup()
+      const onAvatarTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="private"
+          theme={PROFILE_THEMES.default}
+          onAvatarTap={onAvatarTap}
+        />
+      )
+
+      const avatarContainer = screen.getByRole('button', { name: /User|John Doe/i })
+      avatarContainer.focus()
+      await user.keyboard('{Escape}')
+      await user.keyboard('{Tab}')
+      await user.keyboard('a')
+
+      expect(onAvatarTap).not.toHaveBeenCalled()
+    })
+
+    it('avatar has tabIndex 0 when handler is provided', () => {
+      const onAvatarTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="private"
+          theme={PROFILE_THEMES.default}
+          onAvatarTap={onAvatarTap}
+        />
+      )
+
+      const avatarContainer = screen.getByRole('button', { name: /User|John Doe/i })
+      expect(avatarContainer).toHaveAttribute('tabindex', '0')
+    })
+
+    it('avatar does not have tabIndex when handler is not provided', () => {
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="private"
+          theme={PROFILE_THEMES.default}
+        />
+      )
+
+      // Find the avatar container (parent of the avatar element)
+      const avatar = screen.getByTestId('avatar')
+      const avatarParent = avatar.closest('.relative')
+
+      // Should not have tabindex attribute when not interactive
+      expect(avatarParent).not.toHaveAttribute('tabindex', '0')
+    })
+
+    it('clicking avatar does not throw when no handler provided', async () => {
+      const user = userEvent.setup()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="private"
+          theme={PROFILE_THEMES.default}
+        />
+      )
+
+      const avatar = screen.getByTestId('avatar')
+      const avatarContainer = avatar.closest('.relative') as HTMLElement
+
+      // Should not throw when clicking
+      await expect(user.click(avatarContainer)).resolves.not.toThrow()
+    })
+
+    it('avatar can receive focus via tab navigation', async () => {
+      const user = userEvent.setup()
+      const onAvatarTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="private"
+          theme={PROFILE_THEMES.default}
+          onAvatarTap={onAvatarTap}
+        />
+      )
+
+      // Tab into the component
+      await user.tab()
+
+      const avatarContainer = screen.getByRole('button', { name: /User|John Doe/i })
+      expect(avatarContainer).toHaveFocus()
+    })
   })
 
   describe('rank interaction', () => {
@@ -724,6 +851,281 @@ describe('ProfileCard', () => {
         await user.keyboard('{Enter}')
         expect(onRankTap).toHaveBeenCalledTimes(1)
       }
+    })
+
+    it('calls onRankTap multiple times on repeated clicks', async () => {
+      const user = userEvent.setup()
+      const onRankTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="lieutenant"
+          theme={PROFILE_THEMES.default}
+          onRankTap={onRankTap}
+        />
+      )
+
+      const rankBadge = screen.getByText('Лейтенант').closest('[role="button"]')
+      if (rankBadge) {
+        await user.click(rankBadge)
+        await user.click(rankBadge)
+        await user.click(rankBadge)
+        expect(onRankTap).toHaveBeenCalledTimes(3)
+      }
+    })
+
+    it('does not call handler when other keys are pressed on rank badge', async () => {
+      const user = userEvent.setup()
+      const onRankTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="major"
+          theme={PROFILE_THEMES.default}
+          onRankTap={onRankTap}
+        />
+      )
+
+      const rankBadge = screen.getByText('Майор').closest('[role="button"]')
+      if (rankBadge) {
+        (rankBadge as HTMLElement).focus()
+        await user.keyboard('{Escape}')
+        await user.keyboard('a')
+        await user.keyboard('{ArrowDown}')
+        expect(onRankTap).not.toHaveBeenCalled()
+      }
+    })
+
+    it('rank badge has tabIndex 0 when handler is provided', () => {
+      const onRankTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="colonel"
+          theme={PROFILE_THEMES.default}
+          onRankTap={onRankTap}
+        />
+      )
+
+      const rankBadge = screen.getByText('Полковник').closest('[role="button"]')
+      expect(rankBadge).toHaveAttribute('tabindex', '0')
+    })
+
+    it('rank badge is not a button when onRankTap is not provided', () => {
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="general"
+          theme={PROFILE_THEMES.default}
+        />
+      )
+
+      // Without onRankTap, rank badge should not have button role
+      const rankText = screen.getByText('Генерал')
+      const rankContainer = rankText.closest('[role="button"]')
+      expect(rankContainer).toBeNull()
+    })
+
+    it('clicking rank badge does not throw when no handler provided', async () => {
+      const user = userEvent.setup()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="corporal"
+          theme={PROFILE_THEMES.default}
+        />
+      )
+
+      const rankText = screen.getByText('Ефрейтор')
+      const rankBadge = rankText.closest('.mt-4') as HTMLElement
+
+      // Should not throw when clicking
+      await expect(user.click(rankBadge)).resolves.not.toThrow()
+    })
+
+    it('rank badge appears after stats section in DOM order', () => {
+      const mockUser = createMockUser({ points: 1000 })
+      const userStats = { events: 5, matches: 10 }
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          userStats={userStats}
+          rank="sergeant_major"
+          theme={PROFILE_THEMES.default}
+        />
+      )
+
+      // Verify rank badge appears after XP stat by checking DOM order
+      const xpElement = screen.getByText('XP')
+      const rankElement = screen.getByText('Старшина')
+
+      // XP should come before rank in the document
+      const allElements = document.body.querySelectorAll('*')
+      let xpIndex = -1
+      let rankIndex = -1
+      allElements.forEach((el, index) => {
+        if (el.textContent === 'XP' && xpIndex === -1) xpIndex = index
+        if (el.textContent === 'Старшина' && rankIndex === -1) rankIndex = index
+      })
+
+      expect(xpIndex).toBeLessThan(rankIndex)
+    })
+  })
+
+  describe('combined interactions', () => {
+    it('both avatar and rank can be interactive simultaneously', async () => {
+      const user = userEvent.setup()
+      const onAvatarTap = vi.fn()
+      const onRankTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="captain"
+          theme={PROFILE_THEMES.default}
+          onAvatarTap={onAvatarTap}
+          onRankTap={onRankTap}
+        />
+      )
+
+      // Click avatar
+      const avatarContainer = screen.getByRole('button', { name: /User|John Doe/i })
+      await user.click(avatarContainer)
+      expect(onAvatarTap).toHaveBeenCalledTimes(1)
+      expect(onRankTap).not.toHaveBeenCalled()
+
+      // Click rank
+      const rankBadge = screen.getByText('Капитан').closest('[role="button"]')
+      if (rankBadge) {
+        await user.click(rankBadge)
+        expect(onRankTap).toHaveBeenCalledTimes(1)
+      }
+    })
+
+    it('tab navigation moves between avatar and rank in order', async () => {
+      const user = userEvent.setup()
+      const onAvatarTap = vi.fn()
+      const onRankTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="major"
+          theme={PROFILE_THEMES.default}
+          onAvatarTap={onAvatarTap}
+          onRankTap={onRankTap}
+        />
+      )
+
+      // First tab should focus avatar
+      await user.tab()
+      const avatarContainer = screen.getByRole('button', { name: /User|John Doe/i })
+      expect(avatarContainer).toHaveFocus()
+
+      // Second tab should focus rank badge
+      await user.tab()
+      const rankBadge = screen.getByText('Майор').closest('[role="button"]')
+      expect(rankBadge).toHaveFocus()
+    })
+
+    it('keyboard Enter works on both elements after tab navigation', async () => {
+      const user = userEvent.setup()
+      const onAvatarTap = vi.fn()
+      const onRankTap = vi.fn()
+      const mockUser = createMockUser()
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="colonel"
+          theme={PROFILE_THEMES.default}
+          onAvatarTap={onAvatarTap}
+          onRankTap={onRankTap}
+        />
+      )
+
+      // Tab to avatar and press Enter
+      await user.tab()
+      await user.keyboard('{Enter}')
+      expect(onAvatarTap).toHaveBeenCalledTimes(1)
+
+      // Tab to rank and press Enter
+      await user.tab()
+      await user.keyboard('{Enter}')
+      expect(onRankTap).toHaveBeenCalledTimes(1)
+    })
+
+    it('interactions work correctly with themed profile', async () => {
+      const user = userEvent.setup()
+      const onAvatarTap = vi.fn()
+      const onRankTap = vi.fn()
+      const mockUser = createMockUser({ team_role: 'core' })
+
+      render(
+        <ProfileCard
+          user={mockUser}
+          profile={null}
+          rank="general"
+          theme={PROFILE_THEMES.core}
+          onAvatarTap={onAvatarTap}
+          onRankTap={onRankTap}
+        />
+      )
+
+      // Avatar should still be clickable with theme badge overlay
+      const avatarContainer = screen.getByRole('button', { name: /User|John Doe/i })
+      await user.click(avatarContainer)
+      expect(onAvatarTap).toHaveBeenCalledTimes(1)
+
+      // Rank should still be clickable
+      const rankBadge = screen.getByText('Генерал').closest('[role="button"]')
+      if (rankBadge) {
+        await user.click(rankBadge)
+        expect(onRankTap).toHaveBeenCalledTimes(1)
+      }
+    })
+
+    it('interacting with null user profile does not crash', async () => {
+      const user = userEvent.setup()
+
+      render(
+        <ProfileCard
+          user={null}
+          profile={null}
+          rank="private"
+          theme={PROFILE_THEMES.default}
+          onAvatarTap={() => {}}
+          onRankTap={() => {}}
+        />
+      )
+
+      // Should show not found message and not crash on any interactions
+      expect(screen.getByText('Профиль не найден')).toBeInTheDocument()
+
+      // Try tabbing - should not crash even though elements aren't rendered
+      await expect(user.tab()).resolves.not.toThrow()
     })
   })
 
