@@ -56,10 +56,10 @@ const NotTelegramScreen: React.FC = () => (
 // Page transition wrapper with proper scrolling
 const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -10 }}
-    transition={{ duration: 0.2 }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.15 }}
     className="screen-scroll"
   >
     {children}
@@ -258,11 +258,13 @@ const App: React.FC = () => {
       <LogoHeader />
       <ToastContainer />
 
-      <React.Suspense fallback={<LoadingScreen />}>
-        <AnimatePresence mode="wait">
-          <PageTransition key={activeTab}>{renderScreen()}</PageTransition>
-        </AnimatePresence>
-      </React.Suspense>
+      <AnimatePresence mode="popLayout">
+        <PageTransition key={activeTab}>
+          <React.Suspense fallback={<LoadingScreen />}>
+            {renderScreen()}
+          </React.Suspense>
+        </PageTransition>
+      </AnimatePresence>
 
       <Navigation />
     </div>

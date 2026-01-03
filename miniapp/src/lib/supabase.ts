@@ -162,11 +162,28 @@ export async function checkMutualLike(userId1: number, userId2: number) {
 
 // Matches
 export async function createMatch(userId1: number, userId2: number) {
-  const { data, error } = await getSupabase()
+  const supabase = getSupabase()
+  const minId = Math.min(userId1, userId2)
+  const maxId = Math.max(userId1, userId2)
+
+  // Check if match already exists
+  const { data: existing } = await supabase
+    .from('bot_matches')
+    .select('id')
+    .eq('user1_id', minId)
+    .eq('user2_id', maxId)
+    .single()
+
+  if (existing) {
+    // Match already exists, return it
+    return existing
+  }
+
+  const { data, error } = await supabase
     .from('bot_matches')
     .insert({
-      user1_id: Math.min(userId1, userId2),
-      user2_id: Math.max(userId1, userId2),
+      user1_id: minId,
+      user2_id: maxId,
     })
     .select()
     .single()

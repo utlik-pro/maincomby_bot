@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { motion, PanInfo } from 'framer-motion'
+import { motion, PanInfo, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Heart,
@@ -305,21 +305,25 @@ const NetworkScreen: React.FC = () => {
         />
       ) : (
         <>
-          <motion.div
-            key={currentProfile.id}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            onDragEnd={handleDragEnd}
-            animate={
-              swipeDirection === 'left'
-                ? { x: -500, rotate: -15, opacity: 0 }
-                : swipeDirection === 'right'
-                ? { x: 500, rotate: 15, opacity: 0 }
-                : { x: 0, rotate: 0, opacity: 1 }
-            }
-            transition={{ duration: 0.3 }}
-            className="swipe-card"
-          >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentProfile.id}
+              drag={!swipeDirection ? "x" : false}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.1}
+              onDragEnd={handleDragEnd}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={
+                swipeDirection === 'left'
+                  ? { x: -300, opacity: 0 }
+                  : swipeDirection === 'right'
+                  ? { x: 300, opacity: 0 }
+                  : { x: 0, opacity: 1, scale: 1 }
+              }
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="swipe-card"
+            >
             <Card className="p-4">
               {/* Компактная карточка: фото + инфо справа */}
               <div className="flex gap-4 items-start">
@@ -370,7 +374,8 @@ const NetworkScreen: React.FC = () => {
                 </div>
               )}
             </Card>
-          </motion.div>
+            </motion.div>
+          </AnimatePresence>
 
           {/* Action Buttons */}
           <div className="flex justify-center gap-6 mt-6">
