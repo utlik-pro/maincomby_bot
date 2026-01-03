@@ -21,6 +21,7 @@ import {
 import { UserLink, LinkType, LINK_TYPE_CONFIG } from '@/types'
 import { setUserLink, removeUserLink } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/telegram'
+import { useToastStore } from '@/lib/store'
 
 // Icon mapping
 const LINK_ICONS: Record<LinkType, React.ElementType> = {
@@ -81,6 +82,7 @@ export const SocialLinksEdit: React.FC<SocialLinksEditProps> = ({
   onLinksChange,
   className = '',
 }) => {
+  const { addToast } = useToastStore()
   const [editingLink, setEditingLink] = useState<EditingLink | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -168,9 +170,11 @@ export const SocialLinksEdit: React.FC<SocialLinksEditProps> = ({
 
       setEditingLink(null)
       hapticFeedback.success()
+      addToast('Ссылка сохранена!', 'success')
     } catch (err) {
       setError('Не удалось сохранить ссылку')
       hapticFeedback.error()
+      addToast('Ошибка сохранения ссылки', 'error')
     } finally {
       setIsSaving(false)
     }
@@ -183,8 +187,10 @@ export const SocialLinksEdit: React.FC<SocialLinksEditProps> = ({
       await removeUserLink(userId, linkType)
       onLinksChange(links.filter(l => l.link_type !== linkType))
       hapticFeedback.success()
+      addToast('Ссылка удалена', 'success')
     } catch (err) {
       hapticFeedback.error()
+      addToast('Ошибка удаления ссылки', 'error')
     } finally {
       setDeletingType(null)
     }

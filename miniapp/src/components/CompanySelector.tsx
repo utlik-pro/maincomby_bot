@@ -20,6 +20,7 @@ import {
   removeUserCompany,
 } from '@/lib/supabase'
 import { hapticFeedback } from '@/lib/telegram'
+import { useToastStore } from '@/lib/store'
 
 interface CompanySelectorProps {
   userId: number
@@ -34,6 +35,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
   onCompanyChange,
   className = '',
 }) => {
+  const { addToast } = useToastStore()
   const [isExpanded, setIsExpanded] = useState(false)
   const [companies, setCompanies] = useState<Company[]>([])
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false)
@@ -128,9 +130,11 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
       setIsExpanded(false)
       setSearchQuery('')
       hapticFeedback.success()
+      addToast('Компания сохранена!', 'success')
     } catch (err) {
       setError('Не удалось сохранить компанию')
       hapticFeedback.error()
+      addToast('Ошибка сохранения компании', 'error')
     } finally {
       setIsSaving(false)
     }
@@ -148,9 +152,11 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
       setIsEditing(false)
       setIsExpanded(false)
       hapticFeedback.success()
+      addToast('Компания удалена', 'success')
     } catch (err) {
       setError('Не удалось удалить компанию')
       hapticFeedback.error()
+      addToast('Ошибка удаления компании', 'error')
     } finally {
       setIsRemoving(false)
     }
