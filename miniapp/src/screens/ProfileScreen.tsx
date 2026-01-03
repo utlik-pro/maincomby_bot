@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen } from '@/lib/telegram'
-import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks } from '@/lib/supabase'
+import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats } from '@/lib/supabase'
 import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
@@ -192,6 +192,14 @@ const ProfileScreen: React.FC = () => {
   const { data: userLinks = [] } = useQuery({
     queryKey: ['userLinks', user?.id],
     queryFn: () => (user ? getUserLinks(user.id) : []),
+    enabled: !!user,
+    staleTime: 60000,
+  })
+
+  // Fetch user stats
+  const { data: userStats } = useQuery({
+    queryKey: ['userStats', user?.id],
+    queryFn: () => (user ? getUserStats(user.id) : null),
     enabled: !!user,
     staleTime: 60000,
   })
@@ -575,11 +583,11 @@ const ProfileScreen: React.FC = () => {
             <div className="text-xs text-gray-400">XP</div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold">0</div>
+            <div className="text-xl font-bold">{userStats?.events || 0}</div>
             <div className="text-xs text-gray-400">Событий</div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold">0</div>
+            <div className="text-xl font-bold">{userStats?.matches || 0}</div>
             <div className="text-xs text-gray-400">Матчей</div>
           </div>
         </div>

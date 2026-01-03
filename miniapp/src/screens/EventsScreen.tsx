@@ -34,6 +34,7 @@ import {
   addXP,
   createOrUpdateUser,
   getUserByTelegramId,
+  checkAndUnlockAchievements,
 } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
@@ -529,10 +530,18 @@ const EventsScreen: React.FC = () => {
       // Note: The user checking in might be a volunteer, XP goes to ticket owner
       return result
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       hapticFeedback.success()
       addToast(`Чекин успешен! +${XP_REWARDS.EVENT_CHECKIN} XP`, 'success')
       setShowScanner(false)
+
+      // Check achievements for the ticket owner
+      if (data?.registration?.user_id) {
+        const unlockedAchievements = await checkAndUnlockAchievements(data.registration.user_id)
+        if (unlockedAchievements.length > 0) {
+          addToast('Новое достижение разблокировано!', 'success')
+        }
+      }
     },
     onError: (error: any) => {
       hapticFeedback.error()

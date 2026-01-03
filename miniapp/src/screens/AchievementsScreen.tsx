@@ -21,8 +21,8 @@ import {
   Calendar,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getUserAchievements } from '@/lib/supabase'
-import { Badge, Card, Progress } from '@/components/ui'
+import { getUserAchievements, getLeaderboard } from '@/lib/supabase'
+import { Avatar, Badge, Card, Progress } from '@/components/ui'
 import { ACHIEVEMENTS, RANK_LABELS, RANK_THRESHOLDS, UserRank, AchievementId } from '@/types'
 
 // Icon mapping for ranks
@@ -63,6 +63,12 @@ const AchievementsScreen: React.FC = () => {
     queryKey: ['achievements', user?.id],
     queryFn: () => (user ? getUserAchievements(user.id) : []),
     enabled: !!user,
+  })
+
+  // Fetch leaderboard (top 10)
+  const { data: leaderboard = [] } = useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: () => getLeaderboard(10),
   })
 
   const unlockedIds = new Set(userAchievements?.map((a: any) => a.achievement_id) || [])
@@ -198,34 +204,46 @@ const AchievementsScreen: React.FC = () => {
         </Card>
       </div>
 
-      {/* Leaderboard Preview */}
+      {/* Leaderboard */}
       <div className="px-4 mt-6">
         <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
           <Award size={20} className="text-accent" />
           Топ участников
         </h2>
         <Card>
-          {[
-            { rank: 1, name: 'Дмитрий', xp: 2450, color: 'text-yellow-400' },
-            { rank: 2, name: 'Мария', xp: 1890, color: 'text-gray-300' },
-            { rank: 3, name: 'Алексей', xp: 1650, color: 'text-orange-400' },
-          ].map((item) => (
-            <div
-              key={item.rank}
-              className="flex items-center gap-3 py-2 border-b border-bg last:border-0"
-            >
-              <div className={`w-8 flex justify-center ${item.color}`}>
-                <Medal size={20} />
-              </div>
-              <div className="flex-1">
-                <div className="font-medium">{item.name}</div>
-              </div>
-              <div className="text-accent font-semibold">{item.xp} XP</div>
+          {leaderboard.length > 0 ? (
+            leaderboard.map((member: any, index: number) => {
+              const profileData = Array.isArray(member.profile) ? member.profile[0] : member.profile
+              const medalColors = ['text-yellow-400', 'text-gray-300', 'text-orange-400']
+              const isCurrentUser = member.id === user?.id
+              return (
+                <div
+                  key={member.id}
+                  className={`flex items-center gap-3 py-2 border-b border-bg last:border-0 ${isCurrentUser ? 'bg-accent/10 -mx-4 px-4 rounded-lg' : ''}`}
+                >
+                  <div className={`w-6 text-center font-bold ${medalColors[index] || 'text-gray-500'}`}>
+                    {index + 1}
+                  </div>
+                  <Avatar
+                    src={profileData?.photo_url}
+                    name={member.first_name}
+                    size="sm"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">
+                      {member.first_name}
+                      {isCurrentUser && <span className="text-accent ml-2">(вы)</span>}
+                    </div>
+                  </div>
+                  <div className="text-accent font-semibold">{member.points} XP</div>
+                </div>
+              )
+            })
+          ) : (
+            <div className="text-center text-gray-400 py-4">
+              Пока нет участников с XP
             </div>
-          ))}
-          <button className="w-full text-center text-accent text-sm mt-3">
-            Показать весь рейтинг →
-          </button>
+          )}
         </Card>
       </div>
     </div>

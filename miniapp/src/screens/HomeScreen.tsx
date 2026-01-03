@@ -18,7 +18,7 @@ import { useAppStore } from '@/lib/store'
 import { Avatar, Badge, Card, Progress } from '@/components/ui'
 import { RANK_LABELS } from '@/types'
 import { useTapEasterEgg } from '@/lib/easterEggs'
-import { getUnreadNotificationsCount, getLeaderboard } from '@/lib/supabase'
+import { getUnreadNotificationsCount, getLeaderboard, getUserStats } from '@/lib/supabase'
 import NotificationsScreen from './NotificationsScreen'
 
 // Avatar ring styles based on role/tier
@@ -48,6 +48,13 @@ const HomeScreen: React.FC = () => {
   const { data: leaderboard = [] } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: () => getLeaderboard(3),
+  })
+
+  // Fetch user stats
+  const { data: userStats } = useQuery({
+    queryKey: ['userStats', user?.id],
+    queryFn: () => (user ? getUserStats(user.id) : null),
+    enabled: !!user,
   })
 
   // Show notifications screen
@@ -152,18 +159,18 @@ const HomeScreen: React.FC = () => {
         </h2>
         <div className="grid grid-cols-3 gap-3">
           <Card className="text-center py-3">
-            <div className="text-2xl font-bold text-accent">0</div>
+            <div className="text-2xl font-bold text-accent">{userStats?.events || 0}</div>
             <div className="text-xs text-gray-400">Событий</div>
           </Card>
           <Card className="text-center py-3 relative">
             <div className="absolute -top-2 -right-2 bg-accent text-bg text-[10px] font-bold px-1.5 py-0.5 rounded-md">
               NEW
             </div>
-            <div className="text-2xl font-bold text-success">0</div>
+            <div className="text-2xl font-bold text-success">{userStats?.matches || 0}</div>
             <div className="text-xs text-gray-400">Матчей</div>
           </Card>
           <Card className="text-center py-3">
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{userStats?.achievements || 0}</div>
             <div className="text-xs text-gray-400">Медалей</div>
           </Card>
         </div>

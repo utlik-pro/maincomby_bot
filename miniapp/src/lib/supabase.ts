@@ -491,6 +491,95 @@ export async function unlockAchievement(userId: number, achievementId: string) {
   return data
 }
 
+// Get user stats (events attended, matches, achievements)
+export async function getUserStats(userId: number) {
+  const supabase = getSupabase()
+
+  // Get attended events count
+  const { count: eventsCount } = await supabase
+    .from('bot_registrations')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'attended')
+
+  // Get matches count
+  const { count: matchesCount } = await supabase
+    .from('bot_matches')
+    .select('*', { count: 'exact', head: true })
+    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+
+  // Get achievements count
+  const { count: achievementsCount } = await supabase
+    .from('user_achievements')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+
+  return {
+    events: eventsCount || 0,
+    matches: matchesCount || 0,
+    achievements: achievementsCount || 0,
+  }
+}
+
+// Check and unlock achievements based on user stats
+export async function checkAndUnlockAchievements(userId: number) {
+  const supabase = getSupabase()
+  const unlockedAchievements: string[] = []
+
+  // Get user's attended events count
+  const { count: attendedCount } = await supabase
+    .from('bot_registrations')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'attended')
+
+  // Get user's matches count
+  const { count: matchesCount } = await supabase
+    .from('bot_matches')
+    .select('*', { count: 'exact', head: true })
+    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+
+  // Get existing achievements
+  const { data: existingAchievements } = await supabase
+    .from('user_achievements')
+    .select('achievement_id')
+    .eq('user_id', userId)
+
+  const hasAchievement = (id: string) => existingAchievements?.some(a => a.achievement_id === id)
+
+  // first_step - first event attended
+  if ((attendedCount || 0) >= 1 && !hasAchievement('first_step')) {
+    await unlockAchievement(userId, 'first_step')
+    unlockedAchievements.push('first_step')
+  }
+
+  // on_fire - 3 events
+  if ((attendedCount || 0) >= 3 && !hasAchievement('on_fire')) {
+    await unlockAchievement(userId, 'on_fire')
+    unlockedAchievements.push('on_fire')
+  }
+
+  // regular - 10 events
+  if ((attendedCount || 0) >= 10 && !hasAchievement('regular')) {
+    await unlockAchievement(userId, 'regular')
+    unlockedAchievements.push('regular')
+  }
+
+  // social_butterfly - 10 matches
+  if ((matchesCount || 0) >= 10 && !hasAchievement('social_butterfly')) {
+    await unlockAchievement(userId, 'social_butterfly')
+    unlockedAchievements.push('social_butterfly')
+  }
+
+  // networker - 25 matches
+  if ((matchesCount || 0) >= 25 && !hasAchievement('networker')) {
+    await unlockAchievement(userId, 'networker')
+    unlockedAchievements.push('networker')
+  }
+
+  return unlockedAchievements
+}
+
 // Notifications
 export type NotificationType = 'event_reminder' | 'match' | 'achievement' | 'rank_up' | 'system' | 'xp'
 
