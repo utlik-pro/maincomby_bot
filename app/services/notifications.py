@@ -282,6 +282,78 @@ class NotificationService:
             logger.error(f"Failed to send event reminders batch: {e}")
             return 0
 
+    async def send_event_starting_soon(self, user_id: int, event: Event) -> bool:
+        """Send reminder 1h before event starts"""
+        try:
+            event_time = event.event_date.strftime("%H:%M")
+            text = (
+                f"⏰ <b>Событие начнётся через 1 час!</b>\n\n"
+                f"<b>{event.title}</b>\n\n"
+                f"🕐 Начало в {event_time}\n"
+                f"📍 {event.location}\n\n"
+                f"Не опаздывай! 🏃"
+            )
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode="HTML",
+                reply_markup=self._get_miniapp_button("Открыть билет")
+            )
+            logger.info(f"Sent 'starting soon' reminder to user {user_id} for event {event.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send 'starting soon' reminder to {user_id}: {e}")
+            return False
+
+    async def send_event_starting_soon_batch(self, session: AsyncSession) -> int:
+        """Send reminders for events starting in ~1 hour"""
+        try:
+            # Find events starting in 45-75 minutes
+            now = datetime.now()
+            reminder_start = now + timedelta(minutes=45)
+            reminder_end = now + timedelta(minutes=75)
+
+            # Get events in reminder window
+            events_query = select(Event).where(
+                and_(
+                    Event.event_date >= reminder_start,
+                    Event.event_date <= reminder_end,
+                    Event.is_active == True
+                )
+            )
+            events_result = await session.execute(events_query)
+            events = events_result.scalars().all()
+
+            sent_count = 0
+            for event in events:
+                # Get registered users for this event
+                regs_query = select(EventRegistration).where(
+                    and_(
+                        EventRegistration.event_id == event.id,
+                        EventRegistration.status == 'registered'
+                    )
+                )
+                regs_result = await session.execute(regs_query)
+                registrations = regs_result.scalars().all()
+
+                for reg in registrations:
+                    # Get user's telegram ID
+                    user_query = select(User).where(User.id == reg.user_id)
+                    user_result = await session.execute(user_query)
+                    user = user_result.scalar_one_or_none()
+
+                    if user and user.tg_user_id:
+                        success = await self.send_event_starting_soon(user.tg_user_id, event)
+                        if success:
+                            sent_count += 1
+
+            logger.info(f"Sent {sent_count} 'starting soon' reminders")
+            return sent_count
+        except Exception as e:
+            logger.error(f"Failed to send 'starting soon' reminders batch: {e}")
+            return 0
+
 
 # Helper function to check and notify rank up
 async def check_and_notify_rank_up(
