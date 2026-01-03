@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   MapPin,
@@ -35,6 +35,7 @@ import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
 import { SocialLinks } from '@/components/SocialLinks'
+import { SocialLinksEdit } from '@/components/SocialLinksEdit'
 import { TagInput } from '@/components/TagInput'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
@@ -145,6 +146,7 @@ function getProfileTheme(
 const ProfileScreen: React.FC = () => {
   const { user, profile, getRank, getSubscriptionTier, setActiveTab, setProfile } = useAppStore()
   const { addToast } = useToastStore()
+  const queryClient = useQueryClient()
 
   const [isEditing, setIsEditing] = useState(false)
   const [showSubscription, setShowSubscription] = useState(false)
@@ -413,6 +415,17 @@ const ProfileScreen: React.FC = () => {
             maxTags={10}
             maxTagLength={30}
           />
+
+          {/* Social Links */}
+          {user && (
+            <SocialLinksEdit
+              userId={user.tg_user_id}
+              links={userLinks}
+              onLinksChange={(updatedLinks) => {
+                queryClient.setQueryData(['userLinks', user.id], updatedLinks)
+              }}
+            />
+          )}
 
           <Button
             fullWidth
