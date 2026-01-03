@@ -19,7 +19,6 @@ import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
 import {
   getApprovedProfiles,
-  getSwipedUserIds,
   createSwipe,
   checkMutualLike,
   createMatch,
@@ -45,18 +44,12 @@ const NetworkScreen: React.FC = () => {
   const limits = SUBSCRIPTION_LIMITS[tier]
   const swipesRemaining = getDailySwipesRemaining()
 
-  // Fetch profiles to swipe
+  // Fetch profiles to swipe (показываем всех, без фильтра по уже просмотренным)
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['swipeProfiles', user?.id],
     queryFn: async () => {
       if (!user) return []
-
-      const [allProfiles, swipedIds] = await Promise.all([
-        getApprovedProfiles(user.id, profile?.city),
-        getSwipedUserIds(user.id),
-      ])
-
-      return allProfiles.filter((p: ProfileWithUser) => !swipedIds.includes(p.user_id))
+      return getApprovedProfiles(user.id, profile?.city)
     },
     enabled: !!user,
   })
