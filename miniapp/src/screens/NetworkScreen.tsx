@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react'
-import { motion, PanInfo, AnimatePresence } from 'framer-motion'
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Heart,
@@ -12,7 +12,6 @@ import {
   Target,
   HandshakeIcon,
   MessageCircle,
-  Coffee,
   Sparkles,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
@@ -23,181 +22,117 @@ import {
   checkMutualLike,
   createMatch,
   getUserMatches,
-  getUserById,
   createNotification,
 } from '@/lib/supabase'
-import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
+import { Avatar, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { SUBSCRIPTION_LIMITS, UserProfile, User as UserType } from '@/types'
 
 type ProfileWithUser = UserProfile & { user: UserType }
-type SwipeDirection = 'left' | 'right' | null
 
 const NetworkScreen: React.FC = () => {
   const { user, getSubscriptionTier, getDailySwipesRemaining, profile, deepLinkTarget, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [swipeDirection, setSwipeDirection] = useState<SwipeDirection>(null)
   const [showMatches, setShowMatches] = useState(false)
   const [showProfileDetail, setShowProfileDetail] = useState<ProfileWithUser | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  // Handle deep link to show matches
   useEffect(() => {
     if (deepLinkTarget === 'matches') {
       setShowMatches(true)
-      setDeepLinkTarget(null) // Clear after handling
+      setDeepLinkTarget(null)
     }
   }, [deepLinkTarget, setDeepLinkTarget])
 
   const tier = getSubscriptionTier()
-  const limits = SUBSCRIPTION_LIMITS[tier]
   const swipesRemaining = getDailySwipesRemaining()
 
-  // Fetch profiles to swipe (показываем всех, рандомизируем порядок)
-  const { data: profiles, isLoading, isFetching } = useQuery({
+  // Простой запрос профилей - каждый раз свежие данные
+  const { data: profiles, isLoading, error: profilesError, refetch } = useQuery({
     queryKey: ['swipeProfiles', user?.id],
     queryFn: async () => {
       if (!user) return []
       const allProfiles = await getApprovedProfiles(user.id, profile?.city)
-      // Shuffle array для рандомного порядка
-      return allProfiles.sort(() => Math.random() - 0.5)
+      return allProfiles as ProfileWithUser[]
     },
     enabled: !!user,
-    staleTime: Infinity, // Не рефетчим автоматически - управляем вручную
   })
 
-  // Fetch matches
   const { data: matches } = useQuery({
     queryKey: ['matches', user?.id],
     queryFn: () => (user ? getUserMatches(user.id) : []),
     enabled: !!user,
   })
 
-  // Swipe mutation
-  const swipeMutation = useMutation({
-    mutationFn: async ({ targetUserId, targetUser, action }: {
-      targetUserId: number
-      targetUser: UserType | null
-      action: 'like' | 'skip' | 'superlike'
-    }) => {
-      if (!user) throw new Error('No user')
+  // Текущий профиль - просто первый из списка
+  const currentProfile = profiles && profiles.length > 0 ? profiles[0] : undefined
 
-      await createSwipe(user.id, targetUserId, action)
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    if (!currentProfile || !user || isProcessing) return
 
-      if (action === 'like' || action === 'superlike') {
-        const isMutual = await checkMutualLike(user.id, targetUserId)
+    if (direction === 'right' && swipesRemaining <= 0 && tier === 'free') {
+      hapticFeedback.error()
+      addToast('Лимит свайпов исчерпан. Получите Premium!', 'error')
+      return
+    }
+
+    setIsProcessing(true)
+    hapticFeedback.medium()
+
+    try {
+      const action = direction === 'right' ? 'like' : 'skip'
+
+      // Сохраняем свайп
+      await createSwipe(user.id, currentProfile.user_id, action)
+
+      // Проверяем матч
+      if (action === 'like') {
+        const isMutual = await checkMutualLike(user.id, currentProfile.user_id)
         if (isMutual) {
-          await createMatch(user.id, targetUserId)
+          await createMatch(user.id, currentProfile.user_id)
 
-          // Send notifications to both users
           const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Участник'
-          const theirName = `${targetUser?.first_name || ''} ${targetUser?.last_name || ''}`.trim() || 'Участник'
+          const theirName = `${currentProfile.user?.first_name || ''} ${currentProfile.user?.last_name || ''}`.trim() || 'Участник'
 
-          // Create in-app notifications for both users
-          createNotification(
-            user.id,
-            'match',
-            'Новый матч!',
-            `Вы понравились друг другу с ${theirName}!`,
-            { matchedUserId: targetUserId }
-          ).catch(console.error)
+          // Уведомления
+          createNotification(user.id, 'match', 'Новый матч!', `Вы понравились друг другу с ${theirName}!`, { matchedUserId: currentProfile.user_id }).catch(console.error)
+          createNotification(currentProfile.user_id, 'match', 'Новый матч!', `Вы понравились друг другу с ${myName}!`, { matchedUserId: user.id }).catch(console.error)
 
-          createNotification(
-            targetUserId,
-            'match',
-            'Новый матч!',
-            `Вы понравились друг другу с ${myName}!`,
-            { matchedUserId: user.id }
-          ).catch(console.error)
-
-          // Send Telegram bot notifications via API (to avoid CORS)
-          const sendMatchNotification = async (userTgId: number, name: string, matchedId: number, recipientId: number) => {
-            try {
-              await fetch('https://iishnica.vercel.app/api/send-match-notification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  userTgId,
-                  matchName: name,
-                  matchedUserId: matchedId,
-                  userId: recipientId,
-                }),
-              })
-            } catch (e) {
-              console.error('Failed to send match notification:', e)
-            }
-          }
-
-          if (targetUser?.tg_user_id) {
-            sendMatchNotification(targetUser.tg_user_id, myName, user.id, targetUserId)
+          // Telegram уведомления
+          if (currentProfile.user?.tg_user_id) {
+            fetch('https://iishnica.vercel.app/api/send-match-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userTgId: currentProfile.user.tg_user_id, matchName: myName, matchedUserId: user.id, userId: currentProfile.user_id }),
+            }).catch(console.error)
           }
           if (user.tg_user_id) {
-            sendMatchNotification(user.tg_user_id, theirName, targetUserId, user.id)
+            fetch('https://iishnica.vercel.app/api/send-match-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userTgId: user.tg_user_id, matchName: theirName, matchedUserId: currentProfile.user_id, userId: user.id }),
+            }).catch(console.error)
           }
 
-          return { match: true, matchName: theirName }
+          hapticFeedback.success()
+          addToast(`Матч с ${theirName}!`, 'success')
+          queryClient.invalidateQueries({ queryKey: ['matches'] })
         }
       }
 
-      return { match: false }
-    },
-    onSuccess: (result) => {
-      // Не инвалидируем swipeProfiles - просто переходим к следующему
-      if (result.match) {
-        hapticFeedback.success()
-        addToast(`Матч с ${result.matchName}!`, 'success')
-        queryClient.invalidateQueries({ queryKey: ['matches'] })
-        queryClient.invalidateQueries({ queryKey: ['notifications'] })
-        queryClient.invalidateQueries({ queryKey: ['unreadCount'] })
-      }
-    },
-  })
+      // Рефетчим профили - свайпнутый пользователь уже не вернётся
+      await refetch()
 
-  // Берём текущий профиль, учитывая что список может закончиться
-  const currentProfile = (profiles && profiles.length > 0 && currentIndex < profiles.length)
-    ? profiles[currentIndex] as ProfileWithUser
-    : undefined
-
-  const handleSwipe = useCallback(
-    async (direction: 'left' | 'right') => {
-      if (!currentProfile || swipeMutation.isPending) return
-
-      if (direction === 'right' && swipesRemaining <= 0 && tier === 'free') {
-        hapticFeedback.error()
-        addToast('Лимит свайпов исчерпан. Получите Premium!', 'error')
-        return
-      }
-
-      setSwipeDirection(direction)
-      hapticFeedback.medium()
-
-      const action = direction === 'right' ? 'like' : 'skip'
-
-      await swipeMutation.mutateAsync({
-        targetUserId: currentProfile.user_id,
-        targetUser: currentProfile.user,
-        action,
-      })
-
-      setTimeout(() => {
-        setSwipeDirection(null)
-        setCurrentIndex((prev) => prev + 1)
-      }, 300)
-    },
-    [currentProfile, swipeMutation, swipesRemaining, tier, addToast]
-  )
-
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    const threshold = 100
-    if (info.offset.x > threshold) {
-      handleSwipe('right')
-    } else if (info.offset.x < -threshold) {
-      handleSwipe('left')
+    } catch (error) {
+      console.error('Swipe error:', error)
+      addToast('Ошибка. Попробуйте ещё раз.', 'error')
+    } finally {
+      setIsProcessing(false)
     }
   }
 
-  // Show matches list
+  // Matches view
   if (showMatches) {
     return (
       <div className="p-4">
@@ -216,7 +151,6 @@ const NetworkScreen: React.FC = () => {
             {matches.map((match: any) => {
               const matchUser = match.user1_id === user?.id ? match.user2 : match.user1
               const matchProfile = match.user1_id === user?.id ? match.profile2 : match.profile1
-
               return (
                 <Card key={match.id} className="flex items-center gap-3">
                   <Avatar src={matchProfile?.photo_url} name={matchUser?.first_name} size="md" />
@@ -232,17 +166,13 @@ const NetworkScreen: React.FC = () => {
             })}
           </div>
         ) : (
-          <EmptyState
-            icon={<Search size={48} className="text-gray-500" />}
-            title="Пока нет матчей"
-            description="Свайпайте вправо, чтобы найти совпадения!"
-          />
+          <EmptyState icon={<Search size={48} className="text-gray-500" />} title="Пока нет матчей" description="Свайпайте вправо, чтобы найти совпадения!" />
         )}
       </div>
     )
   }
 
-  // Show profile detail
+  // Profile detail view
   if (showProfileDetail) {
     const p = showProfileDetail
     return (
@@ -257,90 +187,45 @@ const NetworkScreen: React.FC = () => {
             <Avatar src={p.photo_url} name={p.user?.first_name} size="xl" />
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-bold truncate">{p.user?.first_name} {p.user?.last_name}</h2>
-              <p className="text-accent flex items-center gap-1">
-                <Briefcase size={14} />
-                <span className="truncate">{p.occupation || 'Участник'}</span>
-              </p>
-              <p className="text-gray-400 flex items-center gap-1">
-                <MapPin size={14} />
-                {p.city}
-              </p>
+              <p className="text-accent flex items-center gap-1"><Briefcase size={14} /><span className="truncate">{p.occupation || 'Участник'}</span></p>
+              <p className="text-gray-400 flex items-center gap-1"><MapPin size={14} />{p.city}</p>
             </div>
           </div>
         </Card>
 
         <div className="space-y-4">
-          {p.bio && (
-            <Card>
-              <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
-                <User size={14} />
-                О себе
-              </h4>
-              <p>{p.bio}</p>
-            </Card>
-          )}
-
-          {p.looking_for && (
-            <Card>
-              <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
-                <Target size={14} />
-                Ищу
-              </h4>
-              <p>{p.looking_for}</p>
-            </Card>
-          )}
-
-          {p.can_help_with && (
-            <Card>
-              <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
-                <HandshakeIcon size={14} />
-                Могу помочь
-              </h4>
-              <p>{p.can_help_with}</p>
-            </Card>
-          )}
+          {p.bio && <Card><h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2"><User size={14} />О себе</h4><p>{p.bio}</p></Card>}
+          {p.looking_for && <Card><h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2"><Target size={14} />Ищу</h4><p>{p.looking_for}</p></Card>}
+          {p.can_help_with && <Card><h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2"><HandshakeIcon size={14} />Могу помочь</h4><p>{p.can_help_with}</p></Card>}
         </div>
 
         <div className="flex gap-4 mt-6">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => {
-              handleSwipe('left')
-              setShowProfileDetail(null)
-            }}
-          >
-            <X size={18} />
-            Скип
+          <Button variant="outline" className="flex-1" onClick={() => { setShowProfileDetail(null); handleSwipe('left') }} disabled={isProcessing}>
+            <X size={18} /> Скип
           </Button>
-          <Button
-            className="flex-1"
-            onClick={() => {
-              handleSwipe('right')
-              setShowProfileDetail(null)
-            }}
-          >
-            <Heart size={18} />
-            Лайк
+          <Button className="flex-1" onClick={() => { setShowProfileDetail(null); handleSwipe('right') }} disabled={isProcessing}>
+            <Heart size={18} /> Лайк
           </Button>
         </div>
       </div>
     )
   }
 
+  // Main view
   return (
     <div className="p-4">
+      {/* Debug */}
+      <div className="mb-2 p-2 bg-yellow-900/50 rounded text-xs text-yellow-300">
+        profiles: {profiles?.length ?? 0} | loading: {isLoading ? 'Y' : 'N'} | processing: {isProcessing ? 'Y' : 'N'}
+      </div>
+
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-xl font-bold">Нетворкинг</h1>
           <p className="text-gray-400 text-sm">Найди полезные контакты</p>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowMatches(true)}
-          className="bg-bg-card px-4 py-2 rounded-xl flex items-center gap-2"
-        >
+        <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowMatches(true)} className="bg-bg-card px-4 py-2 rounded-xl flex items-center gap-2">
           <Heart size={16} className="text-success fill-success" />
           <span className="font-semibold">{matches?.length || 0}</span>
         </motion.button>
@@ -367,117 +252,45 @@ const NetworkScreen: React.FC = () => {
         <Card className="h-96 flex items-center justify-center">
           <Skeleton className="w-24 h-24 rounded-full" />
         </Card>
+      ) : profilesError ? (
+        <EmptyState icon={<X size={48} className="text-danger" />} title="Ошибка загрузки" description="Не удалось загрузить профили." />
       ) : !currentProfile ? (
-        <EmptyState
-          icon={<Sparkles size={48} className="text-accent" />}
-          title="Все просмотрено!"
-          description="Загляните позже, появятся новые участники"
-        />
+        <EmptyState icon={<Sparkles size={48} className="text-accent" />} title="Все просмотрено!" description="Загляните позже, появятся новые участники" />
       ) : (
         <>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentProfile.id}
-              drag={!swipeDirection ? "x" : false}
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.1}
-              onDragEnd={handleDragEnd}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={
-                swipeDirection === 'left'
-                  ? { x: -300, opacity: 0 }
-                  : swipeDirection === 'right'
-                  ? { x: 300, opacity: 0 }
-                  : { x: 0, opacity: 1, scale: 1 }
-              }
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="swipe-card"
-            >
-            <Card className="p-4">
-              {/* Компактная карточка: фото + инфо справа */}
-              <div className="flex gap-4 items-start">
-                {/* Большое фото слева */}
-                <div className="flex-shrink-0">
-                  <Avatar
-                    src={currentProfile.photo_url}
-                    name={currentProfile.user?.first_name}
-                    size="xl"
-                  />
-                </div>
-
-                {/* Инфо справа */}
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold truncate">
-                    {currentProfile.user?.first_name} {currentProfile.user?.last_name}
-                  </h2>
-                  <p className="text-accent text-sm flex items-center gap-1 mb-1">
-                    <Briefcase size={12} />
-                    <span className="truncate">{currentProfile.occupation || 'Участник'}</span>
-                  </p>
-                  <p className="text-gray-500 text-xs flex items-center gap-1 mb-2">
-                    <MapPin size={10} />
-                    {currentProfile.city}
-                  </p>
-
-                  {currentProfile.bio && (
-                    <p className="text-gray-400 text-sm italic line-clamp-2">"{currentProfile.bio}"</p>
-                  )}
-                </div>
+          <Card className="p-4">
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0">
+                <Avatar src={currentProfile.photo_url} name={currentProfile.user?.first_name} size="xl" />
               </div>
-
-              {/* Доп инфо под основным блоком */}
-              {(currentProfile.looking_for || currentProfile.can_help_with) && (
-                <div className="mt-3 pt-3 border-t border-bg space-y-2">
-                  {currentProfile.looking_for && (
-                    <div className="flex gap-2">
-                      <Target size={14} className="text-accent flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-gray-300 line-clamp-2">{currentProfile.looking_for}</div>
-                    </div>
-                  )}
-                  {currentProfile.can_help_with && (
-                    <div className="flex gap-2">
-                      <HandshakeIcon size={14} className="text-success flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-gray-300 line-clamp-2">{currentProfile.can_help_with}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </Card>
-            </motion.div>
-          </AnimatePresence>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold truncate">{currentProfile.user?.first_name} {currentProfile.user?.last_name}</h2>
+                <p className="text-accent text-sm flex items-center gap-1 mb-1"><Briefcase size={12} /><span className="truncate">{currentProfile.occupation || 'Участник'}</span></p>
+                <p className="text-gray-500 text-xs flex items-center gap-1 mb-2"><MapPin size={10} />{currentProfile.city}</p>
+                {currentProfile.bio && <p className="text-gray-400 text-sm italic line-clamp-2">"{currentProfile.bio}"</p>}
+              </div>
+            </div>
+            {(currentProfile.looking_for || currentProfile.can_help_with) && (
+              <div className="mt-3 pt-3 border-t border-bg space-y-2">
+                {currentProfile.looking_for && <div className="flex gap-2"><Target size={14} className="text-accent flex-shrink-0 mt-0.5" /><div className="text-sm text-gray-300 line-clamp-2">{currentProfile.looking_for}</div></div>}
+                {currentProfile.can_help_with && <div className="flex gap-2"><HandshakeIcon size={14} className="text-success flex-shrink-0 mt-0.5" /><div className="text-sm text-gray-300 line-clamp-2">{currentProfile.can_help_with}</div></div>}
+              </div>
+            )}
+          </Card>
 
           {/* Action Buttons */}
           <div className="flex justify-center gap-6 mt-6">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => handleSwipe('left')}
-              className="w-16 h-16 rounded-full border-2 border-danger flex items-center justify-center"
-            >
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleSwipe('left')} disabled={isProcessing} className="w-16 h-16 rounded-full border-2 border-danger flex items-center justify-center disabled:opacity-50">
               <X size={28} className="text-danger" />
             </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowProfileDetail(currentProfile)}
-              className="w-14 h-14 rounded-full bg-bg-card flex items-center justify-center"
-            >
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowProfileDetail(currentProfile)} className="w-14 h-14 rounded-full bg-bg-card flex items-center justify-center">
               <User size={24} className="text-gray-400" />
             </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => handleSwipe('right')}
-              className="w-16 h-16 rounded-full bg-success flex items-center justify-center"
-              disabled={swipesRemaining <= 0 && tier === 'free'}
-            >
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleSwipe('right')} disabled={isProcessing || (swipesRemaining <= 0 && tier === 'free')} className="w-16 h-16 rounded-full bg-success flex items-center justify-center disabled:opacity-50">
               <Heart size={28} className="text-bg" />
             </motion.button>
           </div>
-
-          <p className="text-center text-gray-500 text-xs mt-4">
-            Пропустить • Профиль • Интересен
-          </p>
+          <p className="text-center text-gray-500 text-xs mt-4">Пропустить • Профиль • Интересен</p>
         </>
       )}
     </div>
