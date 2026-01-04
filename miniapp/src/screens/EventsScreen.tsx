@@ -984,7 +984,10 @@ const EventsScreen: React.FC = () => {
         <div className="px-4 mb-6 pb-20">
           <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
             <Ticket size={14} />
-            Мои билеты ({registrations?.length || 0})
+            Мои билеты ({registrations?.filter((r: any) =>
+              r.status !== 'cancelled' &&
+              (!r.event?.event_date || new Date(r.event.event_date) >= new Date())
+            ).length || 0})
           </h3>
           {registrationsError && (
             <Card className="mb-3 border-red-500/20">
@@ -993,10 +996,16 @@ const EventsScreen: React.FC = () => {
               </div>
             </Card>
           )}
-          {registrations && registrations.length > 0 ? (
-            registrations
-              .filter((r: any) => r.status !== 'cancelled')
-              .map((reg: any) => (
+          {(() => {
+            const activeRegistrations = registrations?.filter((r: any) => {
+              if (r.status === 'cancelled') return false
+              // Hide past events
+              if (r.event?.event_date && new Date(r.event.event_date) < new Date()) return false
+              return true
+            }) || []
+
+            return activeRegistrations.length > 0 ? (
+              activeRegistrations.map((reg: any) => (
                 <Card
                   key={reg.id}
                   onClick={() => setShowTicket({ registration: reg, event: reg.event })}
@@ -1017,14 +1026,15 @@ const EventsScreen: React.FC = () => {
                   </div>
                 </Card>
               ))
-          ) : !registrationsError ? (
-            <Card className="mb-3">
-              <div className="text-center text-gray-400 py-4">
-                <Ticket size={24} className="mx-auto mb-2 opacity-50" />
-                <div className="text-sm">Нет регистраций на события</div>
-              </div>
-            </Card>
-          ) : null}
+            ) : !registrationsError ? (
+              <Card className="mb-3">
+                <div className="text-center text-gray-400 py-4">
+                  <Ticket size={24} className="mx-auto mb-2 opacity-50" />
+                  <div className="text-sm">Нет активных билетов</div>
+                </div>
+              </Card>
+            ) : null
+          })()}
         </div>
       )}
 
