@@ -121,7 +121,17 @@ export async function createProfile(userId: number, profileData: {
 }
 
 export async function getApprovedProfiles(excludeUserId: number, city?: string) {
-  let query = getSupabase()
+  const supabase = getSupabase()
+
+  // Получаем ID уже просвайпанных пользователей
+  const { data: swipedData } = await supabase
+    .from('bot_swipes')
+    .select('swiped_id')
+    .eq('swiper_id', excludeUserId)
+
+  const swipedIds = swipedData?.map(s => s.swiped_id) || []
+
+  let query = supabase
     .from('bot_profiles')
     .select(`
       *,
@@ -130,6 +140,11 @@ export async function getApprovedProfiles(excludeUserId: number, city?: string) 
     .eq('moderation_status', 'approved')
     .eq('is_visible', true)
     .neq('user_id', excludeUserId)
+
+  // Исключаем уже просвайпанных пользователей
+  if (swipedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${swipedIds.join(',')})`)
+  }
 
   if (city) {
     query = query.eq('city', city)
@@ -420,21 +435,40 @@ export async function getEventCheckins(eventId: number) {
 
 // Get all registrations for an event (for volunteers/admins)
 export async function getEventRegistrations(eventId: number) {
-  const { data, error } = await getSupabase()
+  const supabase = getSupabase()
+
+  // Get registrations
+  const { data: registrations, error } = await supabase
     .from('bot_registrations')
-    .select(`
-      *,
-      user:bot_users!bot_registrations_user_id_fkey(
-        id, first_name, last_name, username, tg_user_id, phone_number,
-        profile:bot_profiles(photo_url)
-      )
-    `)
+    .select('*')
     .eq('event_id', eventId)
     .neq('status', 'cancelled')
     .order('registered_at', { ascending: false })
 
   if (error) throw error
-  return data || []
+  if (!registrations || registrations.length === 0) return []
+
+  // Get user IDs
+  const userIds = registrations.map(r => r.user_id)
+
+  // Fetch users
+  const { data: users } = await supabase
+    .from('bot_users')
+    .select('id, first_name, last_name, username, tg_user_id, phone_number')
+    .in('id', userIds)
+
+  // Fetch profiles
+  const { data: profiles } = await supabase
+    .from('bot_profiles')
+    .select('user_id, photo_url')
+    .in('user_id', userIds)
+
+  // Combine data
+  return registrations.map(reg => ({
+    ...reg,
+    user: users?.find(u => u.id === reg.user_id) || null,
+    profile: profiles?.find(p => p.user_id === reg.user_id) || null,
+  }))
 }
 
 // Cancel registration

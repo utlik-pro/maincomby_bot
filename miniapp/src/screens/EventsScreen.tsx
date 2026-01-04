@@ -945,8 +945,8 @@ const EventsScreen: React.FC = () => {
           ) : leads && leads.length > 0 ? (
             <div className="space-y-2">
               {leads.map((reg: any) => {
-                const userData = Array.isArray(reg.user) ? reg.user[0] : reg.user
-                const profileData = userData?.profile ? (Array.isArray(userData.profile) ? userData.profile[0] : userData.profile) : null
+                const userData = reg.user
+                const profileData = reg.profile
                 const isCheckedIn = reg.status === 'attended'
                 return (
                   <Card key={reg.id} className="flex items-center gap-3">

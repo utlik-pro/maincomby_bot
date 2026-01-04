@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, notifyNewMatch } from '@/lib/telegram'
+import { hapticFeedback } from '@/lib/telegram'
 import {
   getApprovedProfiles,
   createSwipe,
@@ -111,12 +111,29 @@ const NetworkScreen: React.FC = () => {
             { matchedUserId: user.id }
           ).catch(console.error)
 
-          // Also send Telegram bot notifications
+          // Send Telegram bot notifications via API (to avoid CORS)
+          const sendMatchNotification = async (userTgId: number, name: string, matchedId: number, recipientId: number) => {
+            try {
+              await fetch('https://iishnica.vercel.app/api/send-match-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userTgId,
+                  matchName: name,
+                  matchedUserId: matchedId,
+                  userId: recipientId,
+                }),
+              })
+            } catch (e) {
+              console.error('Failed to send match notification:', e)
+            }
+          }
+
           if (targetUser?.tg_user_id) {
-            notifyNewMatch(targetUser.tg_user_id, myName).catch(console.error)
+            sendMatchNotification(targetUser.tg_user_id, myName, user.id, targetUserId)
           }
           if (user.tg_user_id) {
-            notifyNewMatch(user.tg_user_id, theirName).catch(console.error)
+            sendMatchNotification(user.tg_user_id, theirName, targetUserId, user.id)
           }
 
           return { match: true, matchName: theirName }

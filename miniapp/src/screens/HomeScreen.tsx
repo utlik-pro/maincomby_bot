@@ -81,6 +81,14 @@ const HomeScreen: React.FC = () => {
     enabled: !!user,
   })
 
+  // Fetch user's active skin
+  const { data: userActiveSkin } = useQuery({
+    queryKey: ['userActiveSkin', user?.id],
+    queryFn: () => (user ? getUserActiveSkin(user.id) : null),
+    enabled: !!user,
+    staleTime: 60000,
+  })
+
   // Fetch latest event for announcement
   const { data: announcementEvent } = useQuery({
     queryKey: ['eventAnnouncement', lastDismissedAnnouncementEventId],
@@ -127,14 +135,25 @@ const HomeScreen: React.FC = () => {
       {/* Header with Profile */}
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`rounded-full ${getAvatarRing(user?.team_role, tier)}`}>
-            <Avatar
+          {/* Avatar with skin - uses new skin system, falls back to legacy ring if no skin */}
+          {userActiveSkin ? (
+            <AvatarWithSkin
               src={profile?.photo_url}
               name={user?.first_name || 'User'}
               size="lg"
               badge={user?.subscription_tier === 'pro' ? 'PRO' : user?.subscription_tier === 'light' ? 'LIGHT' : undefined}
+              skin={userActiveSkin}
             />
-          </div>
+          ) : (
+            <div className={`rounded-full ${getLegacyAvatarRing(user?.team_role, tier)}`}>
+              <Avatar
+                src={profile?.photo_url}
+                name={user?.first_name || 'User'}
+                size="lg"
+                badge={user?.subscription_tier === 'pro' ? 'PRO' : user?.subscription_tier === 'light' ? 'LIGHT' : undefined}
+              />
+            </div>
+          )}
           <div>
             <div className="font-semibold text-lg">{user?.first_name || 'Пользователь'}</div>
             <div className="flex items-center gap-2">
