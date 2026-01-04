@@ -214,11 +214,6 @@ const NetworkScreen: React.FC = () => {
   // Main view
   return (
     <div className="p-4">
-      {/* Debug */}
-      <div className="mb-2 p-2 bg-yellow-900/50 rounded text-xs text-yellow-300">
-        profiles: {profiles?.length ?? 0} | loading: {isLoading ? 'Y' : 'N'} | processing: {isProcessing ? 'Y' : 'N'}
-      </div>
-
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
