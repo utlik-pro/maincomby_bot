@@ -55,7 +55,7 @@ const NetworkScreen: React.FC = () => {
   const swipesRemaining = getDailySwipesRemaining()
 
   // Fetch profiles to swipe (показываем всех, рандомизируем порядок)
-  const { data: profiles, isLoading } = useQuery({
+  const { data: profiles, isLoading, isFetching } = useQuery({
     queryKey: ['swipeProfiles', user?.id],
     queryFn: async () => {
       if (!user) return []
@@ -64,7 +64,7 @@ const NetworkScreen: React.FC = () => {
       return allProfiles.sort(() => Math.random() - 0.5)
     },
     enabled: !!user,
-    staleTime: 60000, // Кешируем на 1 минуту чтобы не перемешивать при каждом свайпе
+    staleTime: Infinity, // Не рефетчим автоматически - управляем вручную
   })
 
   // Fetch matches
@@ -143,8 +143,7 @@ const NetworkScreen: React.FC = () => {
       return { match: false }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['swipeProfiles'] })
-
+      // Не инвалидируем swipeProfiles - просто переходим к следующему
       if (result.match) {
         hapticFeedback.success()
         addToast(`Матч с ${result.matchName}!`, 'success')
@@ -155,7 +154,10 @@ const NetworkScreen: React.FC = () => {
     },
   })
 
-  const currentProfile = profiles?.[currentIndex % (profiles?.length || 1)] as ProfileWithUser | undefined
+  // Берём текущий профиль, учитывая что список может закончиться
+  const currentProfile = (profiles && profiles.length > 0 && currentIndex < profiles.length)
+    ? profiles[currentIndex] as ProfileWithUser
+    : undefined
 
   const handleSwipe = useCallback(
     async (direction: 'left' | 'right') => {
