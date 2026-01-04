@@ -837,7 +837,7 @@ const EventsScreen: React.FC = () => {
               </h3>
 
               {selectedCalendarEvents.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {selectedCalendarEvents.map((event) => {
                     const registration = getRegistrationForEvent(event.id)
                     const IconComponent = eventTypeIcons[event.event_type || 'default'] || eventTypeIcons.default
@@ -847,23 +847,28 @@ const EventsScreen: React.FC = () => {
                         key={event.id}
                         onClick={() => setSelectedEvent(event)}
                         highlighted={!!registration}
-                        className="flex gap-3"
+                        className="flex gap-3 items-center py-3"
                       >
-                        <div className="w-14 h-14 bg-bg rounded-xl flex items-center justify-center flex-shrink-0">
-                          {IconComponent}
+                        <div className="w-10 h-10 bg-bg rounded-xl flex items-center justify-center flex-shrink-0">
+                          {React.cloneElement(IconComponent as React.ReactElement, { size: 20 })}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold truncate">{event.title}</div>
-                          <div className="text-sm text-accent flex items-center gap-1">
-                            <Clock size={12} />
+                          <div className="font-semibold truncate text-sm">{event.title}</div>
+                          <div className="text-xs text-accent flex items-center gap-1">
+                            <Clock size={10} />
                             {format(new Date(event.event_date), 'HH:mm')}
                           </div>
                           <div className="text-xs text-gray-400 truncate flex items-center gap-1">
-                            <MapPin size={12} />
+                            <MapPin size={10} />
                             {event.location}
                           </div>
                         </div>
-                        {registration && <Check size={16} className="text-accent flex-shrink-0" />}
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          {registration && <Check size={14} className="text-accent" />}
+                          <Badge variant={event.price === 0 ? 'accent' : 'default'} className="text-xs px-2 py-0.5">
+                            {event.price === 0 ? 'Free' : `${event.price} BYN`}
+                          </Badge>
+                        </div>
                       </Card>
                     )
                   })}
@@ -1128,31 +1133,27 @@ const EventsScreen: React.FC = () => {
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
                   highlighted={!!registration}
-                  className="flex gap-3"
+                  className="flex gap-3 items-center py-3"
                 >
-                  <div className="w-16 h-16 bg-bg rounded-xl flex items-center justify-center flex-shrink-0">
-                    {IconComponent}
+                  <div className="w-12 h-12 bg-bg rounded-xl flex items-center justify-center flex-shrink-0">
+                    {React.cloneElement(IconComponent as React.ReactElement, { size: 24 })}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
-                      <div className="font-semibold truncate pr-2">{event.title}</div>
-                      {registration && <Check size={16} className="text-accent flex-shrink-0" />}
-                    </div>
-                    <div className="text-sm text-accent mb-1 flex items-center gap-1">
-                      <Clock size={12} />
+                    <div className="font-semibold truncate text-sm">{event.title}</div>
+                    <div className="text-xs text-accent flex items-center gap-1">
+                      <Clock size={10} />
                       {formatEventDate(event.event_date)} • {format(new Date(event.event_date), 'HH:mm')}
                     </div>
                     <div className="text-xs text-gray-400 truncate flex items-center gap-1">
-                      <MapPin size={12} />
+                      <MapPin size={10} />
                       {event.location}
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      {event.price === 0 ? (
-                        <Badge variant="accent">Free</Badge>
-                      ) : (
-                        <Badge>{event.price} BYN</Badge>
-                      )}
-                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    {registration && <Check size={14} className="text-accent" />}
+                    <Badge variant={event.price === 0 ? 'accent' : 'default'} className="text-xs px-2 py-0.5">
+                      {event.price === 0 ? 'Free' : `${event.price} BYN`}
+                    </Badge>
                   </div>
                 </Card>
               )
