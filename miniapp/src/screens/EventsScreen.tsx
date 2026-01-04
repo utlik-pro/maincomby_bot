@@ -425,11 +425,21 @@ const EventsScreen: React.FC = () => {
   })
 
   // Fetch event registrations/leads (for core team/volunteers)
-  const { data: leads, isLoading: leadsLoading } = useQuery({
+  const { data: leads, isLoading: leadsLoading, error: leadsError } = useQuery({
     queryKey: ['eventLeads', selectedLeadsEvent],
-    queryFn: () => (selectedLeadsEvent ? getEventRegistrations(selectedLeadsEvent) : []),
+    queryFn: async () => {
+      console.log('[Leads] Fetching for event:', selectedLeadsEvent)
+      const result = await getEventRegistrations(selectedLeadsEvent!)
+      console.log('[Leads] Result:', result)
+      return result
+    },
     enabled: !!selectedLeadsEvent && canAccessScanner(),
   })
+
+  // Log leads error
+  if (leadsError) {
+    console.error('[Leads] Error:', leadsError)
+  }
 
   // Auto-select first event for checkins when events load
   useEffect(() => {
@@ -915,8 +925,16 @@ const EventsScreen: React.FC = () => {
           {/* Leads list */}
           <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
             <Users size={14} />
-            Зарегистрированные ({leads?.length || 0})
+            Зарегистрированные ({leads?.length || 0}) {selectedLeadsEvent && `[Event: ${selectedLeadsEvent}]`}
           </h3>
+
+          {leadsError && (
+            <Card className="mb-3 border-red-500/20">
+              <div className="text-red-400 text-sm">
+                Ошибка: {String(leadsError)}
+              </div>
+            </Card>
+          )}
 
           {leadsLoading ? (
             <div className="space-y-3">
