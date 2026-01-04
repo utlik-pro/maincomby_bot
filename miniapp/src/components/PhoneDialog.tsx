@@ -98,6 +98,9 @@ export const PhoneDialog: React.FC<PhoneDialogProps> = ({
                       <Send size={18} />
                       Поделиться из Telegram
                     </Button>
+                    <p className="text-xs text-gray-500 text-center">
+                      Если не получается — проверьте настройки приватности Telegram
+                    </p>
                     <button
                       onClick={() => setMode('manual')}
                       className="w-full py-3 px-4 rounded-xl bg-white/5 text-white font-semibold hover:bg-white/10 transition-colors"
