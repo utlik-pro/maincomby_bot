@@ -147,7 +147,10 @@ export async function getApprovedProfiles(excludeUserId: number, city?: string) 
     .from('bot_profiles')
     .select(`
       *,
-      user:bot_users(*)
+      user:bot_users(
+        *,
+        active_skin:avatar_skins(*)
+      )
     `)
     .eq('is_visible', true)
     .neq('user_id', excludeUserId)
@@ -255,10 +258,13 @@ export async function getUserMatches(userId: number) {
     userIds.add(m.user2_id)
   })
 
-  // Fetch users and profiles
+  // Fetch users and profiles with skin data
   const { data: users } = await supabase
     .from('bot_users')
-    .select('*')
+    .select(`
+      *,
+      active_skin:avatar_skins(*)
+    `)
     .in('id', Array.from(userIds))
 
   const { data: profiles } = await supabase
@@ -877,7 +883,8 @@ export async function getLeaderboard(limit = 10) {
       points,
       team_role,
       subscription_tier,
-      profile:bot_profiles(photo_url)
+      profile:bot_profiles(photo_url),
+      active_skin:avatar_skins(*)
     `)
     .gt('points', 0)
     .order('points', { ascending: false })
@@ -898,7 +905,8 @@ export async function getTeamMembers() {
       first_name,
       last_name,
       team_role,
-      profile:bot_profiles(photo_url, occupation, bio)
+      profile:bot_profiles(photo_url, occupation, bio),
+      active_skin:avatar_skins(*)
     `)
     .not('team_role', 'is', null)
     .order('team_role', { ascending: true })

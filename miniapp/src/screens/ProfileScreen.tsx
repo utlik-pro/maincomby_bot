@@ -814,13 +814,15 @@ const ProfileScreen: React.FC = () => {
                 const role = member.team_role as Exclude<TeamRole, null>
                 const badge = TEAM_BADGES[role]
                 const profileData = Array.isArray(member.profile) ? member.profile[0] : member.profile
+                const skinData = Array.isArray(member.active_skin) ? member.active_skin[0] : member.active_skin
 
                 return (
                   <Card key={member.id} className="flex items-center gap-3">
-                    <Avatar
+                    <AvatarWithSkin
                       src={profileData?.photo_url}
                       name={member.first_name || 'User'}
                       size="md"
+                      skin={skinData}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold truncate">

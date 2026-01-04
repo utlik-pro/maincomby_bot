@@ -24,7 +24,7 @@ import {
   getUserMatches,
   createNotification,
 } from '@/lib/supabase'
-import { Avatar, Button, Card, EmptyState, Skeleton } from '@/components/ui'
+import { Avatar, AvatarWithSkin, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { SUBSCRIPTION_LIMITS, UserProfile, User as UserType } from '@/types'
 
 type ProfileWithUser = UserProfile & { user: UserType }
@@ -151,9 +151,11 @@ const NetworkScreen: React.FC = () => {
             {matches.map((match: any) => {
               const matchUser = match.user1_id === user?.id ? match.user2 : match.user1
               const matchProfile = match.user1_id === user?.id ? match.profile2 : match.profile1
+              const matchSkin = matchUser?.active_skin
+              const skinData = Array.isArray(matchSkin) ? matchSkin[0] : matchSkin
               return (
                 <Card key={match.id} className="flex items-center gap-3">
-                  <Avatar src={matchProfile?.photo_url} name={matchUser?.first_name} size="md" />
+                  <AvatarWithSkin src={matchProfile?.photo_url} name={matchUser?.first_name} size="md" skin={skinData} />
                   <div className="flex-1">
                     <div className="font-semibold">{matchUser?.first_name} {matchUser?.last_name}</div>
                     <div className="text-sm text-gray-400">{matchProfile?.occupation || 'Участник'}</div>
@@ -175,6 +177,8 @@ const NetworkScreen: React.FC = () => {
   // Profile detail view
   if (showProfileDetail) {
     const p = showProfileDetail
+    const profileSkin = (p.user as any)?.active_skin
+    const profileSkinData = Array.isArray(profileSkin) ? profileSkin[0] : profileSkin
     return (
       <div className="p-4">
         <button onClick={() => setShowProfileDetail(null)} className="text-gray-400 mb-4 flex items-center gap-2">
@@ -184,7 +188,7 @@ const NetworkScreen: React.FC = () => {
 
         <Card className="mb-6">
           <div className="flex gap-4 items-center">
-            <Avatar src={p.photo_url} name={p.user?.first_name} size="xl" />
+            <AvatarWithSkin src={p.photo_url} name={p.user?.first_name} size="xl" skin={profileSkinData} />
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-bold truncate">{p.user?.first_name} {p.user?.last_name}</h2>
               <p className="text-accent flex items-center gap-1"><Briefcase size={14} /><span className="truncate">{p.occupation || 'Участник'}</span></p>
@@ -256,7 +260,11 @@ const NetworkScreen: React.FC = () => {
           <Card className="p-4">
             <div className="flex gap-4 items-start">
               <div className="flex-shrink-0">
-                <Avatar src={currentProfile.photo_url} name={currentProfile.user?.first_name} size="xl" />
+                {(() => {
+                  const swipeSkin = (currentProfile.user as any)?.active_skin
+                  const swipeSkinData = Array.isArray(swipeSkin) ? swipeSkin[0] : swipeSkin
+                  return <AvatarWithSkin src={currentProfile.photo_url} name={currentProfile.user?.first_name} size="xl" skin={swipeSkinData} />
+                })()}
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-bold truncate">{currentProfile.user?.first_name} {currentProfile.user?.last_name}</h2>

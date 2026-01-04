@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { getUserAchievements, getLeaderboard } from '@/lib/supabase'
-import { Avatar, Badge, Card, Progress } from '@/components/ui'
+import { Avatar, AvatarWithSkin, Badge, Card, Progress } from '@/components/ui'
 import { ACHIEVEMENTS, RANK_LABELS, RANK_THRESHOLDS, UserRank, AchievementId } from '@/types'
 
 // Icon mapping for ranks
@@ -216,6 +216,7 @@ const AchievementsScreen: React.FC = () => {
           {leaderboard.length > 0 ? (
             leaderboard.map((member: any, index: number) => {
               const profileData = Array.isArray(member.profile) ? member.profile[0] : member.profile
+              const skinData = Array.isArray(member.active_skin) ? member.active_skin[0] : member.active_skin
               const medalColors = ['text-yellow-400', 'text-gray-300', 'text-orange-400']
               const isCurrentUser = member.id === user?.id
               return (
@@ -226,10 +227,11 @@ const AchievementsScreen: React.FC = () => {
                   <div className={`w-6 text-center font-bold ${medalColors[index] || 'text-gray-500'}`}>
                     {index + 1}
                   </div>
-                  <Avatar
+                  <AvatarWithSkin
                     src={profileData?.photo_url}
                     name={member.first_name}
                     size="sm"
+                    skin={skinData}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">

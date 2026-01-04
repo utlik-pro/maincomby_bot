@@ -60,6 +60,21 @@ const sizeClasses = {
   xl: 'w-24 h-24',
 }
 
+// Proportional badge sizes for skin badges
+const badgeSizeClasses: Record<string, string> = {
+  sm: 'px-1 py-0.5 text-[7px] gap-0.5 -bottom-1',
+  md: 'px-1.5 py-0.5 text-[9px] gap-0.5 -bottom-1.5',
+  lg: 'px-2 py-0.5 text-[11px] gap-1 -bottom-2',
+  xl: 'px-2.5 py-0.5 text-xs gap-1 -bottom-2.5',
+}
+
+const badgeIconSizes: Record<string, number> = {
+  sm: 8,
+  md: 10,
+  lg: 12,
+  xl: 14,
+}
+
 export const Avatar: React.FC<AvatarProps> = ({ src, name, size = 'md', badge, className = '' }) => {
   const initials = name
     ?.split(' ')
@@ -108,8 +123,8 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
   showSkinBadge,
   className = ''
 }) => {
-  // Default: show skin badge for md/lg/xl sizes
-  const shouldShowSkinBadge = showSkinBadge ?? (size !== 'sm')
+  // Default: show skin badge for all sizes (proportionally scaled)
+  const shouldShowSkinBadge = showSkinBadge ?? true
 
   const initials = name
     ?.split(' ')
@@ -181,7 +196,7 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
       )}
       {skin?.slug && shouldShowSkinBadge && (
         <div
-          className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs font-bold whitespace-nowrap z-10"
+          className={`absolute left-1/2 -translate-x-1/2 rounded-full flex items-center font-bold whitespace-nowrap z-10 ${badgeSizeClasses[size]}`}
           style={{
             backgroundColor: skin.ring_color,
             color: getContrastColor(skin.ring_color)
@@ -189,7 +204,7 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
         >
           {(() => {
             const IconComponent = getSkinIcon(skin.slug)
-            return <IconComponent size={12} />
+            return <IconComponent size={badgeIconSizes[size]} />
           })()}
           {skin.name.toUpperCase()}
         </div>
