@@ -424,7 +424,7 @@ export async function getEventRegistrations(eventId: number) {
     .from('bot_registrations')
     .select(`
       *,
-      user:bot_users(
+      user:bot_users!bot_registrations_user_id_fkey(
         id, first_name, last_name, username, tg_user_id, phone_number,
         profile:bot_profiles(photo_url)
       )

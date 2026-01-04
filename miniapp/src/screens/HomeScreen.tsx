@@ -16,17 +16,17 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { Avatar, Badge, Card, Progress } from '@/components/ui'
-import { RANK_LABELS } from '@/types'
+import { Avatar, AvatarWithSkin, Badge, Card, Progress } from '@/components/ui'
+import { RANK_LABELS, AvatarSkin } from '@/types'
 import { useTapEasterEgg } from '@/lib/easterEggs'
-import { getUnreadNotificationsCount, getLeaderboard, getUserStats, requestConsultation, getLatestEventForAnnouncement } from '@/lib/supabase'
+import { getUnreadNotificationsCount, getLeaderboard, getUserStats, requestConsultation, getLatestEventForAnnouncement, getUserActiveSkin } from '@/lib/supabase'
 import { useToastStore } from '@/lib/store'
 import { openTelegramLink } from '@/lib/telegram'
 import NotificationsScreen from './NotificationsScreen'
 import EventAnnouncementModal from '@/components/EventAnnouncementModal'
 
-// Avatar ring styles based on role/tier
-const getAvatarRing = (teamRole?: string | null, tier?: string) => {
+// Legacy fallback - Avatar ring styles based on role/tier (used when skin system not available)
+const getLegacyAvatarRing = (teamRole?: string | null, tier?: string) => {
   if (teamRole === 'core') return 'ring-4 ring-[#c8ff00] ring-offset-2 ring-offset-bg shadow-[0_0_20px_rgba(200,255,0,0.3)]'
   if (teamRole === 'speaker') return 'ring-4 ring-purple-400 ring-offset-2 ring-offset-bg'
   if (teamRole === 'partner') return 'ring-4 ring-teal-400 ring-offset-2 ring-offset-bg'

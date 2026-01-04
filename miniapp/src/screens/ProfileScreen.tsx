@@ -27,18 +27,19 @@ import {
   Smartphone,
   Users,
   ExternalLink,
+  Palette,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported } from '@/lib/telegram'
-import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats } from '@/lib/supabase'
-import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
+import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin } from '@/lib/supabase'
+import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
 import { CompanySelector } from '@/components/CompanySelector'
 import { SocialLinks } from '@/components/SocialLinks'
 import { SocialLinksEdit } from '@/components/SocialLinksEdit'
 import { TagInput } from '@/components/TagInput'
-import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge } from '@/types'
+import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
 
@@ -154,10 +155,12 @@ const ProfileScreen: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showTeamSection, setShowTeamSection] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showSkinSelector, setShowSkinSelector] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [skinSaving, setSkinSaving] = useState(false)
 
   // Easter eggs (tap-based)
   const { handleTap: handleAvatarTap } = useTapEasterEgg('avatar_taps', 5)
@@ -210,6 +213,17 @@ const ProfileScreen: React.FC = () => {
     enabled: !!user,
     staleTime: 60000,
   })
+
+  // Fetch user's available skins
+  const { data: userSkins = [], refetch: refetchSkins } = useQuery({
+    queryKey: ['userSkins', user?.id],
+    queryFn: () => (user ? getUserAvailableSkins(user.id) : []),
+    enabled: !!user,
+    staleTime: 60000,
+  })
+
+  // Get active skin from user's skins
+  const activeSkin = userSkins.find(s => s.is_active_skin)?.skin || null
 
   // Selected badge for detail popup
   const [selectedBadge, setSelectedBadge] = useState<UserBadge | null>(null)
@@ -766,6 +780,154 @@ const ProfileScreen: React.FC = () => {
     )
   }
 
+  // Skin Selector Screen
+  if (showSkinSelector) {
+    const handleSkinSelect = async (skinId: string) => {
+      if (!user) return
+      setSkinSaving(true)
+      hapticFeedback.medium()
+
+      try {
+        await setUserActiveSkin(user.id, skinId)
+        await refetchSkins()
+        hapticFeedback.success()
+        addToast('Скин активирован!', 'success')
+      } catch (error) {
+        hapticFeedback.error()
+        addToast('Ошибка при смене скина', 'error')
+      } finally {
+        setSkinSaving(false)
+      }
+    }
+
+    const handleRemoveSkin = async () => {
+      if (!user) return
+      setSkinSaving(true)
+      hapticFeedback.medium()
+
+      try {
+        await setUserActiveSkin(user.id, null)
+        await refetchSkins()
+        hapticFeedback.success()
+        addToast('Скин снят', 'success')
+      } catch (error) {
+        hapticFeedback.error()
+        addToast('Ошибка', 'error')
+      } finally {
+        setSkinSaving(false)
+      }
+    }
+
+    return (
+      <div className="pb-6">
+        <button onClick={() => setShowSkinSelector(false)} className="p-4 text-gray-400 flex items-center gap-2">
+          <ArrowLeft size={16} />
+          Назад
+        </button>
+
+        <div className="px-4">
+          <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+            <Palette size={24} className="text-accent" />
+            Мой скин
+          </h1>
+          <p className="text-gray-400 text-sm mb-6">Выберите рамку для вашего аватара</p>
+
+          {/* Current skin preview */}
+          <Card className="mb-6 flex items-center gap-4">
+            <AvatarWithSkin
+              src={profile?.photo_url}
+              name={user?.first_name || 'User'}
+              size="xl"
+              skin={activeSkin}
+            />
+            <div>
+              <div className="text-sm text-gray-400">Текущий скин</div>
+              <div className="font-semibold">
+                {activeSkin ? (
+                  <span className="flex items-center gap-2">
+                    {activeSkin.icon_emoji} {activeSkin.name}
+                  </span>
+                ) : (
+                  'Без скина'
+                )}
+              </div>
+              {activeSkin?.description && (
+                <div className="text-xs text-gray-500 mt-1">{activeSkin.description}</div>
+              )}
+            </div>
+          </Card>
+
+          {/* Available skins */}
+          {userSkins.length > 0 ? (
+            <>
+              <h3 className="text-sm text-gray-400 mb-3">Доступные скины ({userSkins.length})</h3>
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {userSkins.map((userSkin) => (
+                  <SkinPreview
+                    key={userSkin.id}
+                    skin={userSkin.skin!}
+                    isActive={userSkin.is_active_skin}
+                    onClick={() => !skinSaving && handleSkinSelect(userSkin.skin_id)}
+                    size="sm"
+                  />
+                ))}
+              </div>
+
+              {activeSkin && (
+                <Button
+                  fullWidth
+                  variant="secondary"
+                  onClick={handleRemoveSkin}
+                  disabled={skinSaving}
+                >
+                  Снять скин
+                </Button>
+              )}
+            </>
+          ) : (
+            <Card className="text-center py-8">
+              <Palette size={48} className="mx-auto text-gray-500 mb-3" />
+              <p className="text-gray-400 font-medium mb-2">У вас пока нет скинов</p>
+              <p className="text-sm text-gray-500">
+                Скины выдаются за достижения, участие в событиях и другие активности
+              </p>
+            </Card>
+          )}
+
+          {/* How to get skins */}
+          <Card className="mt-6 bg-bg-card/50">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Gift size={18} className="text-accent" />
+              Как получить скины?
+            </h3>
+            <div className="space-y-2 text-sm text-gray-400">
+              <div className="flex items-start gap-2">
+                <span className="text-accent">•</span>
+                <span><b>Core Team</b> — для членов команды MAIN</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-accent">•</span>
+                <span><b>Volunteer</b> — за волонтёрство на событиях</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-accent">•</span>
+                <span><b>Speaker</b> — за выступление на событии</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-accent">•</span>
+                <span><b>Champion</b> — за топ-3 в лидерборде</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-accent">•</span>
+                <span><b>Pro Member</b> — с PRO подпиской</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="pb-6">
       {/* Header with themed gradient background */}
@@ -983,6 +1145,7 @@ const ProfileScreen: React.FC = () => {
             { icon: <Ticket size={20} className="text-purple-400" />, label: 'Мои билеты', badge: null, onClick: () => setActiveTab('events') },
             { icon: <Heart size={20} className="text-pink-400" />, label: 'Мои матчи', badge: null, onClick: () => setActiveTab('network') },
             { icon: <Trophy size={20} className="text-yellow-400" />, label: 'Достижения', badge: null, onClick: () => setActiveTab('achievements') },
+            { icon: <Palette size={20} className="text-orange-400" />, label: 'Мой скин', badge: userSkins.length > 0 ? userSkins.length : null, onClick: () => setShowSkinSelector(true) },
             { icon: <Settings size={20} className="text-gray-400" />, label: 'Настройки', badge: null, onClick: () => setShowSettings(true) },
           ].map((item, i, arr) => (
             <motion.div

@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import type { AvatarSkin } from '@/types'
 
 // Avatar component
 interface AvatarProps {
@@ -42,6 +43,157 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name, size = 'md', badge, c
         </div>
       )}
     </div>
+  )
+}
+
+// Avatar with Skin component - unified display of avatars with skin rings
+interface AvatarWithSkinProps {
+  src?: string | null | undefined
+  name?: string | null
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  badge?: string
+  skin?: AvatarSkin | null
+  className?: string
+}
+
+export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
+  src,
+  name,
+  size = 'md',
+  badge,
+  skin,
+  className = ''
+}) => {
+  const initials = name
+    ?.split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  // Build ring classes based on skin
+  const getRingClasses = () => {
+    if (!skin) return ''
+
+    const classes: string[] = []
+
+    // Ring width
+    const ringWidthMap: Record<number, string> = {
+      2: 'ring-2',
+      3: 'ring-[3px]',
+      4: 'ring-4',
+    }
+    classes.push(ringWidthMap[skin.ring_width] || 'ring-4')
+
+    // Ring offset
+    const offsetMap: Record<number, string> = {
+      1: 'ring-offset-1',
+      2: 'ring-offset-2',
+    }
+    classes.push(offsetMap[skin.ring_offset] || 'ring-offset-2')
+    classes.push('ring-offset-bg')
+
+    return classes.join(' ')
+  }
+
+  // Build inline styles for ring color and glow
+  const getRingStyles = (): React.CSSProperties => {
+    if (!skin) return {}
+
+    const styles: React.CSSProperties = {
+      '--tw-ring-color': skin.ring_color,
+    } as React.CSSProperties
+
+    if (skin.glow_enabled && skin.glow_color) {
+      styles.boxShadow = `0 0 ${skin.glow_intensity || 20}px ${skin.glow_color}`
+    }
+
+    return styles
+  }
+
+  return (
+    <div className={`relative ${className}`}>
+      <div
+        className={`${sizeClasses[size]} rounded-full ${getRingClasses()}`}
+        style={getRingStyles()}
+      >
+        <div
+          className={`w-full h-full rounded-full bg-bg-card overflow-hidden flex items-center justify-center`}
+        >
+          {src ? (
+            <img src={src} alt={name || 'Avatar'} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-accent font-bold">{initials || '?'}</span>
+          )}
+        </div>
+      </div>
+      {badge && (
+        <div className="absolute -bottom-1 -right-1 bg-accent text-bg text-[10px] font-bold px-1.5 py-0.5 rounded-md z-10">
+          {badge}
+        </div>
+      )}
+      {skin?.icon_emoji && (
+        <div className="absolute -top-1 -right-1 text-sm z-10">
+          {skin.icon_emoji}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Skin preview component for skin selector
+interface SkinPreviewProps {
+  skin: AvatarSkin
+  isActive?: boolean
+  isLocked?: boolean
+  onClick?: () => void
+  size?: 'sm' | 'md'
+}
+
+export const SkinPreview: React.FC<SkinPreviewProps> = ({
+  skin,
+  isActive = false,
+  isLocked = false,
+  onClick,
+  size = 'md'
+}) => {
+  const sizeClass = size === 'sm' ? 'w-16 h-16' : 'w-20 h-20'
+  const ringClass = size === 'sm' ? 'ring-2' : 'ring-4'
+
+  const ringStyles: React.CSSProperties = {
+    '--tw-ring-color': skin.ring_color,
+  } as React.CSSProperties
+
+  if (skin.glow_enabled && skin.glow_color) {
+    ringStyles.boxShadow = `0 0 ${skin.glow_intensity || 20}px ${skin.glow_color}`
+  }
+
+  return (
+    <motion.div
+      whileTap={onClick ? { scale: 0.95 } : undefined}
+      onClick={onClick}
+      className={`
+        flex flex-col items-center gap-2 p-3 rounded-xl
+        ${onClick ? 'cursor-pointer' : ''}
+        ${isActive ? 'bg-accent/20 border border-accent' : 'bg-bg-card'}
+        ${isLocked ? 'opacity-50' : ''}
+        transition-all
+      `}
+    >
+      <div
+        className={`${sizeClass} rounded-full ${ringClass} ring-offset-2 ring-offset-bg bg-gradient-to-br from-gray-600 to-gray-800`}
+        style={ringStyles}
+      >
+        <div className="w-full h-full rounded-full flex items-center justify-center text-2xl">
+          {skin.icon_emoji || '👤'}
+        </div>
+      </div>
+      <div className="text-center">
+        <div className="text-xs font-medium truncate max-w-[80px]">{skin.name}</div>
+        {isLocked && <div className="text-[10px] text-gray-500">Заблокирован</div>}
+        {isActive && <div className="text-[10px] text-accent">Активен</div>}
+      </div>
+    </motion.div>
   )
 }
 
