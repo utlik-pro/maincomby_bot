@@ -37,6 +37,7 @@ import {
   getUserByTelegramId,
   checkAndUnlockAchievements,
   getEventCheckins,
+  getEventRegistrations,
 } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
@@ -385,8 +386,9 @@ const EventsScreen: React.FC = () => {
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
-  const [filter, setFilter] = useState<'all' | 'registered' | 'checkins'>('all')
+  const [filter, setFilter] = useState<'all' | 'registered' | 'checkins' | 'leads'>('all')
   const [selectedCheckinsEvent, setSelectedCheckinsEvent] = useState<number | null>(null)
+  const [selectedLeadsEvent, setSelectedLeadsEvent] = useState<number | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [showTicket, setShowTicket] = useState<{ registration: EventRegistration; event: Event } | null>(null)
   const [showScanner, setShowScanner] = useState(false)
@@ -419,12 +421,22 @@ const EventsScreen: React.FC = () => {
     enabled: !!selectedCheckinsEvent && canAccessScanner(),
   })
 
+  // Fetch event registrations/leads (for core team/volunteers)
+  const { data: leads, isLoading: leadsLoading } = useQuery({
+    queryKey: ['eventLeads', selectedLeadsEvent],
+    queryFn: () => (selectedLeadsEvent ? getEventRegistrations(selectedLeadsEvent) : []),
+    enabled: !!selectedLeadsEvent && canAccessScanner(),
+  })
+
   // Auto-select first event for checkins when events load
   useEffect(() => {
     if (filter === 'checkins' && events && events.length > 0 && !selectedCheckinsEvent) {
       setSelectedCheckinsEvent(events[0].id)
     }
-  }, [filter, events, selectedCheckinsEvent])
+    if (filter === 'leads' && events && events.length > 0 && !selectedLeadsEvent) {
+      setSelectedLeadsEvent(events[0].id)
+    }
+  }, [filter, events, selectedCheckinsEvent, selectedLeadsEvent])
 
   // Real-time subscription for check-in notifications
   useEffect(() => {
@@ -773,7 +785,10 @@ const EventsScreen: React.FC = () => {
         {[
           { id: 'all' as const, label: 'Все', icon: Calendar },
           { id: 'registered' as const, label: 'Мои', icon: Ticket },
-          ...(canAccessScanner() ? [{ id: 'checkins' as const, label: 'Check-ins', icon: UserCheck }] : []),
+          ...(canAccessScanner() ? [
+            { id: 'leads' as const, label: 'Лиды', icon: Users },
+            { id: 'checkins' as const, label: 'Check-ins', icon: UserCheck },
+          ] : []),
         ].map((f) => (
           <motion.button
             key={f.id}
@@ -782,6 +797,9 @@ const EventsScreen: React.FC = () => {
               setFilter(f.id)
               if (f.id === 'checkins' && events && events.length > 0 && !selectedCheckinsEvent) {
                 setSelectedCheckinsEvent(events[0].id)
+              }
+              if (f.id === 'leads' && events && events.length > 0 && !selectedLeadsEvent) {
+                setSelectedLeadsEvent(events[0].id)
               }
             }}
             className={`
@@ -794,6 +812,91 @@ const EventsScreen: React.FC = () => {
           </motion.button>
         ))}
       </div>
+
+      {/* Leads (for core team/volunteers) */}
+      {filter === 'leads' && canAccessScanner() && (
+        <div className="px-4 mb-6 pb-20">
+          {/* Event selector */}
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center gap-2">
+              <Calendar size={14} />
+              Выберите событие
+            </h3>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {events?.map((event: Event) => (
+                <motion.button
+                  key={event.id}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedLeadsEvent(event.id)}
+                  className={`
+                    px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap
+                    ${selectedLeadsEvent === event.id ? 'bg-accent text-bg' : 'bg-bg-card text-white'}
+                  `}
+                >
+                  {event.title}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Leads list */}
+          <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+            <Users size={14} />
+            Зарегистрированные ({leads?.length || 0})
+          </h3>
+
+          {leadsLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+            </div>
+          ) : leads && leads.length > 0 ? (
+            <div className="space-y-2">
+              {leads.map((reg: any) => {
+                const profileData = Array.isArray(reg.profile) ? reg.profile[0] : reg.profile
+                const userData = Array.isArray(reg.user) ? reg.user[0] : reg.user
+                const isCheckedIn = reg.status === 'attended'
+                return (
+                  <Card key={reg.id} className="flex items-center gap-3">
+                    <Avatar
+                      src={profileData?.photo_url}
+                      name={userData?.first_name || 'User'}
+                      size="sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">
+                        {userData?.first_name} {userData?.last_name || ''}
+                      </div>
+                      <div className="text-xs text-gray-400 flex items-center gap-2">
+                        <span>@{userData?.username || 'no_username'}</span>
+                        {userData?.phone_number && (
+                          <span className="text-accent">{userData.phone_number}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">
+                        {format(new Date(reg.registered_at), 'dd.MM HH:mm', { locale: ru })}
+                      </div>
+                      <Badge variant={isCheckedIn ? 'success' : 'default'} className="mt-1">
+                        {isCheckedIn ? <><Check size={12} /> Пришёл</> : 'Ждём'}
+                      </Badge>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          ) : (
+            <Card>
+              <div className="text-center text-gray-400 py-6">
+                <Users size={32} className="mx-auto mb-2 opacity-50" />
+                <div className="text-sm">Пока никто не зарегистрировался</div>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Check-ins (for core team/volunteers) */}
       {filter === 'checkins' && canAccessScanner() && (
@@ -925,8 +1028,8 @@ const EventsScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Events List (hide when checkins filter is active) */}
-      {filter !== 'checkins' && (
+      {/* Events List (hide when checkins or leads filter is active) */}
+      {filter !== 'checkins' && filter !== 'leads' && (
       <div className="px-4">
         {isLoading ? (
           <div className="space-y-4">
