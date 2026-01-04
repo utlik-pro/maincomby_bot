@@ -277,6 +277,19 @@ export async function getEventRegistration(eventId: number, userId: number) {
 export async function createEventRegistration(eventId: number, userId: number) {
   const supabase = getSupabase()
 
+  // Check if already registered
+  const { data: existing } = await supabase
+    .from('bot_registrations')
+    .select('id')
+    .eq('event_id', eventId)
+    .eq('user_id', userId)
+    .neq('status', 'cancelled')
+    .single()
+
+  if (existing) {
+    throw new Error('Вы уже зарегистрированы на это событие')
+  }
+
   // Generate unique ticket code
   const ticketCode = `MAIN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
