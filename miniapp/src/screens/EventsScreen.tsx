@@ -296,7 +296,7 @@ const EventDetail: React.FC<{
       <div className="p-4">
         <div className="flex gap-2 mb-3">
           <Badge variant="accent">{event.event_type || 'event'}</Badge>
-          {event.price === 0 ? (
+          {!event.price ? (
             <Badge>Бесплатно</Badge>
           ) : (
             <Badge>{event.price} BYN</Badge>
@@ -373,7 +373,7 @@ const EventDetail: React.FC<{
         ) : (
           <Button fullWidth onClick={onRegister}>
             <Ticket size={18} />
-            {event.price === 0 ? 'Зарегистрироваться' : `Купить билет — ${event.price} BYN`}
+            {!event.price ? 'Зарегистрироваться' : `Купить билет — ${event.price} BYN`}
           </Button>
         )}
       </div>
@@ -1151,8 +1151,8 @@ const EventsScreen: React.FC = () => {
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     {registration && <Check size={14} className="text-accent" />}
-                    <Badge variant={event.price === 0 ? 'accent' : 'default'} className="text-xs px-2 py-0.5">
-                      {event.price === 0 ? 'Free' : `${event.price} BYN`}
+                    <Badge variant={!event.price ? 'accent' : 'default'} className="text-xs px-2 py-0.5">
+                      {!event.price ? 'Бесплатно' : `${event.price} BYN`}
                     </Badge>
                   </div>
                 </Card>
