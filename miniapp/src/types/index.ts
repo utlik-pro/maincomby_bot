@@ -78,7 +78,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'regular', title: 'Завсегдатай', description: '10 событий', emoji: '🏆', xpReward: 150 },
 ]
 
-// Team roles/badges
+// Team roles/badges (legacy - kept for backwards compatibility)
 export type TeamRole =
   | 'core'      // Ядро команды MAIN
   | 'partner'   // Партнёр
@@ -93,6 +93,122 @@ export const TEAM_BADGES: Record<Exclude<TeamRole, null>, { label: string; color
   sponsor: { label: 'Спонсор', color: 'bg-yellow-500', icon: '⭐' },
   volunteer: { label: 'Волонтёр', color: 'bg-green-500', icon: '💚' },
   speaker: { label: 'Спикер', color: 'bg-purple-500', icon: '🎤' },
+}
+
+// ============================================
+// Avatar Skins System
+// ============================================
+
+// Skin permission types
+export type SkinPermission =
+  | 'can_checkin_events'   // Volunteer can check in attendees
+  | 'can_create_posts'     // Can create community posts
+  | 'is_admin'             // Admin access
+  | 'is_moderator'         // Moderation access
+  | 'priority_matching'    // Priority in matching feed
+  | 'unlimited_swipes'     // Bypass swipe limits
+
+// Skin grant types
+export type SkinGrantType =
+  | 'manual'        // Manually awarded by admin
+  | 'achievement'   // Auto-awarded for achievement
+  | 'subscription'  // Auto-awarded for subscription tier
+  | 'event'         // Auto-awarded for event participation
+  | 'auto'          // Auto-awarded by system rules
+
+// Avatar skin from database
+export interface AvatarSkin {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  ring_color: string
+  ring_width: number
+  ring_offset: number
+  glow_enabled: boolean
+  glow_color: string | null
+  glow_intensity: number | null
+  css_class: string | null
+  icon_emoji: string | null
+  grant_type: SkinGrantType
+  grant_config: Record<string, any>
+  permissions: SkinPermission[]
+  priority: number
+  is_active: boolean
+  is_premium: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+// User's awarded skin
+export interface UserAvatarSkin {
+  id: string
+  user_id: number
+  skin_id: string
+  awarded_by: number | null
+  awarded_reason: string | null
+  awarded_at: string
+  expires_at: string | null
+  // Joined skin data
+  skin?: AvatarSkin
+  is_active_skin?: boolean
+}
+
+// Skin style for rendering
+export interface SkinStyle {
+  ringColor: string
+  ringWidth: number
+  ringOffset: number
+  glowEnabled: boolean
+  glowColor?: string
+  glowIntensity?: number
+  cssClass?: string
+}
+
+// Helper to convert AvatarSkin to CSS classes
+export function getSkinClasses(skin: AvatarSkin | null): string {
+  if (!skin) return ''
+
+  const classes: string[] = []
+
+  // Ring width classes
+  const ringWidthMap: Record<number, string> = {
+    2: 'ring-2',
+    3: 'ring-[3px]',
+    4: 'ring-4',
+  }
+  classes.push(ringWidthMap[skin.ring_width] || 'ring-4')
+
+  // Ring offset
+  const offsetMap: Record<number, string> = {
+    1: 'ring-offset-1',
+    2: 'ring-offset-2',
+  }
+  classes.push(offsetMap[skin.ring_offset] || 'ring-offset-2')
+  classes.push('ring-offset-bg')
+
+  // Custom CSS class
+  if (skin.css_class) {
+    classes.push(skin.css_class)
+  }
+
+  return classes.join(' ')
+}
+
+// Helper to get inline styles for skin
+export function getSkinStyles(skin: AvatarSkin | null): React.CSSProperties {
+  if (!skin) return {}
+
+  const styles: React.CSSProperties = {
+    '--tw-ring-color': skin.ring_color,
+  } as React.CSSProperties
+
+  if (skin.glow_enabled && skin.glow_color) {
+    styles.boxShadow = `0 0 ${skin.glow_intensity || 20}px ${skin.glow_color}`
+  }
+
+  return styles
 }
 
 // Database types
@@ -113,8 +229,11 @@ export interface User {
   subscription_expires_at: string | null
   daily_swipes_used: number
   daily_swipes_reset_at: string | null
-  // Team role
+  // Team role (legacy)
   team_role: TeamRole
+  // Avatar skin
+  active_skin_id: string | null
+  active_skin?: AvatarSkin | null
 }
 
 export interface UserProfile {

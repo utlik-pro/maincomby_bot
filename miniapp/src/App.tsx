@@ -119,6 +119,7 @@ const App: React.FC = () => {
             daily_swipes_used: 0,
             daily_swipes_reset_at: null,
             team_role: 'core' as const,
+            active_skin_id: null,
           }
           setUser(mockUser)
 

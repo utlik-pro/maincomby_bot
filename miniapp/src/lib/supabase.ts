@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event } from '@/types'
+import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndpkxustvcijykzxqxrn.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -1195,4 +1195,276 @@ export async function requestConsultation(userId: number, userName: string, user
   }
 
   return data
+}
+
+// ============================================
+// Avatar Skins System
+// ============================================
+
+// Get all available skins (catalog)
+export async function getAllAvatarSkins(): Promise<AvatarSkin[]> {
+  const { data, error } = await getSupabase()
+    .from('avatar_skins')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    console.warn('[getAllAvatarSkins] Error:', error)
+    return []
+  }
+  return data || []
+}
+
+// Get skin by slug
+export async function getAvatarSkinBySlug(slug: string): Promise<AvatarSkin | null> {
+  const { data, error } = await getSupabase()
+    .from('avatar_skins')
+    .select('*')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    console.warn('[getAvatarSkinBySlug] Error:', error)
+    return null
+  }
+  return data
+}
+
+// Get user's active skin
+export async function getUserActiveSkin(userId: number): Promise<AvatarSkin | null> {
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .select(`
+      active_skin_id,
+      active_skin:avatar_skins(*)
+    `)
+    .eq('id', userId)
+    .single()
+
+  if (error) {
+    console.warn('[getUserActiveSkin] Error:', error)
+    return null
+  }
+
+  // Handle the joined data
+  const skinData = data?.active_skin
+  if (Array.isArray(skinData)) {
+    return skinData[0] || null
+  }
+  return skinData || null
+}
+
+// Get all skins available to user (awarded skins)
+export async function getUserAvailableSkins(userId: number): Promise<UserAvatarSkin[]> {
+  const supabase = getSupabase()
+
+  // Get user's awarded skins
+  const { data: awardedSkins, error } = await supabase
+    .from('user_avatar_skins')
+    .select(`
+      *,
+      skin:avatar_skins(*)
+    `)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.warn('[getUserAvailableSkins] Error:', error)
+    return []
+  }
+
+  // Get user's active skin ID
+  const { data: userData } = await supabase
+    .from('bot_users')
+    .select('active_skin_id')
+    .eq('id', userId)
+    .single()
+
+  const activeSkinId = userData?.active_skin_id
+
+  // Filter out expired skins and mark active
+  const now = new Date()
+  return (awardedSkins || [])
+    .filter(uas => {
+      if (!uas.expires_at) return true
+      return new Date(uas.expires_at) > now
+    })
+    .map(uas => ({
+      ...uas,
+      skin: Array.isArray(uas.skin) ? uas.skin[0] : uas.skin,
+      is_active_skin: uas.skin_id === activeSkinId,
+    }))
+    .sort((a, b) => (b.skin?.priority || 0) - (a.skin?.priority || 0))
+}
+
+// Set user's active skin
+export async function setUserActiveSkin(userId: number, skinId: string | null): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('bot_users')
+    .update({ active_skin_id: skinId })
+    .eq('id', userId)
+
+  if (error) {
+    console.error('[setUserActiveSkin] Error:', error)
+    return false
+  }
+  return true
+}
+
+// Award skin to user
+export async function awardSkinToUser(
+  userId: number,
+  skinSlug: string,
+  awardedBy: number | null = null,
+  reason: string | null = null,
+  expiresAt: string | null = null,
+  setActive: boolean = true
+): Promise<UserAvatarSkin | null> {
+  const supabase = getSupabase()
+
+  // Get skin by slug
+  const { data: skin, error: skinError } = await supabase
+    .from('avatar_skins')
+    .select('id')
+    .eq('slug', skinSlug)
+    .eq('is_active', true)
+    .single()
+
+  if (skinError || !skin) {
+    console.error('[awardSkinToUser] Skin not found:', skinSlug)
+    return null
+  }
+
+  // Award skin
+  const { data: awarded, error } = await supabase
+    .from('user_avatar_skins')
+    .upsert({
+      user_id: userId,
+      skin_id: skin.id,
+      awarded_by: awardedBy,
+      awarded_reason: reason,
+      expires_at: expiresAt,
+    }, { onConflict: 'user_id,skin_id' })
+    .select(`
+      *,
+      skin:avatar_skins(*)
+    `)
+    .single()
+
+  if (error) {
+    console.error('[awardSkinToUser] Error:', error)
+    return null
+  }
+
+  // Set as active if requested
+  if (setActive) {
+    await setUserActiveSkin(userId, skin.id)
+  }
+
+  return awarded
+}
+
+// Revoke skin from user
+export async function revokeSkinFromUser(userId: number, skinSlug: string): Promise<boolean> {
+  const supabase = getSupabase()
+
+  // Get skin by slug
+  const { data: skin } = await supabase
+    .from('avatar_skins')
+    .select('id')
+    .eq('slug', skinSlug)
+    .single()
+
+  if (!skin) return false
+
+  // Remove skin
+  const { error } = await supabase
+    .from('user_avatar_skins')
+    .delete()
+    .eq('user_id', userId)
+    .eq('skin_id', skin.id)
+
+  if (error) {
+    console.error('[revokeSkinFromUser] Error:', error)
+    return false
+  }
+
+  // If this was active skin, clear it
+  const { data: user } = await supabase
+    .from('bot_users')
+    .select('active_skin_id')
+    .eq('id', userId)
+    .single()
+
+  if (user?.active_skin_id === skin.id) {
+    await setUserActiveSkin(userId, null)
+  }
+
+  return true
+}
+
+// Check if user has a specific permission through any of their skins
+export async function userHasSkinPermission(userId: number, permission: SkinPermission): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from('user_avatar_skins')
+    .select(`
+      skin:avatar_skins(permissions)
+    `)
+    .eq('user_id', userId)
+
+  if (error || !data) return false
+
+  for (const uas of data) {
+    const skinData = Array.isArray(uas.skin) ? uas.skin[0] : uas.skin
+    if (!skinData) continue
+
+    const permissions = skinData.permissions as SkinPermission[] || []
+    if (permissions.includes(permission)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+// Get user's skin permissions (all permissions from all their skins)
+export async function getUserSkinPermissions(userId: number): Promise<SkinPermission[]> {
+  const skins = await getUserAvailableSkins(userId)
+
+  const allPermissions = new Set<SkinPermission>()
+  for (const uas of skins) {
+    const permissions = uas.skin?.permissions || []
+    permissions.forEach(p => allPermissions.add(p))
+  }
+
+  return Array.from(allPermissions)
+}
+
+// Get users with a specific skin (for admin)
+export async function getUsersWithSkin(skinSlug: string): Promise<any[]> {
+  const supabase = getSupabase()
+
+  const { data: skin } = await supabase
+    .from('avatar_skins')
+    .select('id')
+    .eq('slug', skinSlug)
+    .single()
+
+  if (!skin) return []
+
+  const { data, error } = await supabase
+    .from('user_avatar_skins')
+    .select(`
+      *,
+      user:bot_users(id, tg_user_id, username, first_name, last_name)
+    `)
+    .eq('skin_id', skin.id)
+
+  if (error) {
+    console.error('[getUsersWithSkin] Error:', error)
+    return []
+  }
+
+  return data || []
 }

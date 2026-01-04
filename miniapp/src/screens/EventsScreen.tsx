@@ -931,7 +931,7 @@ const EventsScreen: React.FC = () => {
           {leadsError && (
             <Card className="mb-3 border-red-500/20">
               <div className="text-red-400 text-sm">
-                Ошибка: {String(leadsError)}
+                Ошибка: {(leadsError as any)?.message || JSON.stringify(leadsError)}
               </div>
             </Card>
           )}
