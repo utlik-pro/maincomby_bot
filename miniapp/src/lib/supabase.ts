@@ -424,8 +424,10 @@ export async function getEventRegistrations(eventId: number) {
     .from('bot_registrations')
     .select(`
       *,
-      user:bot_users(id, first_name, last_name, username, tg_user_id, phone_number),
-      profile:bot_profiles(photo_url)
+      user:bot_users(
+        id, first_name, last_name, username, tg_user_id, phone_number,
+        profile:bot_profiles(photo_url)
+      )
     `)
     .eq('event_id', eventId)
     .neq('status', 'cancelled')
