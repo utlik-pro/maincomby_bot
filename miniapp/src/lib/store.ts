@@ -48,6 +48,7 @@ interface AppState {
   isVolunteerMode: boolean
   onboardingVersion: number
   lastSeenEventId: number | null
+  lastDismissedAnnouncementEventId: number | null // For event announcement modal
   deepLinkTarget: string | null // For handling deep links like 'matches'
 
   // Actions
@@ -59,6 +60,7 @@ interface AppState {
   setVolunteerMode: (mode: boolean) => void
   completeOnboarding: () => void
   setLastSeenEventId: (eventId: number) => void
+  dismissEventAnnouncement: (eventId: number) => void
   addPoints: (amount: number) => void
   logout: () => void
 
@@ -85,6 +87,7 @@ export const useAppStore = create<AppState>()(
       isVolunteerMode: false,
       onboardingVersion: 0,
       lastSeenEventId: null,
+      lastDismissedAnnouncementEventId: null,
       deepLinkTarget: null,
 
       // Actions
@@ -102,6 +105,7 @@ export const useAppStore = create<AppState>()(
       setVolunteerMode: (isVolunteerMode) => set({ isVolunteerMode }),
       completeOnboarding: () => set({ onboardingVersion: CURRENT_ONBOARDING_VERSION }),
       setLastSeenEventId: (lastSeenEventId) => set({ lastSeenEventId }),
+      dismissEventAnnouncement: (eventId) => set({ lastDismissedAnnouncementEventId: eventId }),
 
       // Computed - check if onboarding should be shown
       shouldShowOnboarding: () => {
@@ -114,7 +118,7 @@ export const useAppStore = create<AppState>()(
           set({ user: { ...user, points: Math.max(0, (user.points || 0) + amount) } })
         }
       },
-      logout: () => set({ user: null, profile: null, isAuthenticated: false, onboardingVersion: 0, lastSeenEventId: null, deepLinkTarget: null }),
+      logout: () => set({ user: null, profile: null, isAuthenticated: false, onboardingVersion: 0, lastSeenEventId: null, lastDismissedAnnouncementEventId: null, deepLinkTarget: null }),
 
       // Computed
       getRank: () => {
@@ -165,6 +169,7 @@ export const useAppStore = create<AppState>()(
         isVolunteerMode: state.isVolunteerMode,
         onboardingVersion: state.onboardingVersion,
         lastSeenEventId: state.lastSeenEventId,
+        lastDismissedAnnouncementEventId: state.lastDismissedAnnouncementEventId,
       }),
     }
   )

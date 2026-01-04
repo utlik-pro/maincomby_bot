@@ -14,6 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import User, Event, EventRegistration, UserProfile, Match
 from app.db.database import async_session_maker
+from supabase import create_client, Client
+import os
+
+# Supabase client for creating in-app notifications
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ndpkxustvcijykzxqxrn.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY", "")
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +87,43 @@ class NotificationService:
 
     def __init__(self, bot: Bot):
         self.bot = bot
+        self._supabase: Optional[Client] = None
+
+    def _get_supabase(self) -> Optional[Client]:
+        """Get Supabase client for in-app notifications"""
+        if not self._supabase and SUPABASE_KEY:
+            try:
+                self._supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+            except Exception as e:
+                logger.error(f"Failed to create Supabase client: {e}")
+        return self._supabase
+
+    def _create_app_notification(
+        self,
+        user_id: int,
+        notification_type: str,
+        title: str,
+        message: str,
+        data: Optional[dict] = None
+    ) -> bool:
+        """Create in-app notification in Supabase"""
+        try:
+            supabase = self._get_supabase()
+            if not supabase:
+                return False
+
+            supabase.table("app_notifications").insert({
+                "user_id": user_id,
+                "type": notification_type,
+                "title": title,
+                "message": message,
+                "data": data or {},
+                "is_read": False
+            }).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to create app notification: {e}")
+            return False
 
     def _get_miniapp_button(self, text: str = "Открыть приложение") -> InlineKeyboardMarkup:
         """Create inline button to open Mini App"""
@@ -280,6 +323,85 @@ class NotificationService:
             return sent_count
         except Exception as e:
             logger.error(f"Failed to send event reminders batch: {e}")
+            return 0
+
+    async def send_new_event_invitation(self, user_id: int, event: Event) -> bool:
+        """Send invitation when a new event is created"""
+        try:
+            event_date = event.event_date.strftime("%d.%m в %H:%M")
+
+            # Event type labels
+            event_type_labels = {
+                'meetup': 'Митап',
+                'workshop': 'Воркшоп',
+                'conference': 'Конференция',
+                'hackathon': 'Хакатон',
+            }
+            event_type = event_type_labels.get(getattr(event, 'event_type', None), 'Мероприятие')
+
+            text = (
+                f"📅 <b>Новое мероприятие!</b>\n\n"
+                f"<b>{event.title}</b>\n\n"
+                f"🏷 {event_type}\n"
+                f"📆 {event_date}\n"
+                f"📍 {event.location or event.city}\n\n"
+                f"Приглашаем вас принять участие!"
+            )
+
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="Подробнее",
+                    url="https://t.me/maincomapp_bot/app?startapp=events"
+                )]
+            ])
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode="HTML",
+                reply_markup=keyboard
+            )
+            logger.info(f"Sent new event invitation to user {user_id} for event {event.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send new event invitation to {user_id}: {e}")
+            return False
+
+    async def send_new_event_invitations_batch(self, session: AsyncSession, event: Event) -> int:
+        """Send new event invitations to all active users"""
+        try:
+            # Get all active users
+            users_query = select(User).where(
+                and_(
+                    User.banned == False,
+                    User.tg_user_id.isnot(None)
+                )
+            )
+            users_result = await session.execute(users_query)
+            users = users_result.scalars().all()
+
+            event_date = event.event_date.strftime("%d.%m в %H:%M")
+            sent_count = 0
+            for user in users:
+                if user.tg_user_id:
+                    # Send Telegram push notification
+                    success = await self.send_new_event_invitation(user.tg_user_id, event)
+                    if success:
+                        sent_count += 1
+
+                    # Create in-app notification
+                    self._create_app_notification(
+                        user_id=user.id,
+                        notification_type="event_invitation",
+                        title=f"Новое мероприятие: {event.title}",
+                        message=f"{event_date} | {event.location or event.city}",
+                        data={"event_id": event.id}
+                    )
+
+            logger.info(f"Sent {sent_count} new event invitations for event {event.id}")
+            return sent_count
+        except Exception as e:
+            logger.error(f"Failed to send new event invitations batch: {e}")
             return 0
 
     async def send_event_starting_soon(self, user_id: int, event: Event) -> bool:

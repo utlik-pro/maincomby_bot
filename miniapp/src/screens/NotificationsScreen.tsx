@@ -30,6 +30,7 @@ import { Card, Button, Skeleton, EmptyState } from '@/components/ui'
 // Icon mapping for notification types
 const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {
   event_reminder: <Calendar size={20} className="text-blue-400" />,
+  event_invitation: <Calendar size={20} className="text-accent" />,
   match: <Heart size={20} className="text-pink-400" />,
   achievement: <Trophy size={20} className="text-yellow-400" />,
   rank_up: <Star size={20} className="text-purple-400" />,
@@ -39,6 +40,7 @@ const TYPE_ICONS: Record<NotificationType, React.ReactNode> = {
 
 const TYPE_COLORS: Record<NotificationType, string> = {
   event_reminder: 'bg-blue-500/20',
+  event_invitation: 'bg-accent/20',
   match: 'bg-pink-500/20',
   achievement: 'bg-yellow-500/20',
   rank_up: 'bg-purple-500/20',

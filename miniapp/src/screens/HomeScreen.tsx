@@ -19,10 +19,11 @@ import { useAppStore } from '@/lib/store'
 import { Avatar, Badge, Card, Progress } from '@/components/ui'
 import { RANK_LABELS } from '@/types'
 import { useTapEasterEgg } from '@/lib/easterEggs'
-import { getUnreadNotificationsCount, getLeaderboard, getUserStats, requestConsultation } from '@/lib/supabase'
+import { getUnreadNotificationsCount, getLeaderboard, getUserStats, requestConsultation, getLatestEventForAnnouncement } from '@/lib/supabase'
 import { useToastStore } from '@/lib/store'
 import { openTelegramLink } from '@/lib/telegram'
 import NotificationsScreen from './NotificationsScreen'
+import EventAnnouncementModal from '@/components/EventAnnouncementModal'
 
 // Avatar ring styles based on role/tier
 const getAvatarRing = (teamRole?: string | null, tier?: string) => {
@@ -35,11 +36,12 @@ const getAvatarRing = (teamRole?: string | null, tier?: string) => {
 }
 
 const HomeScreen: React.FC = () => {
-  const { user, profile, setActiveTab, getRank, getRankProgress, getSubscriptionTier } = useAppStore()
+  const { user, profile, setActiveTab, getRank, getRankProgress, getSubscriptionTier, lastDismissedAnnouncementEventId, dismissEventAnnouncement } = useAppStore()
   const { addToast } = useToastStore()
   const { handleTap: handleLogoTap } = useTapEasterEgg('logo_taps', 6)
   const tier = getSubscriptionTier()
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showEventAnnouncement, setShowEventAnnouncement] = useState(false)
 
   // Handle consultation request
   const handleConsultation = async () => {
@@ -78,6 +80,37 @@ const HomeScreen: React.FC = () => {
     queryFn: () => (user ? getUserStats(user.id) : null),
     enabled: !!user,
   })
+
+  // Fetch latest event for announcement
+  const { data: announcementEvent } = useQuery({
+    queryKey: ['eventAnnouncement', lastDismissedAnnouncementEventId],
+    queryFn: () => getLatestEventForAnnouncement(lastDismissedAnnouncementEventId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
+  // Show announcement modal when new event is available
+  React.useEffect(() => {
+    if (announcementEvent && announcementEvent.id !== lastDismissedAnnouncementEventId) {
+      setShowEventAnnouncement(true)
+    }
+  }, [announcementEvent, lastDismissedAnnouncementEventId])
+
+  // Handle dismissing event announcement
+  const handleDismissAnnouncement = () => {
+    if (announcementEvent) {
+      dismissEventAnnouncement(announcementEvent.id)
+    }
+    setShowEventAnnouncement(false)
+  }
+
+  // Handle viewing event details
+  const handleViewEventDetails = () => {
+    if (announcementEvent) {
+      dismissEventAnnouncement(announcementEvent.id)
+    }
+    setShowEventAnnouncement(false)
+    setActiveTab('events')
+  }
 
   // Show notifications screen
   if (showNotifications) {
@@ -325,6 +358,14 @@ const HomeScreen: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* Event Announcement Modal */}
+      <EventAnnouncementModal
+        isOpen={showEventAnnouncement}
+        event={announcementEvent || null}
+        onClose={handleDismissAnnouncement}
+        onViewDetails={handleViewEventDetails}
+      />
     </div>
   )
 }

@@ -23,6 +23,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.models import User, Event, EventRegistration, EventFeedback, Question, SecurityLog, UserProfile, Match, Swipe
+from .notifications import get_notification_service
 
 # Supabase configuration from environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ndpkxustvcijykzxqxrn.supabase.co")
@@ -191,6 +192,7 @@ class SupabaseSync:
                     "is_active": web_event.get("is_published", True),
                 }
 
+                is_new_event = False
                 if local_event:
                     # Update existing
                     for key, value in event_data.items():
@@ -200,9 +202,23 @@ class SupabaseSync:
                     # Create new
                     local_event = Event(**event_data)
                     session.add(local_event)
+                    is_new_event = True
                     logger.info(f"Created new event from web admin: {event_data['title']}")
 
                 synced_count += 1
+
+                # Send notifications for new events
+                if is_new_event and local_event.is_active:
+                    await session.flush()  # Get the ID
+                    notification_service = get_notification_service()
+                    if notification_service:
+                        try:
+                            sent_count = await notification_service.send_new_event_invitations_batch(
+                                session, local_event
+                            )
+                            logger.info(f"Sent {sent_count} invitations for new event: {local_event.title}")
+                        except Exception as e:
+                            logger.error(f"Failed to send invitations for event {local_event.title}: {e}")
 
             await session.commit()
             logger.info(f"Pulled {synced_count} events from web admin")

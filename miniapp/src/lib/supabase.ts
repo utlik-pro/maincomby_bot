@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType } from '@/types'
+import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndpkxustvcijykzxqxrn.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -690,7 +690,7 @@ export async function checkAndUnlockAchievements(userId: number) {
 }
 
 // Notifications
-export type NotificationType = 'event_reminder' | 'match' | 'achievement' | 'rank_up' | 'system' | 'xp'
+export type NotificationType = 'event_reminder' | 'event_invitation' | 'match' | 'achievement' | 'rank_up' | 'system' | 'xp'
 
 export interface AppNotification {
   id: number
@@ -760,6 +760,47 @@ export async function createNotification(
 
   if (error) throw error
   return notification as AppNotification
+}
+
+// Get unseen event invitations (notifications with event data)
+export async function getUnseenEventInvitations(userId: number): Promise<AppNotification[]> {
+  const { data, error } = await getSupabase()
+    .from('app_notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('type', 'event_invitation')
+    .eq('is_read', false)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (error) {
+    console.error('[getUnseenEventInvitations] Error:', error)
+    return []
+  }
+  return (data || []) as AppNotification[]
+}
+
+// Get latest active event for announcement
+export async function getLatestEventForAnnouncement(lastSeenEventId: number | null): Promise<Event | null> {
+  const query = getSupabase()
+    .from('bot_events')
+    .select('*')
+    .eq('is_active', true)
+    .gte('event_date', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (lastSeenEventId) {
+    query.gt('id', lastSeenEventId)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[getLatestEventForAnnouncement] Error:', error)
+    return null
+  }
+  return data?.[0] as Event | null
 }
 
 // Leaderboard - Top users by XP
