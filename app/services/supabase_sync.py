@@ -223,8 +223,64 @@ class SupabaseSync:
             await session.commit()
             logger.info(f"Pulled {synced_count} events from web admin")
 
+            # Check for manual notification triggers
+            await self._process_event_notification_triggers(session)
+
         except Exception as e:
             logger.error(f"Error pulling web events: {e}")
+
+    async def _process_event_notification_triggers(self, session: AsyncSession):
+        """Process manual notification triggers from admin (send_notifications flag in bot_events)"""
+        try:
+            # Check for events with send_notifications = true
+            events_to_notify = await self.supabase.table("bot_events") \
+                .select("*") \
+                .eq("send_notifications", True) \
+                .execute()
+
+            if not events_to_notify.data:
+                return
+
+            notification_service = get_notification_service()
+            if not notification_service:
+                logger.warning("Notification service not available for manual triggers")
+                return
+
+            for event_data in events_to_notify.data:
+                event_id = event_data.get("id")
+
+                # Get local event
+                result = await session.execute(
+                    select(Event).where(Event.id == event_id)
+                )
+                local_event = result.scalar_one_or_none()
+
+                if local_event:
+                    try:
+                        sent_count = await notification_service.send_new_event_invitations_batch(
+                            session, local_event
+                        )
+                        logger.info(f"Manual trigger: sent {sent_count} invitations for event {local_event.title}")
+
+                        # Reset the flag
+                        await self.supabase.table("bot_events") \
+                            .update({"send_notifications": False}) \
+                            .eq("id", event_id) \
+                            .execute()
+                    except Exception as e:
+                        logger.error(f"Failed to send notifications for event {event_id}: {e}")
+                else:
+                    logger.warning(f"Event {event_id} not found in local DB for notification trigger")
+                    # Reset flag anyway to prevent infinite loop
+                    await self.supabase.table("bot_events") \
+                        .update({"send_notifications": False}) \
+                        .eq("id", event_id) \
+                        .execute()
+
+        except Exception as e:
+            # Silently ignore if column doesn't exist
+            if "column" not in str(e).lower():
+                logger.error(f"Error processing notification triggers: {e}")
 
     async def _process_broadcasts(self, session: AsyncSession):
         """Process pending broadcasts from web admin"""
