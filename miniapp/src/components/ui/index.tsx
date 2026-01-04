@@ -18,10 +18,10 @@ import type { AvatarSkin } from '@/types'
 
 // Skin icon mapping - maps skin slug to lucide icon component
 const SKIN_ICONS: Record<string, LucideIcon> = {
-  core_team: Diamond,
+  core_team: Diamond,     // Diamond for core team
   speaker: Mic2,
   partner: Handshake,
-  sponsor: Star,
+  sponsor: Star,          // Star for sponsors
   volunteer: HeartHandshake,
   pro_member: Crown,
   early_bird: Flame,
@@ -33,6 +33,15 @@ const SKIN_ICONS: Record<string, LucideIcon> = {
 // Get icon component for a skin
 export const getSkinIcon = (slug: string): LucideIcon => {
   return SKIN_ICONS[slug] || User
+}
+
+// Get contrast color (black or white) for text on colored background
+const getContrastColor = (hexColor: string): string => {
+  const r = parseInt(hexColor.slice(1, 3), 16)
+  const g = parseInt(hexColor.slice(3, 5), 16)
+  const b = parseInt(hexColor.slice(5, 7), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.5 ? '#000000' : '#ffffff'
 }
 
 // Avatar component
@@ -86,6 +95,7 @@ interface AvatarWithSkinProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
   badge?: string
   skin?: AvatarSkin | null
+  showSkinBadge?: boolean  // Show skin badge with icon + text (default: true for md/lg/xl)
   className?: string
 }
 
@@ -95,8 +105,12 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
   size = 'md',
   badge,
   skin,
+  showSkinBadge,
   className = ''
 }) => {
+  // Default: show skin badge for md/lg/xl sizes
+  const shouldShowSkinBadge = showSkinBadge ?? (size !== 'sm')
+
   const initials = name
     ?.split(' ')
     .map((n) => n[0])
@@ -145,7 +159,7 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} style={{ overflow: 'visible' }}>
       <div
         className={`${sizeClasses[size]} rounded-full ${getRingClasses()}`}
         style={getRingStyles()}
@@ -160,20 +174,24 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
           )}
         </div>
       </div>
-      {badge && (
+      {badge && !skin?.slug && (
         <div className="absolute -bottom-1 -right-1 bg-accent text-bg text-[10px] font-bold px-1.5 py-0.5 rounded-md z-10">
           {badge}
         </div>
       )}
-      {skin?.slug && (
+      {skin?.slug && shouldShowSkinBadge && (
         <div
-          className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center z-10"
-          style={{ backgroundColor: skin.ring_color }}
+          className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs font-bold whitespace-nowrap z-10"
+          style={{
+            backgroundColor: skin.ring_color,
+            color: getContrastColor(skin.ring_color)
+          }}
         >
           {(() => {
             const IconComponent = getSkinIcon(skin.slug)
-            return <IconComponent size={12} className="text-bg" />
+            return <IconComponent size={12} />
           })()}
+          {skin.name.toUpperCase()}
         </div>
       )}
     </div>
