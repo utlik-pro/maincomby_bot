@@ -133,50 +133,36 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
     .toUpperCase()
     .slice(0, 2)
 
-  // Build ring classes based on skin
-  const getRingClasses = () => {
-    if (!skin) return ''
-
-    const classes: string[] = []
-
-    // Ring width
-    const ringWidthMap: Record<number, string> = {
-      2: 'ring-2',
-      3: 'ring-[3px]',
-      4: 'ring-4',
-    }
-    classes.push(ringWidthMap[skin.ring_width] || 'ring-4')
-
-    // Ring offset
-    const offsetMap: Record<number, string> = {
-      1: 'ring-offset-1',
-      2: 'ring-offset-2',
-    }
-    classes.push(offsetMap[skin.ring_offset] || 'ring-offset-2')
-    classes.push('ring-offset-bg')
-
-    return classes.join(' ')
-  }
-
-  // Build inline styles for ring color and glow
+  // Build inline styles for ring and glow (more reliable than Tailwind CSS vars)
   const getRingStyles = (): React.CSSProperties => {
     if (!skin) return {}
 
-    const styles: React.CSSProperties = {
-      '--tw-ring-color': skin.ring_color,
-    } as React.CSSProperties
+    const ringWidth = skin.ring_width || 4
+    const ringOffset = skin.ring_offset || 2
+    const ringColor = skin.ring_color || '#c8ff00'
+    const bgColor = '#0a0a0a' // bg.DEFAULT from tailwind config
 
+    // Build boxShadow: offset ring (bg color), main ring, optional glow
+    const shadows: string[] = []
+
+    // Offset ring (creates gap between avatar and ring)
+    shadows.push(`0 0 0 ${ringOffset}px ${bgColor}`)
+
+    // Main colored ring
+    shadows.push(`0 0 0 ${ringOffset + ringWidth}px ${ringColor}`)
+
+    // Optional glow effect
     if (skin.glow_enabled && skin.glow_color) {
-      styles.boxShadow = `0 0 ${skin.glow_intensity || 20}px ${skin.glow_color}`
+      shadows.push(`0 0 ${skin.glow_intensity || 20}px ${skin.glow_color}`)
     }
 
-    return styles
+    return { boxShadow: shadows.join(', ') }
   }
 
   return (
     <div className={`relative ${className}`} style={{ overflow: 'visible' }}>
       <div
-        className={`${sizeClasses[size]} rounded-full ${getRingClasses()}`}
+        className={`${sizeClasses[size]} rounded-full`}
         style={getRingStyles()}
       >
         <div
