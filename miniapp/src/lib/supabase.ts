@@ -141,17 +141,18 @@ export async function getApprovedProfiles(excludeUserId: number, city?: string) 
     .eq('is_visible', true)
     .neq('user_id', excludeUserId)
 
-  // Исключаем уже просвайпанных пользователей
-  if (swipedIds.length > 0) {
-    query = query.not('user_id', 'in', `(${swipedIds.join(',')})`)
-  }
-
   if (city) {
     query = query.eq('city', city)
   }
 
   const { data, error } = await query
   if (error) throw error
+
+  // Фильтруем уже просвайпанных на клиенте
+  if (swipedIds.length > 0) {
+    return (data || []).filter(p => !swipedIds.includes(p.user_id))
+  }
+
   return data
 }
 
