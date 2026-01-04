@@ -52,38 +52,29 @@ export const EventAnnouncementModal: React.FC<EventAnnouncementModalProps> = ({
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-sm mx-auto"
           >
-            <div className="bg-bg-card rounded-2xl overflow-hidden shadow-xl border border-white/10">
-              {/* Header with image or gradient */}
-              <div className="relative h-32 bg-gradient-to-br from-accent/30 to-accent/10">
-                {event.image_url && (
-                  <img
-                    src={event.image_url}
-                    alt={event.title}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-bg-card via-transparent to-transparent" />
-
-                {/* Close button */}
-                <button
-                  onClick={onClose}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 flex items-center justify-center text-white/80 hover:text-white"
-                >
-                  <X size={18} />
-                </button>
-
-                {/* Event type badge */}
-                <div className="absolute bottom-3 left-4">
-                  <span className="px-2 py-1 rounded-md bg-accent/90 text-bg text-xs font-semibold">
-                    {eventTypeLabels[event.event_type] || event.event_type}
-                  </span>
-                </div>
-              </div>
-
+            <div className="bg-bg-card rounded-2xl shadow-xl border border-white/10">
               {/* Content */}
               <div className="p-5">
-                {/* Title */}
-                <h3 className="text-xl font-bold mb-1">{event.title}</h3>
+                {/* Header row */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
+                      <Calendar size={24} className="text-accent" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-accent font-medium">
+                        {eventTypeLabels[event.event_type] || 'Мероприятие'}
+                      </span>
+                      <h3 className="text-lg font-bold">{event.title}</h3>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
 
                 {/* Subtitle */}
                 <p className="text-gray-400 text-sm mb-4">
@@ -91,37 +82,30 @@ export const EventAnnouncementModal: React.FC<EventAnnouncementModalProps> = ({
                 </p>
 
                 {/* Event details */}
-                <div className="space-y-2 mb-5">
+                <div className="space-y-3 mb-5">
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <Calendar size={16} className="text-accent" />
+                    <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                      <Calendar size={18} className="text-accent" />
                     </div>
-                    <span className="text-gray-300">{formattedDate}</span>
+                    <span className="text-gray-200">{formattedDate}</span>
                   </div>
 
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <Clock size={16} className="text-accent" />
+                    <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                      <Clock size={18} className="text-accent" />
                     </div>
-                    <span className="text-gray-300">{formattedTime}</span>
+                    <span className="text-gray-200">{formattedTime}</span>
                   </div>
 
                   {event.location && (
                     <div className="flex items-center gap-3 text-sm">
-                      <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                        <MapPin size={16} className="text-accent" />
+                      <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                        <MapPin size={18} className="text-accent" />
                       </div>
-                      <span className="text-gray-300 truncate">{event.location}</span>
+                      <span className="text-gray-200">{event.location}</span>
                     </div>
                   )}
                 </div>
-
-                {/* Description preview */}
-                {event.description && (
-                  <p className="text-gray-400 text-sm mb-5 line-clamp-2">
-                    {event.description}
-                  </p>
-                )}
 
                 {/* Buttons */}
                 <div className="flex gap-3">
