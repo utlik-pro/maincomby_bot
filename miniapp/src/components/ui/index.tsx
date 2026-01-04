@@ -1,6 +1,39 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import {
+  Diamond,
+  Mic2,
+  Handshake,
+  Star,
+  HeartHandshake,
+  Crown,
+  Flame,
+  Trophy,
+  Target,
+  Heart,
+  User,
+  LucideIcon,
+} from 'lucide-react'
 import type { AvatarSkin } from '@/types'
+
+// Skin icon mapping - maps skin slug to lucide icon component
+const SKIN_ICONS: Record<string, LucideIcon> = {
+  core_team: Diamond,
+  speaker: Mic2,
+  partner: Handshake,
+  sponsor: Star,
+  volunteer: HeartHandshake,
+  pro_member: Crown,
+  early_bird: Flame,
+  champion: Trophy,
+  event_regular: Target,
+  networker: Heart,
+}
+
+// Get icon component for a skin
+export const getSkinIcon = (slug: string): LucideIcon => {
+  return SKIN_ICONS[slug] || User
+}
 
 // Avatar component
 interface AvatarProps {
@@ -132,9 +165,15 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
           {badge}
         </div>
       )}
-      {skin?.icon_emoji && (
-        <div className="absolute -top-1 -right-1 text-sm z-10">
-          {skin.icon_emoji}
+      {skin?.slug && (
+        <div
+          className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center z-10"
+          style={{ backgroundColor: skin.ring_color }}
+        >
+          {(() => {
+            const IconComponent = getSkinIcon(skin.slug)
+            return <IconComponent size={12} className="text-bg" />
+          })()}
         </div>
       )}
     </div>
@@ -184,8 +223,12 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
         className={`${sizeClass} rounded-full ${ringClass} ring-offset-2 ring-offset-bg bg-gradient-to-br from-gray-600 to-gray-800`}
         style={ringStyles}
       >
-        <div className="w-full h-full rounded-full flex items-center justify-center text-2xl">
-          {skin.icon_emoji || '👤'}
+        <div className="w-full h-full rounded-full flex items-center justify-center">
+          {(() => {
+            const IconComponent = getSkinIcon(skin.slug)
+            const iconSize = size === 'sm' ? 24 : 32
+            return <IconComponent size={iconSize} className="text-white/80" />
+          })()}
         </div>
       </div>
       <div className="text-center">

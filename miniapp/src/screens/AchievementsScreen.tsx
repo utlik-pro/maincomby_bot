@@ -2,7 +2,6 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Shield,
   Star,
   Award,
   Medal,
@@ -11,7 +10,6 @@ import {
   Zap,
   FileText,
   Check,
-  Users,
   UserPlus,
   User,
   Target,
@@ -19,6 +17,10 @@ import {
   Heart,
   Handshake,
   Calendar,
+  Sprout,
+  Wrench,
+  Flag,
+  GraduationCap,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { getUserAchievements, getLeaderboard } from '@/lib/supabase'
@@ -27,15 +29,15 @@ import { ACHIEVEMENTS, RANK_LABELS, RANK_THRESHOLDS, UserRank, AchievementId } f
 
 // Icon mapping for ranks
 const RANK_ICONS: Record<UserRank, React.ReactNode> = {
-  private: <Shield size={32} className="text-gray-400" />,
-  corporal: <Star size={32} className="text-yellow-400" />,
-  sergeant: <Award size={32} className="text-yellow-500" />,
-  sergeant_major: <Medal size={32} className="text-orange-400" />,
-  lieutenant: <Medal size={32} className="text-blue-400" />,
-  captain: <Trophy size={32} className="text-purple-400" />,
-  major: <Crown size={32} className="text-accent" />,
-  colonel: <Award size={32} className="text-red-500" />,
-  general: <Crown size={32} className="text-yellow-300" />,
+  newcomer: <Sprout size={32} className="text-green-400" />,
+  member: <User size={32} className="text-gray-400" />,
+  activist: <UserPlus size={32} className="text-blue-400" />,
+  enthusiast: <Flame size={32} className="text-orange-400" />,
+  contributor: <Wrench size={32} className="text-purple-400" />,
+  ambassador: <Flag size={32} className="text-pink-400" />,
+  expert: <GraduationCap size={32} className="text-cyan-400" />,
+  leader: <Star size={32} className="text-yellow-400" />,
+  founder: <Crown size={32} className="text-accent" />,
 }
 
 // Icon mapping for achievements
@@ -74,7 +76,7 @@ const AchievementsScreen: React.FC = () => {
   const unlockedIds = new Set(userAchievements?.map((a: any) => a.achievement_id) || [])
 
   // All ranks for display
-  const allRanks: UserRank[] = ['private', 'corporal', 'sergeant', 'sergeant_major', 'lieutenant', 'captain', 'major', 'colonel', 'general']
+  const allRanks: UserRank[] = ['newcomer', 'member', 'activist', 'enthusiast', 'contributor', 'ambassador', 'expert', 'leader', 'founder']
   const currentRankIndex = allRanks.indexOf(rank)
 
   return (
@@ -117,7 +119,7 @@ const AchievementsScreen: React.FC = () => {
       <div className="px-4 mb-6">
         <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
           <Medal size={20} className="text-accent" />
-          Звания
+          Уровни
         </h2>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {allRanks.map((r, index) => {

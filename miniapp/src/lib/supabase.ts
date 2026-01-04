@@ -524,39 +524,39 @@ export async function checkInByTicketCode(ticketCode: string, volunteerId: numbe
 
 // Rank thresholds (same as store.ts)
 const RANK_THRESHOLDS: Record<string, number> = {
-  private: 0,
-  corporal: 100,
-  sergeant: 300,
-  sergeant_major: 600,
-  lieutenant: 1000,
-  captain: 2000,
-  major: 5000,
-  colonel: 10000,
-  general: 20000,
+  newcomer: 0,
+  member: 100,
+  activist: 300,
+  enthusiast: 600,
+  contributor: 1000,
+  ambassador: 2000,
+  expert: 5000,
+  leader: 10000,
+  founder: 20000,
 }
 
 const RANK_NAMES: Record<string, string> = {
-  private: 'Рядовой',
-  corporal: 'Капрал',
-  sergeant: 'Сержант',
-  sergeant_major: 'Старший сержант',
-  lieutenant: 'Лейтенант',
-  captain: 'Капитан',
-  major: 'Майор',
-  colonel: 'Полковник',
-  general: 'Генерал',
+  newcomer: 'Новичок',
+  member: 'Участник',
+  activist: 'Активист',
+  enthusiast: 'Энтузиаст',
+  contributor: 'Контрибьютор',
+  ambassador: 'Амбассадор',
+  expert: 'Эксперт',
+  leader: 'Лидер',
+  founder: 'Основатель',
 }
 
 function getRankFromPoints(points: number): string {
-  if (points >= RANK_THRESHOLDS.general) return 'general'
-  if (points >= RANK_THRESHOLDS.colonel) return 'colonel'
-  if (points >= RANK_THRESHOLDS.major) return 'major'
-  if (points >= RANK_THRESHOLDS.captain) return 'captain'
-  if (points >= RANK_THRESHOLDS.lieutenant) return 'lieutenant'
-  if (points >= RANK_THRESHOLDS.sergeant_major) return 'sergeant_major'
-  if (points >= RANK_THRESHOLDS.sergeant) return 'sergeant'
-  if (points >= RANK_THRESHOLDS.corporal) return 'corporal'
-  return 'private'
+  if (points >= RANK_THRESHOLDS.founder) return 'founder'
+  if (points >= RANK_THRESHOLDS.leader) return 'leader'
+  if (points >= RANK_THRESHOLDS.expert) return 'expert'
+  if (points >= RANK_THRESHOLDS.ambassador) return 'ambassador'
+  if (points >= RANK_THRESHOLDS.contributor) return 'contributor'
+  if (points >= RANK_THRESHOLDS.enthusiast) return 'enthusiast'
+  if (points >= RANK_THRESHOLDS.activist) return 'activist'
+  if (points >= RANK_THRESHOLDS.member) return 'member'
+  return 'newcomer'
 }
 
 // XP & Achievements
@@ -593,8 +593,8 @@ export async function addXP(userId: number, amount: number, reason: string) {
       await createNotification(
         userId,
         'rank_up',
-        `Новое звание: ${RANK_NAMES[newRank]}!`,
-        `Поздравляем! Вы достигли звания "${RANK_NAMES[newRank]}" с ${newPoints} XP!`,
+        `Новый уровень: ${RANK_NAMES[newRank]}!`,
+        `Поздравляем! Вы достигли уровня "${RANK_NAMES[newRank]}" с ${newPoints} XP!`,
         { rank: newRank, points: newPoints }
       )
     } catch (e) {

@@ -7,20 +7,20 @@ export const CURRENT_ONBOARDING_VERSION = 2
 
 // Calculate rank from XP
 export function calculateRank(xp: number): UserRank {
-  if (xp >= RANK_THRESHOLDS.general) return 'general'
-  if (xp >= RANK_THRESHOLDS.colonel) return 'colonel'
-  if (xp >= RANK_THRESHOLDS.major) return 'major'
-  if (xp >= RANK_THRESHOLDS.captain) return 'captain'
-  if (xp >= RANK_THRESHOLDS.lieutenant) return 'lieutenant'
-  if (xp >= RANK_THRESHOLDS.sergeant_major) return 'sergeant_major'
-  if (xp >= RANK_THRESHOLDS.sergeant) return 'sergeant'
-  if (xp >= RANK_THRESHOLDS.corporal) return 'corporal'
-  return 'private'
+  if (xp >= RANK_THRESHOLDS.founder) return 'founder'
+  if (xp >= RANK_THRESHOLDS.leader) return 'leader'
+  if (xp >= RANK_THRESHOLDS.expert) return 'expert'
+  if (xp >= RANK_THRESHOLDS.ambassador) return 'ambassador'
+  if (xp >= RANK_THRESHOLDS.contributor) return 'contributor'
+  if (xp >= RANK_THRESHOLDS.enthusiast) return 'enthusiast'
+  if (xp >= RANK_THRESHOLDS.activist) return 'activist'
+  if (xp >= RANK_THRESHOLDS.member) return 'member'
+  return 'newcomer'
 }
 
 // Calculate progress to next rank (0-100)
 export function calculateRankProgress(xp: number): { current: UserRank; next: UserRank | null; progress: number } {
-  const ranks: UserRank[] = ['private', 'corporal', 'sergeant', 'sergeant_major', 'lieutenant', 'captain', 'major', 'colonel', 'general']
+  const ranks: UserRank[] = ['newcomer', 'member', 'activist', 'enthusiast', 'contributor', 'ambassador', 'expert', 'leader', 'founder']
   const current = calculateRank(xp)
   const currentIndex = ranks.indexOf(current)
 

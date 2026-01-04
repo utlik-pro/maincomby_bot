@@ -28,6 +28,16 @@ import {
   Users,
   ExternalLink,
   Palette,
+  Diamond,
+  HeartHandshake,
+  Mic2,
+  Flame,
+  Sprout,
+  User,
+  UserPlus,
+  Wrench,
+  Flag,
+  GraduationCap,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported } from '@/lib/telegram'
@@ -45,15 +55,15 @@ import NotificationsScreen from './NotificationsScreen'
 
 // Icon mapping for ranks
 const RANK_ICONS: Record<UserRank, React.ReactNode> = {
-  private: <Shield size={14} className="text-gray-400" />,
-  corporal: <Star size={14} className="text-yellow-400" />,
-  sergeant: <Award size={14} className="text-yellow-500" />,
-  sergeant_major: <Medal size={14} className="text-orange-400" />,
-  lieutenant: <Medal size={14} className="text-blue-400" />,
-  captain: <Trophy size={14} className="text-purple-400" />,
-  major: <Crown size={14} className="text-accent" />,
-  colonel: <Award size={14} className="text-red-500" />,
-  general: <Crown size={14} className="text-yellow-300" />,
+  newcomer: <Sprout size={14} className="text-green-400" />,
+  member: <User size={14} className="text-gray-400" />,
+  activist: <UserPlus size={14} className="text-blue-400" />,
+  enthusiast: <Flame size={14} className="text-orange-400" />,
+  contributor: <Wrench size={14} className="text-purple-400" />,
+  ambassador: <Flag size={14} className="text-pink-400" />,
+  expert: <GraduationCap size={14} className="text-cyan-400" />,
+  leader: <Star size={14} className="text-yellow-400" />,
+  founder: <Crown size={14} className="text-accent" />,
 }
 
 // Profile themes based on role/tier/badges
@@ -900,26 +910,36 @@ const ProfileScreen: React.FC = () => {
               <Gift size={18} className="text-accent" />
               Как получить скины?
             </h3>
-            <div className="space-y-2 text-sm text-gray-400">
-              <div className="flex items-start gap-2">
-                <span className="text-accent">•</span>
-                <span><b>Core Team</b> — для членов команды MAIN</span>
+            <div className="space-y-3 text-sm text-gray-400">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-[#c8ff00] flex items-center justify-center flex-shrink-0">
+                  <Diamond size={14} className="text-bg" />
+                </div>
+                <span><b className="text-white">Core Team</b> — для членов команды MAIN</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="text-accent">•</span>
-                <span><b>Volunteer</b> — за волонтёрство на событиях</span>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                  <HeartHandshake size={14} className="text-bg" />
+                </div>
+                <span><b className="text-white">Volunteer</b> — за волонтёрство на событиях</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="text-accent">•</span>
-                <span><b>Speaker</b> — за выступление на событии</span>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                  <Mic2 size={14} className="text-white" />
+                </div>
+                <span><b className="text-white">Speaker</b> — за выступление на событии</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="text-accent">•</span>
-                <span><b>Champion</b> — за топ-3 в лидерборде</span>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
+                  <Trophy size={14} className="text-bg" />
+                </div>
+                <span><b className="text-white">Champion</b> — за топ-3 в лидерборде</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="text-accent">•</span>
-                <span><b>Pro Member</b> — с PRO подпиской</span>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                  <Crown size={14} className="text-bg" />
+                </div>
+                <span><b className="text-white">Pro Member</b> — с PRO подпиской</span>
               </div>
             </div>
           </Card>

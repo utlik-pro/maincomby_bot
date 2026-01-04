@@ -53,11 +53,11 @@ CREATE INDEX IF NOT EXISTS idx_avatar_skins_priority ON avatar_skins(priority DE
 -- ============================================
 CREATE TABLE IF NOT EXISTS user_avatar_skins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES bot_users(id) ON DELETE CASCADE,
     skin_id UUID NOT NULL REFERENCES avatar_skins(id) ON DELETE CASCADE,
 
     -- Award info
-    awarded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,  -- Admin who awarded
+    awarded_by INTEGER REFERENCES bot_users(id) ON DELETE SET NULL,  -- Admin who awarded
     awarded_reason TEXT,                                          -- Why awarded
     awarded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ,                                       -- NULL = permanent
@@ -72,9 +72,9 @@ CREATE INDEX IF NOT EXISTS idx_user_avatar_skins_skin ON user_avatar_skins(skin_
 CREATE INDEX IF NOT EXISTS idx_user_avatar_skins_expires ON user_avatar_skins(expires_at) WHERE expires_at IS NOT NULL;
 
 -- ============================================
--- 3. ADD ACTIVE SKIN TO USERS TABLE
+-- 3. ADD ACTIVE SKIN TO BOT_USERS TABLE
 -- ============================================
-ALTER TABLE users ADD COLUMN IF NOT EXISTS active_skin_id UUID REFERENCES avatar_skins(id) ON DELETE SET NULL;
+ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS active_skin_id UUID REFERENCES avatar_skins(id) ON DELETE SET NULL;
 
 -- ============================================
 -- 4. INSERT DEFAULT SKINS
@@ -138,60 +138,60 @@ BEGIN
     -- Core team
     SELECT id INTO skin_record FROM avatar_skins WHERE slug = 'core_team';
     IF FOUND THEN
-        FOR user_record IN SELECT id FROM users WHERE team_role = 'core' LOOP
+        FOR user_record IN SELECT id FROM bot_users WHERE team_role = 'core' LOOP
             INSERT INTO user_avatar_skins (user_id, skin_id, awarded_reason)
             VALUES (user_record.id, skin_record.id, 'Migrated from team_role')
             ON CONFLICT (user_id, skin_id) DO NOTHING;
 
-            UPDATE users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
+            UPDATE bot_users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
         END LOOP;
     END IF;
 
     -- Speaker
     SELECT id INTO skin_record FROM avatar_skins WHERE slug = 'speaker';
     IF FOUND THEN
-        FOR user_record IN SELECT id FROM users WHERE team_role = 'speaker' LOOP
+        FOR user_record IN SELECT id FROM bot_users WHERE team_role = 'speaker' LOOP
             INSERT INTO user_avatar_skins (user_id, skin_id, awarded_reason)
             VALUES (user_record.id, skin_record.id, 'Migrated from team_role')
             ON CONFLICT (user_id, skin_id) DO NOTHING;
 
-            UPDATE users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
+            UPDATE bot_users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
         END LOOP;
     END IF;
 
     -- Partner
     SELECT id INTO skin_record FROM avatar_skins WHERE slug = 'partner';
     IF FOUND THEN
-        FOR user_record IN SELECT id FROM users WHERE team_role = 'partner' LOOP
+        FOR user_record IN SELECT id FROM bot_users WHERE team_role = 'partner' LOOP
             INSERT INTO user_avatar_skins (user_id, skin_id, awarded_reason)
             VALUES (user_record.id, skin_record.id, 'Migrated from team_role')
             ON CONFLICT (user_id, skin_id) DO NOTHING;
 
-            UPDATE users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
+            UPDATE bot_users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
         END LOOP;
     END IF;
 
     -- Sponsor
     SELECT id INTO skin_record FROM avatar_skins WHERE slug = 'sponsor';
     IF FOUND THEN
-        FOR user_record IN SELECT id FROM users WHERE team_role = 'sponsor' LOOP
+        FOR user_record IN SELECT id FROM bot_users WHERE team_role = 'sponsor' LOOP
             INSERT INTO user_avatar_skins (user_id, skin_id, awarded_reason)
             VALUES (user_record.id, skin_record.id, 'Migrated from team_role')
             ON CONFLICT (user_id, skin_id) DO NOTHING;
 
-            UPDATE users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
+            UPDATE bot_users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
         END LOOP;
     END IF;
 
     -- Volunteer
     SELECT id INTO skin_record FROM avatar_skins WHERE slug = 'volunteer';
     IF FOUND THEN
-        FOR user_record IN SELECT id FROM users WHERE team_role = 'volunteer' LOOP
+        FOR user_record IN SELECT id FROM bot_users WHERE team_role = 'volunteer' LOOP
             INSERT INTO user_avatar_skins (user_id, skin_id, awarded_reason)
             VALUES (user_record.id, skin_record.id, 'Migrated from team_role')
             ON CONFLICT (user_id, skin_id) DO NOTHING;
 
-            UPDATE users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
+            UPDATE bot_users SET active_skin_id = skin_record.id WHERE id = user_record.id AND active_skin_id IS NULL;
         END LOOP;
     END IF;
 END $$;
@@ -250,7 +250,7 @@ BEGIN
         s.css_class,
         s.icon_emoji,
         s.permissions
-    FROM users u
+    FROM bot_users u
     JOIN avatar_skins s ON u.active_skin_id = s.id
     WHERE u.id = p_user_id AND s.is_active = true;
 END;
@@ -297,7 +297,7 @@ BEGIN
         (u.active_skin_id = s.id) AS is_active_skin
     FROM user_avatar_skins uas
     JOIN avatar_skins s ON uas.skin_id = s.id
-    JOIN users u ON uas.user_id = u.id
+    JOIN bot_users u ON uas.user_id = u.id
     WHERE uas.user_id = p_user_id
       AND s.is_active = true
       AND (uas.expires_at IS NULL OR uas.expires_at > NOW())
@@ -352,7 +352,7 @@ BEGIN
 
     -- Set as active if requested
     IF p_set_active THEN
-        UPDATE users SET active_skin_id = v_skin_id WHERE id = p_user_id;
+        UPDATE bot_users SET active_skin_id = v_skin_id WHERE id = p_user_id;
     END IF;
 
     RETURN v_award_id;

@@ -1,40 +1,40 @@
 // User subscription types
 export type SubscriptionTier = 'free' | 'light' | 'pro'
 
-// User ranks (military style)
+// User ranks (community roles)
 export type UserRank =
-  | 'private'      // Рядовой (0-100 XP)
-  | 'corporal'     // Ефрейтор (100-300 XP)
-  | 'sergeant'     // Сержант (300-600 XP)
-  | 'sergeant_major' // Старшина (600-1000 XP)
-  | 'lieutenant'   // Лейтенант (1000-2000 XP)
-  | 'captain'      // Капитан (2000-5000 XP)
-  | 'major'        // Майор (5000-10000 XP)
-  | 'colonel'      // Полковник (10000-20000 XP)
-  | 'general'      // Генерал (20000+ XP) - Super Admin
+  | 'newcomer'     // Новичок (0-100 XP)
+  | 'member'       // Участник (100-300 XP)
+  | 'activist'     // Активист (300-600 XP)
+  | 'enthusiast'   // Энтузиаст (600-1000 XP)
+  | 'contributor'  // Контрибьютор (1000-2000 XP)
+  | 'ambassador'   // Амбассадор (2000-5000 XP)
+  | 'expert'       // Эксперт (5000-10000 XP)
+  | 'leader'       // Лидер (10000-20000 XP)
+  | 'founder'      // Основатель (20000+ XP)
 
 export const RANK_THRESHOLDS: Record<UserRank, number> = {
-  private: 0,
-  corporal: 100,
-  sergeant: 300,
-  sergeant_major: 600,
-  lieutenant: 1000,
-  captain: 2000,
-  major: 5000,
-  colonel: 10000,
-  general: 20000,
+  newcomer: 0,
+  member: 100,
+  activist: 300,
+  enthusiast: 600,
+  contributor: 1000,
+  ambassador: 2000,
+  expert: 5000,
+  leader: 10000,
+  founder: 20000,
 }
 
-export const RANK_LABELS: Record<UserRank, { ru: string; emoji: string }> = {
-  private: { ru: 'Рядовой', emoji: '🔰' },
-  corporal: { ru: 'Ефрейтор', emoji: '⭐' },
-  sergeant: { ru: 'Сержант', emoji: '⭐⭐' },
-  sergeant_major: { ru: 'Старшина', emoji: '🎖️' },
-  lieutenant: { ru: 'Лейтенант', emoji: '🏅' },
-  captain: { ru: 'Капитан', emoji: '🎗️' },
-  major: { ru: 'Майор', emoji: '👑' },
-  colonel: { ru: 'Полковник', emoji: '⭐⭐⭐' },
-  general: { ru: 'Генерал', emoji: '🎖️👑' },
+export const RANK_LABELS: Record<UserRank, { ru: string }> = {
+  newcomer: { ru: 'Новичок' },
+  member: { ru: 'Участник' },
+  activist: { ru: 'Активист' },
+  enthusiast: { ru: 'Энтузиаст' },
+  contributor: { ru: 'Контрибьютор' },
+  ambassador: { ru: 'Амбассадор' },
+  expert: { ru: 'Эксперт' },
+  leader: { ru: 'Лидер' },
+  founder: { ru: 'Основатель' },
 }
 
 // XP rewards
