@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Rocket, User, Calendar, Check, ChevronRight } from 'lucide-react'
+import { Rocket, Users, Sparkles, Calendar, Check, ChevronRight } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
 import { Button } from '@/components/ui'
@@ -10,6 +10,7 @@ interface OnboardingSlide {
   title: string
   description: string
   color: string
+  bullets?: string[]
 }
 
 const slides: OnboardingSlide[] = [
@@ -20,21 +21,32 @@ const slides: OnboardingSlide[] = [
     color: 'text-accent',
   },
   {
-    icon: <User size={64} />,
-    title: 'Заполни профиль',
-    description: 'Расскажи о себе, чтобы другие участники могли тебя найти',
+    icon: <Users size={64} />,
+    title: 'Находи полезные контакты',
+    description: 'Свайпай профили и находи единомышленников для сотрудничества',
     color: 'text-blue-400',
+  },
+  {
+    icon: <Sparkles size={64} />,
+    title: 'Зачем заполнять профиль?',
+    description: 'Чем подробнее профиль — тем больше шансов найти нужных людей',
+    color: 'text-yellow-400',
+    bullets: [
+      'Тебя найдут по навыкам и интересам',
+      'Другие поймут чем ты можешь помочь',
+      'Больше мэтчей с релевантными людьми',
+    ],
   },
   {
     icon: <Calendar size={64} />,
     title: 'Участвуй в событиях',
-    description: 'Посещай мероприятия, знакомься с людьми и получай XP',
+    description: 'Посещай мероприятия и получай XP за активность',
     color: 'text-purple-400',
   },
   {
     icon: <Check size={64} />,
     title: 'Готово!',
-    description: 'Начни с заполнения профиля и регистрации на ближайшее событие',
+    description: 'Заполни профиль и начни нетворкинг прямо сейчас',
     color: 'text-success',
   },
 ]
@@ -105,6 +117,18 @@ const OnboardingScreen: React.FC = () => {
             <p className="text-gray-400 text-base max-w-xs mx-auto">
               {slide.description}
             </p>
+
+            {/* Bullets (if any) */}
+            {slide.bullets && (
+              <ul className="mt-4 text-left max-w-xs mx-auto space-y-2">
+                {slide.bullets.map((bullet, i) => (
+                  <li key={i} className="flex items-start gap-2 text-gray-300 text-sm">
+                    <Check size={16} className="text-success flex-shrink-0 mt-0.5" />
+                    {bullet}
+                  </li>
+                ))}
+              </ul>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

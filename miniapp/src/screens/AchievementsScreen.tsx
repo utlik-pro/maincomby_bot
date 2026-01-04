@@ -133,7 +133,7 @@ const AchievementsScreen: React.FC = () => {
                 key={r}
                 whileTap={{ scale: 0.95 }}
                 className={`
-                  flex-shrink-0 w-20 text-center p-3 rounded-xl
+                  flex-shrink-0 w-24 text-center p-3 rounded-xl
                   ${isCurrent ? 'bg-accent/20 border border-accent' : 'bg-bg-card'}
                   ${!isUnlocked && 'opacity-40'}
                 `}

@@ -374,7 +374,7 @@ BEGIN
     DELETE FROM user_avatar_skins WHERE user_id = p_user_id AND skin_id = v_skin_id;
 
     -- If this was active skin, clear it
-    UPDATE users SET active_skin_id = NULL WHERE id = p_user_id AND active_skin_id = v_skin_id;
+    UPDATE bot_users SET active_skin_id = NULL WHERE id = p_user_id AND active_skin_id = v_skin_id;
 
     RETURN true;
 END;

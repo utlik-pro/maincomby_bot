@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { User, UserProfile, SubscriptionTier, UserRank, RANK_THRESHOLDS } from '@/types'
 
 // Onboarding version - increment this to show onboarding to all users again
-export const CURRENT_ONBOARDING_VERSION = 2
+export const CURRENT_ONBOARDING_VERSION = 3
 
 // Calculate rank from XP
 export function calculateRank(xp: number): UserRank {

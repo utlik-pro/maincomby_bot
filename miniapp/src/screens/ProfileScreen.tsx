@@ -38,16 +38,19 @@ import {
   Wrench,
   Flag,
   GraduationCap,
+  EyeOff,
+  BookOpen,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported } from '@/lib/telegram'
-import { updateProfile, createProfile, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin } from '@/lib/supabase'
+import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
 import { CompanySelector } from '@/components/CompanySelector'
 import { SocialLinks } from '@/components/SocialLinks'
 import { SocialLinksEdit } from '@/components/SocialLinksEdit'
+import { NetworkingGuide } from '@/components/NetworkingGuide'
 import { TagInput } from '@/components/TagInput'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
@@ -166,6 +169,7 @@ const ProfileScreen: React.FC = () => {
   const [showTeamSection, setShowTeamSection] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showSkinSelector, setShowSkinSelector] = useState(false)
+  const [showNetworkingGuide, setShowNetworkingGuide] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
@@ -587,6 +591,11 @@ const ProfileScreen: React.FC = () => {
   }
 
   // Settings Screen
+  // Networking Guide
+  if (showNetworkingGuide) {
+    return <NetworkingGuide onClose={() => setShowNetworkingGuide(false)} />
+  }
+
   if (showSettings) {
     const handleEnableNotifications = async () => {
       setNotificationsLoading(true)
@@ -687,6 +696,60 @@ const ProfileScreen: React.FC = () => {
                 </p>
               </div>
             )}
+          </Card>
+
+          {/* Networking Visibility */}
+          <Card className="mb-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Users size={18} className="text-accent" />
+              Нетворкинг
+            </h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Управляйте видимостью вашего профиля в ленте свайпов
+            </p>
+            <div
+              className="flex items-center justify-between p-3 bg-bg rounded-xl cursor-pointer"
+              onClick={async () => {
+                if (!user || !profile) return
+                hapticFeedback.medium()
+                try {
+                  const newVisibility = !profile.is_visible
+                  await updateProfileVisibility(user.id, newVisibility)
+                  setProfile({ ...profile, is_visible: newVisibility })
+                  addToast(newVisibility ? 'Профиль виден в свайпах' : 'Профиль скрыт из свайпов', 'success')
+                  hapticFeedback.success()
+                } catch (error) {
+                  console.error('Failed to update visibility:', error)
+                  addToast('Ошибка сохранения', 'error')
+                  hapticFeedback.error()
+                }
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <EyeOff size={18} className="text-gray-400" />
+                <div>
+                  <span className="text-sm">Скрыть для нетворкинга</span>
+                  <p className="text-xs text-gray-500">Профиль не будет показываться в свайпах</p>
+                </div>
+              </div>
+              <div className={`w-10 h-6 rounded-full ${!profile?.is_visible ? 'bg-accent' : 'bg-gray-600'} relative transition-colors`}>
+                <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${!profile?.is_visible ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                hapticFeedback.light()
+                setShowNetworkingGuide(true)
+              }}
+              className="w-full flex items-center justify-between p-3 bg-bg rounded-xl mt-3"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen size={18} className="text-accent" />
+                <span className="text-sm">Как работает нетворкинг</span>
+              </div>
+              <ChevronRight size={18} className="text-gray-500" />
+            </button>
           </Card>
 
           {/* Add to Home Screen */}

@@ -95,6 +95,18 @@ export async function updateProfile(userId: number, profileData: {
   return data
 }
 
+export async function updateProfileVisibility(userId: number, isVisible: boolean) {
+  const { data, error } = await getSupabase()
+    .from('bot_profiles')
+    .update({ is_visible: isVisible, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function createProfile(userId: number, profileData: {
   bio?: string | null
   occupation?: string | null
@@ -137,7 +149,6 @@ export async function getApprovedProfiles(excludeUserId: number, city?: string) 
       *,
       user:bot_users(*)
     `)
-    .eq('moderation_status', 'approved')
     .eq('is_visible', true)
     .neq('user_id', excludeUserId)
 
