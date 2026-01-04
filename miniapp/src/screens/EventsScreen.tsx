@@ -41,6 +41,7 @@ import {
 } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
+import { EventCalendar } from '@/components/EventCalendar'
 import { Event, EventRegistration, XP_REWARDS } from '@/types'
 
 // Event type icons
@@ -386,7 +387,9 @@ const EventsScreen: React.FC = () => {
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
-  const [filter, setFilter] = useState<'all' | 'registered' | 'checkins' | 'leads'>('all')
+  const [filter, setFilter] = useState<'all' | 'calendar' | 'registered' | 'checkins' | 'leads'>('all')
+  const [selectedCalendarEvents, setSelectedCalendarEvents] = useState<Event[]>([])
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null)
   const [selectedCheckinsEvent, setSelectedCheckinsEvent] = useState<number | null>(null)
   const [selectedLeadsEvent, setSelectedLeadsEvent] = useState<number | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
@@ -784,6 +787,7 @@ const EventsScreen: React.FC = () => {
       <div className="flex gap-2 px-4 mb-4 overflow-x-auto pb-2">
         {[
           { id: 'all' as const, label: 'Все', icon: Calendar },
+          { id: 'calendar' as const, label: 'Календарь', icon: CalendarDays },
           { id: 'registered' as const, label: 'Мои', icon: Ticket },
           ...(canAccessScanner() ? [
             { id: 'leads' as const, label: 'Лиды', icon: Users },
@@ -812,6 +816,70 @@ const EventsScreen: React.FC = () => {
           </motion.button>
         ))}
       </div>
+
+      {/* Calendar View */}
+      {filter === 'calendar' && events && (
+        <div className="px-4 mb-6 pb-20">
+          <EventCalendar
+            events={events}
+            onSelectDate={(date, eventsOnDate) => {
+              setSelectedCalendarDate(date)
+              setSelectedCalendarEvents(eventsOnDate)
+            }}
+          />
+
+          {/* Events on selected date */}
+          {selectedCalendarDate && (
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-gray-400 mb-3">
+                {format(selectedCalendarDate, 'd MMMM', { locale: ru })}
+                {selectedCalendarEvents.length > 0 && ` (${selectedCalendarEvents.length})`}
+              </h3>
+
+              {selectedCalendarEvents.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedCalendarEvents.map((event) => {
+                    const registration = getRegistrationForEvent(event.id)
+                    const IconComponent = eventTypeIcons[event.event_type || 'default'] || eventTypeIcons.default
+
+                    return (
+                      <Card
+                        key={event.id}
+                        onClick={() => setSelectedEvent(event)}
+                        highlighted={!!registration}
+                        className="flex gap-3"
+                      >
+                        <div className="w-14 h-14 bg-bg rounded-xl flex items-center justify-center flex-shrink-0">
+                          {IconComponent}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold truncate">{event.title}</div>
+                          <div className="text-sm text-accent flex items-center gap-1">
+                            <Clock size={12} />
+                            {format(new Date(event.event_date), 'HH:mm')}
+                          </div>
+                          <div className="text-xs text-gray-400 truncate flex items-center gap-1">
+                            <MapPin size={12} />
+                            {event.location}
+                          </div>
+                        </div>
+                        {registration && <Check size={16} className="text-accent flex-shrink-0" />}
+                      </Card>
+                    )
+                  })}
+                </div>
+              ) : (
+                <Card>
+                  <div className="text-center text-gray-400 py-4">
+                    <Calendar size={24} className="mx-auto mb-2 opacity-50" />
+                    <div className="text-sm">Нет событий на эту дату</div>
+                  </div>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Leads (for core team/volunteers) */}
       {filter === 'leads' && canAccessScanner() && (
@@ -1038,8 +1106,8 @@ const EventsScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Events List (hide when checkins or leads filter is active) */}
-      {filter !== 'checkins' && filter !== 'leads' && (
+      {/* Events List (hide when checkins, leads, or calendar filter is active) */}
+      {filter !== 'checkins' && filter !== 'leads' && filter !== 'calendar' && (
       <div className="px-4">
         {isLoading ? (
           <div className="space-y-4">
