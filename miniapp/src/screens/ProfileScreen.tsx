@@ -1234,8 +1234,8 @@ const ProfileScreen: React.FC = () => {
           {[
             { icon: <Bell size={20} className="text-blue-400" />, label: 'Уведомления', badge: unreadCount > 0 ? unreadCount : null, onClick: () => setShowNotifications(true) },
             { icon: <Users size={20} className="text-accent" />, label: 'Команда MAIN', badge: teamMembers.length > 0 ? teamMembers.length : null, onClick: () => setShowTeamSection(true) },
-            // Admin: Skin management (core team and volunteers)
-            ...(['core', 'volunteer'].includes(user?.team_role || '') ? [{ icon: <Shield size={20} className="text-red-400" />, label: 'Управление скинами', badge: null, onClick: () => setShowSkinAdmin(true) }] : []),
+            // Admin: Skin management (core team only)
+            ...(user?.team_role === 'core' ? [{ icon: <Shield size={20} className="text-red-400" />, label: 'Управление скинами', badge: null, onClick: () => setShowSkinAdmin(true) }] : []),
             { icon: <Ticket size={20} className="text-purple-400" />, label: 'Мои билеты', badge: null, onClick: () => setActiveTab('events') },
             { icon: <Heart size={20} className="text-pink-400" />, label: 'Мои матчи', badge: null, onClick: () => setActiveTab('network') },
             { icon: <Trophy size={20} className="text-yellow-400" />, label: 'Достижения', badge: null, onClick: () => setActiveTab('achievements') },
