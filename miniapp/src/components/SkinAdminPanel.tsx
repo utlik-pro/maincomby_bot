@@ -9,9 +9,9 @@ import {
   Palette,
   User,
 } from 'lucide-react'
-import { searchUsersForAdmin, getAllSkins, adminAssignSkin } from '@/lib/supabase'
+import { searchUsersForAdmin, getAllSkins, adminAssignSkin, createNotification } from '@/lib/supabase'
 import { AvatarWithSkin, Card, Input, Button, Badge } from '@/components/ui'
-import { useToastStore } from '@/lib/store'
+import { useAppStore, useToastStore } from '@/lib/store'
 import type { AvatarSkin } from '@/types'
 
 interface SkinAdminPanelProps {
@@ -19,6 +19,7 @@ interface SkinAdminPanelProps {
 }
 
 const SkinAdminPanel: React.FC<SkinAdminPanelProps> = ({ onClose }) => {
+  const { user: adminUser } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -40,18 +41,34 @@ const SkinAdminPanel: React.FC<SkinAdminPanelProps> = ({ onClose }) => {
 
   // Assign skin mutation
   const assignSkinMutation = useMutation({
-    mutationFn: ({ userId, skinId }: { userId: number; skinId: string | null }) =>
-      adminAssignSkin(userId, skinId),
+    mutationFn: async ({ userId, skinId, skinName }: { userId: number; skinId: string | null; skinName: string | null }) => {
+      const success = await adminAssignSkin(userId, skinId)
+      if (success) {
+        // Send notification to user
+        const adminName = adminUser?.first_name || 'Админ'
+        if (skinId && skinName) {
+          await createNotification(
+            userId,
+            'system',
+            `${skinName} получен!`,
+            `${adminName} назначил тебе скин "${skinName}"`,
+            { skinId }
+          )
+        } else {
+          await createNotification(
+            userId,
+            'system',
+            'Скин снят',
+            `${adminName} снял с тебя скин`,
+            {}
+          )
+        }
+      }
+      return success
+    },
     onSuccess: () => {
       addToast('Скин назначен!', 'success')
       queryClient.invalidateQueries({ queryKey: ['adminSearchUsers'] })
-      // Refresh selected user data
-      if (selectedUser) {
-        const updatedUsers = searchResults.filter((u: any) => u.id === selectedUser.id)
-        if (updatedUsers.length > 0) {
-          setSelectedUser(null)
-        }
-      }
     },
     onError: () => {
       addToast('Ошибка назначения скина', 'error')
@@ -60,12 +77,17 @@ const SkinAdminPanel: React.FC<SkinAdminPanelProps> = ({ onClose }) => {
 
   const handleAssignSkin = (skinId: string | null) => {
     if (!selectedUser) return
-    assignSkinMutation.mutate({ userId: selectedUser.id, skinId })
+    const skin = skinId ? allSkins.find((s: AvatarSkin) => s.id === skinId) : null
+    assignSkinMutation.mutate({
+      userId: selectedUser.id,
+      skinId,
+      skinName: skin?.name || null
+    })
     // Update local state immediately
     setSelectedUser({
       ...selectedUser,
       active_skin_id: skinId,
-      active_skin: skinId ? allSkins.find((s: AvatarSkin) => s.id === skinId) : null,
+      active_skin: skin || null,
     })
   }
 
