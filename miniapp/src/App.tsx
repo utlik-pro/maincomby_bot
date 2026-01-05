@@ -17,6 +17,7 @@ const AchievementsScreen = React.lazy(() => import('@/screens/AchievementsScreen
 const ProfileScreen = React.lazy(() => import('@/screens/ProfileScreen'))
 const OnboardingScreen = React.lazy(() => import('@/screens/OnboardingScreen'))
 const AccessGateScreen = React.lazy(() => import('@/screens/AccessGateScreen'))
+const InviteBottomSheet = React.lazy(() => import('@/components/InviteBottomSheet').then(m => ({ default: m.InviteBottomSheet })))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -68,7 +69,7 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 )
 
 const App: React.FC = () => {
-  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired } = useAppStore()
+  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired, showInvites, setShowInvites } = useAppStore()
   const { addToast } = useToastStore()
 
   // Easter eggs - speed runner (visit all tabs quickly)
@@ -662,6 +663,15 @@ const App: React.FC = () => {
       </AnimatePresence>
 
       <Navigation />
+
+      {/* Global Invite Bottom Sheet */}
+      <AnimatePresence>
+        {showInvites && (
+          <React.Suspense fallback={null}>
+            <InviteBottomSheet onClose={() => setShowInvites(false)} />
+          </React.Suspense>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

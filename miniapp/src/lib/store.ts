@@ -54,6 +54,7 @@ interface AppState {
   pendingInviteCode: string | null
   accessDenied: boolean
   inviteRequired: boolean
+  showInvites: boolean
 
   // Actions
   setUser: (user: User | null) => void
@@ -64,6 +65,7 @@ interface AppState {
   setPendingInviteCode: (code: string | null) => void
   setAccessDenied: (denied: boolean) => void
   setInviteRequired: (required: boolean) => void
+  setShowInvites: (show: boolean) => void
   setVolunteerMode: (mode: boolean) => void
   completeOnboarding: () => void
   setLastSeenEventId: (eventId: number) => void
@@ -99,12 +101,14 @@ export const useAppStore = create<AppState>()(
       pendingInviteCode: null,
       accessDenied: false,
       inviteRequired: false,
+      showInvites: false,
 
       // Actions
       setDeepLinkTarget: (target) => set({ deepLinkTarget: target }),
       setPendingInviteCode: (pendingInviteCode) => set({ pendingInviteCode }),
       setAccessDenied: (accessDenied) => set({ accessDenied }),
       setInviteRequired: (inviteRequired) => set({ inviteRequired }),
+      setShowInvites: (showInvites) => set({ showInvites }),
       setUser: (user) => {
         // Ensure points are never negative in UI
         if (user && user.points < 0) {

@@ -38,7 +38,7 @@ const getLegacyAvatarRing = (teamRole?: string | null, tier?: string) => {
 }
 
 const HomeScreen: React.FC = () => {
-  const { user, profile, setActiveTab, getRank, getRankProgress, getSubscriptionTier, lastDismissedAnnouncementEventId, dismissEventAnnouncement } = useAppStore()
+  const { user, profile, setActiveTab, getRank, getRankProgress, getSubscriptionTier, lastDismissedAnnouncementEventId, dismissEventAnnouncement, setShowInvites } = useAppStore()
   const { addToast } = useToastStore()
   const { handleTap: handleLogoTap } = useTapEasterEgg('logo_taps', 6)
   const tier = getSubscriptionTier()
@@ -208,7 +208,7 @@ const HomeScreen: React.FC = () => {
       {/* Invite Hint */}
       <div className="px-4 mb-6">
         <Card
-          onClick={() => setActiveTab('profile')}
+          onClick={() => setShowInvites(true)}
           className="bg-gradient-to-r from-accent/20 to-accent/5 border border-accent/20 cursor-pointer overflow-hidden relative"
         >
           <div className="flex items-center gap-4 relative z-10">
