@@ -14,6 +14,8 @@ import {
   Crown,
   ChevronRight,
   MessageCircle,
+  Gift,
+  Users,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Avatar, AvatarWithSkin, Badge, Card, Progress } from '@/components/ui'
