@@ -138,24 +138,14 @@ const HomeScreen: React.FC = () => {
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Avatar with skin - uses new skin system, falls back to legacy ring if no skin */}
-          {userActiveSkin ? (
-            <AvatarWithSkin
-              src={profile?.photo_url}
-              name={user?.first_name || 'User'}
-              size="lg"
-              badge={user?.subscription_tier === 'pro' ? 'PRO' : user?.subscription_tier === 'light' ? 'LIGHT' : undefined}
-              skin={userActiveSkin}
-            />
-          ) : (
-            <div className={`rounded-full ${getLegacyAvatarRing(user?.team_role, tier)}`}>
-              <Avatar
-                src={profile?.photo_url}
-                name={user?.first_name || 'User'}
-                size="lg"
-                badge={user?.subscription_tier === 'pro' ? 'PRO' : user?.subscription_tier === 'light' ? 'LIGHT' : undefined}
-              />
-            </div>
-          )}
+          <AvatarWithSkin
+            src={profile?.photo_url}
+            name={user?.first_name || 'User'}
+            size="lg"
+            skin={userActiveSkin}
+            role={user?.team_role}
+            tier={user?.subscription_tier === 'pro' ? 'pro' : user?.subscription_tier === 'light' ? 'light' : null}
+          />
           <div>
             <div className="font-semibold text-lg">{user?.first_name || 'Пользователь'}</div>
             <div className="flex items-center gap-2">

@@ -14,7 +14,22 @@ import {
   User,
   LucideIcon,
 } from 'lucide-react'
-import type { AvatarSkin } from '@/types'
+import { AvatarSkin, TeamRole, SubscriptionTier } from '@/types'
+
+// Team Role Config for badges
+const ROLE_CONFIG: Record<string, { label: string, color: string, icon: LucideIcon }> = {
+  core: { label: 'MAIN TEAM', color: '#c8ff00', icon: Diamond },
+  partner: { label: 'ПАРТНЁР', color: '#3b82f6', icon: Handshake },
+  sponsor: { label: 'СПОНСОР', color: '#eab308', icon: Star },
+  volunteer: { label: 'ВОЛОНТЁР', color: '#22c55e', icon: HeartHandshake },
+  speaker: { label: 'СПИКЕР', color: '#a855f7', icon: Mic2 },
+}
+
+// Subscription Tier Config for badges
+const TIER_CONFIG: Record<string, { label: string, color: string, icon: LucideIcon }> = {
+  pro: { label: 'PRO', color: '#f59e0b', icon: Crown },
+  light: { label: 'LIGHT', color: '#10b981', icon: Flame },
+}
 
 // Skin icon mapping - maps skin slug to lucide icon component
 const SKIN_ICONS: Record<string, LucideIcon> = {
@@ -110,6 +125,8 @@ interface AvatarWithSkinProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
   badge?: string
   skin?: AvatarSkin | null
+  role?: TeamRole
+  tier?: SubscriptionTier | null
   showSkinBadge?: boolean  // Show skin badge with icon + text (default: true for md/lg/xl)
   className?: string
 }
@@ -120,6 +137,8 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
   size = 'md',
   badge,
   skin,
+  role,
+  tier,
   showSkinBadge,
   className = ''
 }) => {
@@ -159,6 +178,42 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
     return { boxShadow: shadows.join(', ') }
   }
 
+  // Determine what badge to show
+  const getBadgeData = () => {
+    // 1. If skin exists, use skin
+    if (skin) {
+      const Icon = getSkinIcon(skin.slug)
+      return {
+        label: skin.name.toUpperCase(),
+        color: skin.ring_color,
+        icon: Icon
+      }
+    }
+
+    // 2. If role exists, use role
+    if (role && ROLE_CONFIG[role]) {
+      return ROLE_CONFIG[role]
+    }
+
+    // 3. If tier exists, use tier
+    if (tier && TIER_CONFIG[tier]) {
+      return TIER_CONFIG[tier]
+    }
+
+    // 4. Fallback to manual badge
+    if (badge) {
+      return {
+        label: badge.toUpperCase(),
+        color: '#c8ff00',
+        icon: Star // Default icon for manual badges
+      }
+    }
+
+    return null
+  }
+
+  const badgeData = getBadgeData()
+
   return (
     <div className={`relative ${className}`} style={{ overflow: 'visible' }}>
       <div
@@ -175,24 +230,16 @@ export const AvatarWithSkin: React.FC<AvatarWithSkinProps> = ({
           )}
         </div>
       </div>
-      {badge && !skin?.slug && (
-        <div className="absolute -bottom-1 -right-1 bg-accent text-bg text-[10px] font-bold px-1.5 py-0.5 rounded-md z-10">
-          {badge}
-        </div>
-      )}
-      {skin?.slug && shouldShowSkinBadge && (
+      {badgeData && shouldShowSkinBadge && (
         <div
           className={`absolute left-1/2 -translate-x-1/2 rounded-full flex items-center font-bold whitespace-nowrap z-10 ${badgeSizeClasses[size]}`}
           style={{
-            backgroundColor: skin.ring_color,
-            color: getContrastColor(skin.ring_color)
+            backgroundColor: badgeData.color,
+            color: getContrastColor(badgeData.color)
           }}
         >
-          {(() => {
-            const IconComponent = getSkinIcon(skin.slug)
-            return <IconComponent size={badgeIconSizes[size]} />
-          })()}
-          {skin.name.toUpperCase()}
+          <badgeData.icon size={badgeIconSizes[size]} />
+          {badgeData.label}
         </div>
       )}
     </div>

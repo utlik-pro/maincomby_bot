@@ -155,7 +155,14 @@ const NetworkScreen: React.FC = () => {
               const skinData = Array.isArray(matchSkin) ? matchSkin[0] : matchSkin
               return (
                 <Card key={match.id} className="flex items-center gap-3">
-                  <AvatarWithSkin src={matchProfile?.photo_url} name={matchUser?.first_name} size="md" skin={skinData} />
+                  <AvatarWithSkin
+                    src={matchProfile?.photo_url}
+                    name={matchUser?.first_name}
+                    size="md"
+                    skin={skinData}
+                    role={matchUser?.team_role}
+                    tier={matchUser?.subscription_tier === 'pro' ? 'pro' : matchUser?.subscription_tier === 'light' ? 'light' : null}
+                  />
                   <div className="flex-1">
                     <div className="font-semibold">{matchUser?.first_name} {matchUser?.last_name}</div>
                     <div className="text-sm text-gray-400">{matchProfile?.occupation || 'Участник'}</div>
@@ -188,7 +195,14 @@ const NetworkScreen: React.FC = () => {
 
         <Card className="mb-6">
           <div className="flex gap-4 items-center">
-            <AvatarWithSkin src={p.photo_url} name={p.user?.first_name} size="xl" skin={profileSkinData} />
+            <AvatarWithSkin
+              src={p.photo_url}
+              name={p.user?.first_name}
+              size="xl"
+              skin={profileSkinData}
+              role={p.user?.team_role}
+              tier={(p.user as any)?.subscription_tier === 'pro' ? 'pro' : (p.user as any)?.subscription_tier === 'light' ? 'light' : null}
+            />
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-bold truncate">{p.user?.first_name} {p.user?.last_name}</h2>
               <p className="text-accent flex items-center gap-1"><Briefcase size={14} /><span className="truncate">{p.occupation || 'Участник'}</span></p>
@@ -263,7 +277,16 @@ const NetworkScreen: React.FC = () => {
                 {(() => {
                   const swipeSkin = (currentProfile.user as any)?.active_skin
                   const swipeSkinData = Array.isArray(swipeSkin) ? swipeSkin[0] : swipeSkin
-                  return <AvatarWithSkin src={currentProfile.photo_url} name={currentProfile.user?.first_name} size="xl" skin={swipeSkinData} />
+                  return (
+                    <AvatarWithSkin
+                      src={currentProfile.photo_url}
+                      name={currentProfile.user?.first_name}
+                      size="xl"
+                      skin={swipeSkinData}
+                      role={currentProfile.user?.team_role}
+                      tier={(currentProfile.user as any)?.subscription_tier === 'pro' ? 'pro' : (currentProfile.user as any)?.subscription_tier === 'light' ? 'light' : null}
+                    />
+                  )
                 })()}
               </div>
               <div className="flex-1 min-w-0">

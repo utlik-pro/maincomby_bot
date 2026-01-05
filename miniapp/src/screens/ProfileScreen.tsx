@@ -644,7 +644,8 @@ const ProfileScreen: React.FC = () => {
                 name={user?.first_name || 'User'}
                 size="xl"
                 skin={userSkins.find(s => s.skin?.slug === (user?.team_role === 'core' ? 'core_team' : user?.team_role))?.skin || null}
-                badge={tier === 'pro' ? 'PRO' : tier === 'light' ? 'LIGHT' : undefined}
+                role={user?.team_role}
+                tier={tier === 'pro' ? 'pro' : tier === 'light' ? 'light' : null}
                 className="mx-auto"
               />
             </div>
@@ -1044,7 +1045,8 @@ const ProfileScreen: React.FC = () => {
             name={user?.first_name || 'User'}
             size="xl"
             skin={userSkins.find(s => s.skin?.slug === (user?.team_role === 'core' ? 'core_team' : user?.team_role))?.skin || null}
-            badge={tier === 'pro' ? 'PRO' : tier === 'light' ? 'LIGHT' : undefined}
+            role={user?.team_role}
+            tier={tier === 'pro' ? 'pro' : tier === 'light' ? 'light' : null}
             className="mx-auto"
           />
         </div>
@@ -1053,12 +1055,6 @@ const ProfileScreen: React.FC = () => {
           {user?.first_name} {user?.last_name}
         </h1>
 
-        {/* Team Badge (if different from theme badge) */}
-        {user?.team_role && TEAM_BADGES[user.team_role] && !theme.badge && (
-          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold mt-2 ${TEAM_BADGES[user.team_role].color} text-white`}>
-            <span>{TEAM_BADGES[user.team_role].label}</span>
-          </div>
-        )}
 
         {profile?.occupation && <p className={`${theme.accentColor} mt-1`}>{profile.occupation}</p>}
 

@@ -232,6 +232,8 @@ const AchievementsScreen: React.FC = () => {
                     name={member.first_name}
                     size="sm"
                     skin={skinData}
+                    role={member.team_role}
+                    tier={member.subscription_tier === 'pro' ? 'pro' : member.subscription_tier === 'light' ? 'light' : null}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">

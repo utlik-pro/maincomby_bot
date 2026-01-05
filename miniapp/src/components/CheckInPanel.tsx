@@ -259,14 +259,17 @@ const CheckInPanel: React.FC<CheckInPanelProps> = ({ onClose }) => {
                   className={`flex items-center gap-3 ${isCheckedIn ? 'opacity-60' : ''}`}
                 >
                   <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-bg-card flex items-center justify-center border-2 border-gray-700">
-                      <span className="text-sm font-bold">
-                        {reg.user?.first_name?.[0] || '?'}
-                      </span>
-                    </div>
+                    <AvatarWithSkin
+                      src={reg.user?.photo_url}
+                      name={reg.user?.first_name}
+                      size="sm"
+                      skin={reg.user?.active_skin?.[0] || reg.user?.active_skin}
+                      role={reg.user?.team_role}
+                      tier={reg.user?.subscription_tier === 'pro' ? 'pro' : reg.user?.subscription_tier === 'light' ? 'light' : null}
+                    />
                     {isCheckedIn && (
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                        <Check size={12} className="text-white" />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center z-20 border border-bg">
+                        <Check size={10} className="text-white" />
                       </div>
                     )}
                   </div>
