@@ -51,6 +51,7 @@ import { CompanySelector } from '@/components/CompanySelector'
 import { SocialLinks } from '@/components/SocialLinks'
 import { SocialLinksEdit } from '@/components/SocialLinksEdit'
 import { NetworkingGuide } from '@/components/NetworkingGuide'
+import SkinAdminPanel from '@/components/SkinAdminPanel'
 import { TagInput } from '@/components/TagInput'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
@@ -169,6 +170,7 @@ const ProfileScreen: React.FC = () => {
   const [showTeamSection, setShowTeamSection] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showSkinSelector, setShowSkinSelector] = useState(false)
+  const [showSkinAdmin, setShowSkinAdmin] = useState(false)
   const [showNetworkingGuide, setShowNetworkingGuide] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
@@ -855,6 +857,11 @@ const ProfileScreen: React.FC = () => {
     )
   }
 
+  // Skin Admin Screen (core team only)
+  if (showSkinAdmin) {
+    return <SkinAdminPanel onClose={() => setShowSkinAdmin(false)} />
+  }
+
   // Skin Selector Screen
   if (showSkinSelector) {
     const handleSkinSelect = async (skinId: string) => {
@@ -1227,6 +1234,8 @@ const ProfileScreen: React.FC = () => {
           {[
             { icon: <Bell size={20} className="text-blue-400" />, label: 'Уведомления', badge: unreadCount > 0 ? unreadCount : null, onClick: () => setShowNotifications(true) },
             { icon: <Users size={20} className="text-accent" />, label: 'Команда MAIN', badge: teamMembers.length > 0 ? teamMembers.length : null, onClick: () => setShowTeamSection(true) },
+            // Admin: Skin management (core team only)
+            ...(user?.team_role === 'core' ? [{ icon: <Shield size={20} className="text-red-400" />, label: 'Управление скинами', badge: null, onClick: () => setShowSkinAdmin(true) }] : []),
             { icon: <Ticket size={20} className="text-purple-400" />, label: 'Мои билеты', badge: null, onClick: () => setActiveTab('events') },
             { icon: <Heart size={20} className="text-pink-400" />, label: 'Мои матчи', badge: null, onClick: () => setActiveTab('network') },
             { icon: <Trophy size={20} className="text-yellow-400" />, label: 'Достижения', badge: null, onClick: () => setActiveTab('achievements') },

@@ -1522,3 +1522,64 @@ export async function getUsersWithSkin(skinSlug: string): Promise<any[]> {
 
   return data || []
 }
+
+// ============================================
+// Admin: Skin Management
+// ============================================
+
+// Search users by username or name (for admin skin assignment)
+export async function searchUsersForAdmin(query: string, limit = 20): Promise<any[]> {
+  if (!query || query.length < 2) return []
+
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .select(`
+      id,
+      tg_user_id,
+      username,
+      first_name,
+      last_name,
+      active_skin_id,
+      profile:bot_profiles(photo_url),
+      active_skin:avatar_skins(id, name, slug, ring_color)
+    `)
+    .or(`username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+    .limit(limit)
+
+  if (error) {
+    console.error('[searchUsersForAdmin] Error:', error)
+    return []
+  }
+
+  return data || []
+}
+
+// Get all available skins (for admin selection)
+export async function getAllSkins(): Promise<AvatarSkin[]> {
+  const { data, error } = await getSupabase()
+    .from('avatar_skins')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    console.error('[getAllSkins] Error:', error)
+    return []
+  }
+
+  return data || []
+}
+
+// Admin: Assign skin to user (sets active_skin_id directly)
+export async function adminAssignSkin(userId: number, skinId: string | null): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('bot_users')
+    .update({ active_skin_id: skinId })
+    .eq('id', userId)
+
+  if (error) {
+    console.error('[adminAssignSkin] Error:', error)
+    return false
+  }
+  return true
+}
