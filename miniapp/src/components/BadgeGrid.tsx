@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Award } from 'lucide-react'
+import { Award, Trophy } from 'lucide-react'
 import { UserBadge } from '@/types'
 import { hapticFeedback } from '@/lib/telegram'
 
@@ -61,9 +61,6 @@ export const BadgeGrid: React.FC<BadgeGridProps> = ({
                 borderWidth: 1,
               }}
             >
-              {userBadge.badge?.emoji && (
-                <span className="text-base">{userBadge.badge.emoji}</span>
-              )}
               <span style={{ color: userBadge.badge?.color || '#c8ff00' }}>
                 {userBadge.badge?.name || 'Badge'}
               </span>
@@ -112,7 +109,7 @@ export const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose }) => {
           className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-4xl"
           style={{ backgroundColor: `${badgeData?.color || '#c8ff00'}20` }}
         >
-          {badgeData?.emoji || '🏆'}
+          <Trophy size={40} style={{ color: badgeData?.color || '#c8ff00' }} />
         </div>
 
         {/* Badge name */}

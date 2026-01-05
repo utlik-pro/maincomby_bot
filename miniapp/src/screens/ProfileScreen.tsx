@@ -44,8 +44,7 @@ import {
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported } from '@/lib/telegram'
 import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin } from '@/lib/supabase'
-import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
-import { AvatarWithSkin, SkinPreview } from '@/components/AvatarWithSkin'
+import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
 import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
@@ -640,20 +639,14 @@ const ProfileScreen: React.FC = () => {
           {/* Themed Avatar and Name in Settings */}
           <div className="text-center mb-8">
             <div className="relative inline-block">
-              <div className={`rounded-full ${theme.avatarRing} ${theme.avatarGlow}`}>
-                <Avatar
-                  src={profile?.photo_url}
-                  name={user?.first_name || 'User'}
-                  size="xl"
-                  className="mx-auto"
-                />
-              </div>
-              {theme.badge && (
-                <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${theme.badge.color} px-2 py-0.5 rounded-full flex items-center gap-1 text-xs font-bold whitespace-nowrap`}>
-                  {theme.badge.icon}
-                  {theme.badge.label}
-                </div>
-              )}
+              <AvatarWithSkin
+                src={profile?.photo_url}
+                name={user?.first_name || 'User'}
+                size="xl"
+                skin={userSkins.find(s => s.skin?.slug === (user?.team_role === 'core' ? 'core_team' : user?.team_role))?.skin || null}
+                badge={tier === 'pro' ? 'PRO' : tier === 'light' ? 'LIGHT' : undefined}
+                className="mx-auto"
+              />
             </div>
             <h2 className="text-xl font-bold mt-4">
               {user?.first_name} {user?.last_name}
@@ -1050,23 +1043,16 @@ const ProfileScreen: React.FC = () => {
     <div className="pb-6">
       {/* Header with themed gradient background */}
       <div className={`${theme.headerGradient} p-6 text-center`}>
-        {/* Avatar with themed ring and glow - tap 5 times for easter egg */}
+        {/* Avatar with skin - uses integrated skin and badge system */}
         <div className="relative inline-block cursor-pointer" onClick={handleAvatarTap}>
-          <div className={`rounded-full ${theme.avatarRing} ${theme.avatarGlow}`}>
-            <Avatar
-              src={profile?.photo_url}
-              name={user?.first_name || 'User'}
-              size="xl"
-              className="mx-auto"
-            />
-          </div>
-          {/* Theme badge on avatar */}
-          {theme.badge && (
-            <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${theme.badge.color} px-2 py-0.5 rounded-full flex items-center gap-1 text-xs font-bold whitespace-nowrap`}>
-              {theme.badge.icon}
-              {theme.badge.label}
-            </div>
-          )}
+          <AvatarWithSkin
+            src={profile?.photo_url}
+            name={user?.first_name || 'User'}
+            size="xl"
+            skin={userSkins.find(s => s.skin?.slug === (user?.team_role === 'core' ? 'core_team' : user?.team_role))?.skin || null}
+            badge={tier === 'pro' ? 'PRO' : tier === 'light' ? 'LIGHT' : undefined}
+            className="mx-auto"
+          />
         </div>
 
         <h1 className="text-xl font-bold mt-4">
@@ -1126,9 +1112,9 @@ const ProfileScreen: React.FC = () => {
           <div className="mt-4">
             <button
               onClick={() => setShowAdminPanel(true)}
-              className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-bold border border-red-500/30"
+              className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-bold border border-red-500/30 flex items-center gap-2 mx-auto"
             >
-              ⚙️ Superadmin
+              <Settings size={16} /> Superadmin
             </button>
           </div>
         )}
