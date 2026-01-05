@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { getUserInvites, generateInviteLink } from '@/lib/supabase'
+import { getUserInvites, generateInviteLink, createUserInvites } from '@/lib/supabase'
 import { Invite } from '@/types'
 import { Copy, Share, Gift, Users, Check, X } from '@/components/Icons'
 import { getTelegramWebApp } from '@/lib/telegram'
@@ -120,13 +120,31 @@ export const InviteBottomSheet: React.FC<InviteBottomSheetProps> = ({ onClose })
                                 )
                             })
                         ) : (
-                            <div className="text-center py-8 text-gray-500 bg-bg rounded-xl border border-dashed border-border">
-                                У вас пока нет инвайтов
+                            <div className="text-center py-8 px-4 bg-bg rounded-xl border border-dashed border-border flex flex-col items-center gap-4">
+                                <div className="text-gray-500">У вас пока нет сгенерированных инвайтов</div>
+                                {user && user.invites_remaining > 0 && (
+                                    <button
+                                        onClick={async () => {
+                                            setIsLoading(true)
+                                            const success = await createUserInvites(user.id, user.invites_remaining)
+                                            if (success) {
+                                                await loadInvites()
+                                                addToast('Инвайты успешно созданы!', 'success')
+                                            } else {
+                                                addToast('Ошибка при создании инвайтов', 'error')
+                                                setIsLoading(false)
+                                            }
+                                        }}
+                                        className="px-6 py-2 bg-accent text-bg font-bold rounded-xl hover:bg-accent-light transition-colors"
+                                    >
+                                        Создать {user.invites_remaining} инвайтов
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

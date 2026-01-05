@@ -955,6 +955,20 @@ export async function getUserInvites(userId: number): Promise<Invite[]> {
   return data as Invite[]
 }
 
+// Create invites for user
+export async function createUserInvites(userId: number, count: number = 5): Promise<boolean> {
+  const { error } = await getSupabase().rpc('create_user_invites', {
+    p_user_id: userId,
+    p_count: count
+  })
+
+  if (error) {
+    console.error('Failed to create invites:', error)
+    return false
+  }
+  return true
+}
+
 // Generate invite link
 export function generateInviteLink(code: string): string {
   return `https://t.me/MainCommunityBot/app?startapp=invite_${code}`
