@@ -10,7 +10,7 @@ import {
   User,
 } from 'lucide-react'
 import { searchUsersForAdmin, getAllSkins, adminAssignSkin, createNotification } from '@/lib/supabase'
-import { AvatarWithSkin, Card, Input, Button, Badge } from '@/components/ui'
+import { AvatarWithSkin, Card, Input, Button, Badge, SkinPreview } from '@/components/ui'
 import { useAppStore, useToastStore } from '@/lib/store'
 import type { AvatarSkin } from '@/types'
 
@@ -208,31 +208,12 @@ const SkinAdminPanel: React.FC<SkinAdminPanelProps> = ({ onClose }) => {
                 const isActive = selectedUser.active_skin_id === skin.id
 
                 return (
-                  <Card
+                  <SkinPreview
                     key={skin.id}
+                    skin={skin}
+                    isActive={isActive}
                     onClick={() => handleAssignSkin(skin.id)}
-                    highlighted={isActive}
-                    className="text-center py-4"
-                  >
-                    <div
-                      className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center"
-                      style={{
-                        boxShadow: `0 0 0 3px ${skin.ring_color}`,
-                        backgroundColor: '#1a1a1a',
-                      }}
-                    >
-                      <span className="text-lg">{skin.icon_emoji}</span>
-                    </div>
-                    <div className="font-medium text-sm">{skin.name}</div>
-                    <div className="text-xs text-gray-500 truncate px-2">
-                      {skin.description}
-                    </div>
-                    {isActive && (
-                      <div className="mt-2">
-                        <Badge variant="success">Текущий</Badge>
-                      </div>
-                    )}
-                  </Card>
+                  />
                 )
               })}
             </div>

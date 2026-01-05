@@ -944,13 +944,7 @@ const ProfileScreen: React.FC = () => {
             <div>
               <div className="text-sm text-gray-400">Текущий скин</div>
               <div className="font-semibold">
-                {activeSkin ? (
-                  <span className="flex items-center gap-2">
-                    {activeSkin.icon_emoji} {activeSkin.name}
-                  </span>
-                ) : (
-                  'Без скина'
-                )}
+                {activeSkin ? activeSkin.name : 'Без скина'}
               </div>
               {activeSkin?.description && (
                 <div className="text-xs text-gray-500 mt-1">{activeSkin.description}</div>
