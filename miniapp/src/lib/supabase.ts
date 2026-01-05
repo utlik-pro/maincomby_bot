@@ -192,6 +192,22 @@ export async function createSwipe(swiperId: number, swipedId: number, action: 'l
   return data
 }
 
+export async function getCoreTeamUsers() {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('bot_users')
+    .select(`
+      *,
+      profile:bot_profiles(*),
+      active_skin:avatar_skins(*)
+    `)
+    .eq('team_role', 'core')
+    .order('points', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
 export async function checkMutualLike(userId1: number, userId2: number) {
   const { data, error } = await getSupabase()
     .from('bot_swipes')
