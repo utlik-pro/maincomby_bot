@@ -643,9 +643,9 @@ const ProfileScreen: React.FC = () => {
                 src={profile?.photo_url}
                 name={user?.first_name || 'User'}
                 size="xl"
-                skin={userSkins.find(s => s.skin?.slug === (user?.team_role === 'core' ? 'core_team' : user?.team_role))?.skin || null}
+                skin={activeSkin}
                 role={user?.team_role}
-                tier={tier === 'pro' ? 'pro' : tier === 'light' ? 'light' : null}
+                tier={user?.subscription_tier === 'pro' ? 'pro' : user?.subscription_tier === 'light' ? 'light' : null}
                 className="mx-auto"
               />
             </div>
@@ -1044,9 +1044,9 @@ const ProfileScreen: React.FC = () => {
             src={profile?.photo_url}
             name={user?.first_name || 'User'}
             size="xl"
-            skin={userSkins.find(s => s.skin?.slug === (user?.team_role === 'core' ? 'core_team' : user?.team_role))?.skin || null}
+            skin={activeSkin}
             role={user?.team_role}
-            tier={tier === 'pro' ? 'pro' : tier === 'light' ? 'light' : null}
+            tier={user?.subscription_tier === 'pro' ? 'pro' : user?.subscription_tier === 'light' ? 'light' : null}
             className="mx-auto"
           />
         </div>
