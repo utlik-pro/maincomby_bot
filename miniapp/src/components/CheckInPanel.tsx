@@ -177,7 +177,7 @@ const CheckInPanel: React.FC<CheckInPanelProps> = ({ onClose }) => {
                   <div className="font-medium truncate">{event.title}</div>
                   <div className="text-sm text-gray-400 flex items-center gap-2">
                     <Clock size={14} />
-                    {format(new Date(event.start_date), 'd MMM, HH:mm', { locale: ru })}
+                    {new Date(event.event_date).toLocaleDateString()} в {new Date(event.event_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
                 <ChevronRight size={20} className="text-gray-500" />
