@@ -203,6 +203,8 @@ const HomeScreen: React.FC = () => {
             <Progress value={progress} />
           </Card>
         </div>
+      )}
+
       {/* Invite Hint */}
       <div className="px-4 mb-6">
         <Card
