@@ -2,6 +2,7 @@ services:
   - type: web
     name: maincomby-miniapp
     runtime: static
+    rootDirectory: miniapp
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
