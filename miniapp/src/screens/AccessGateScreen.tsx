@@ -109,9 +109,9 @@ const AccessGateScreen: React.FC = () => {
                         <>
                             <span className="text-white font-semibold">{inviteDetails.inviterName}</span> подарил вам инвайт в закрытое сообщество MAIN.
                             <br /><br />
-                            <span className="text-accent">🎁 +50 XP</span> вам и другу
+                            <span className="text-accent">+50 XP</span> вам и другу
                             <br />
-                            <span className="text-accent">🎫 5 инвайтов</span> для друзей
+                            <span className="text-accent">5 инвайтов</span> для друзей
                         </>
                     ) : (
                         'Сейчас доступ в MAIN Community открыт только по приглашениям. Введите код доступа, чтобы присоединиться.'
@@ -136,8 +136,8 @@ const AccessGateScreen: React.FC = () => {
                         onClick={inviteDetails ? handleJoin : () => validateCode(code)}
                         disabled={isVerifying || !code}
                         className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${inviteDetails
-                                ? 'bg-accent text-bg hover:bg-accent-light'
-                                : 'bg-card hover:bg-card-hover text-white'
+                            ? 'bg-accent text-bg hover:bg-accent-light'
+                            : 'bg-card hover:bg-card-hover text-white'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                         {isVerifying ? (

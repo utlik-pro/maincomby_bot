@@ -8,6 +8,7 @@ import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
 import { Skeleton } from '@/components/ui'
 import { useSpeedRunner } from '@/lib/easterEggs'
+import { Smartphone } from 'lucide-react'
 
 // Screen imports (lazy loaded)
 const HomeScreen = React.lazy(() => import('@/screens/HomeScreen'))
@@ -39,7 +40,7 @@ const LoadingScreen: React.FC = () => (
 // Error screen for non-Telegram access
 const NotTelegramScreen: React.FC = () => (
   <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
-    <div className="text-6xl mb-4">📱</div>
+    <Smartphone size={64} className="mb-4 text-accent" />
     <h1 className="text-xl font-bold mb-2">Откройте в Telegram</h1>
     <p className="text-gray-400 text-sm mb-6">
       Это приложение работает только внутри Telegram.

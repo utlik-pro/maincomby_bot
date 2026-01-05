@@ -386,12 +386,12 @@ export const sendPushNotification = async (
 ): Promise<boolean> => {
   try {
     const emoji = {
-      match: '💕',
-      event: '📅',
-      achievement: '🏆',
-      reminder: '⏰',
-      system: '🔔',
-    }[notification.type] || '🔔'
+      match: '',
+      event: '',
+      achievement: '',
+      reminder: '',
+      system: '',
+    }[notification.type] || ''
 
     const text = `${emoji} *${notification.title}*\n\n${notification.message}`
 
@@ -488,7 +488,7 @@ export const notifyAchievement = async (
   return sendPushNotification(userTgId, {
     type: 'achievement',
     title: 'Новое достижение!',
-    message: `${achievementEmoji} Вы получили достижение *${achievementTitle}*!\n\n+${xpReward} XP`,
+    message: `Вы получили достижение *${achievementTitle}*!\n\n+${xpReward} XP`,
   })
 }
 

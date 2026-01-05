@@ -1348,12 +1348,12 @@ export async function sendNotification(
 ): Promise<boolean> {
   try {
     const emoji = {
-      match: '💕',
-      event: '📅',
-      achievement: '🏆',
-      reminder: '⏰',
-      system: '🔔',
-    }[type] || '🔔'
+      match: '',
+      event: '',
+      achievement: '',
+      reminder: '',
+      system: '',
+    }[type] || ''
 
     const text = `${emoji} *${title}*\n\n${message}`
 

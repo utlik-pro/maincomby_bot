@@ -637,11 +637,29 @@ const ProfileScreen: React.FC = () => {
         </button>
 
         <div className="px-4">
-          <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
-            <Settings size={24} className="text-gray-400" />
-            Настройки
-          </h1>
-          <p className="text-gray-400 text-sm mb-6">Управление приложением</p>
+          {/* Themed Avatar and Name in Settings */}
+          <div className="text-center mb-8">
+            <div className="relative inline-block">
+              <div className={`rounded-full ${theme.avatarRing} ${theme.avatarGlow}`}>
+                <Avatar
+                  src={profile?.photo_url}
+                  name={user?.first_name || 'User'}
+                  size="xl"
+                  className="mx-auto"
+                />
+              </div>
+              {theme.badge && (
+                <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${theme.badge.color} px-2 py-0.5 rounded-full flex items-center gap-1 text-xs font-bold whitespace-nowrap`}>
+                  {theme.badge.icon}
+                  {theme.badge.label}
+                </div>
+              )}
+            </div>
+            <h2 className="text-xl font-bold mt-4">
+              {user?.first_name} {user?.last_name}
+            </h2>
+            <p className="text-gray-400 text-sm mt-1">Настройки профиля</p>
+          </div>
 
           {/* Notifications Section */}
           <Card className="mb-4">
@@ -809,7 +827,8 @@ const ProfileScreen: React.FC = () => {
 
         <div className="px-4">
           <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
-            💎 Команда MAIN
+            <Shield size={24} className="text-accent" />
+            Команда MAIN
           </h1>
           <p className="text-gray-400 text-sm mb-6">Люди, которые делают сообщество лучше</p>
 
@@ -842,7 +861,6 @@ const ProfileScreen: React.FC = () => {
                         <div className="text-sm text-gray-400 truncate">{profileData.occupation}</div>
                       )}
                       <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${badge?.color || 'bg-gray-500'} text-white`}>
-                        <span>{badge?.icon}</span>
                         <span>{badge?.label}</span>
                       </div>
                     </div>
@@ -1058,7 +1076,6 @@ const ProfileScreen: React.FC = () => {
         {/* Team Badge (if different from theme badge) */}
         {user?.team_role && TEAM_BADGES[user.team_role] && !theme.badge && (
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold mt-2 ${TEAM_BADGES[user.team_role].color} text-white`}>
-            <span>{TEAM_BADGES[user.team_role].icon}</span>
             <span>{TEAM_BADGES[user.team_role].label}</span>
           </div>
         )}

@@ -14,27 +14,27 @@ const EASTER_EGGS: Record<string, EasterEgg> = {
   logo_taps: {
     id: 'logo_taps',
     xpReward: 100,
-    message: '🎉 Секрет найден! +100 XP за любопытство!',
+    message: 'Секрет найден! +100 XP за любопытство!',
   },
   avatar_taps: {
     id: 'avatar_taps',
     xpReward: 50,
-    message: '👤 Нашёл секрет аватара! +50 XP',
+    message: 'Нашёл секрет аватара! +50 XP',
   },
   rank_taps: {
     id: 'rank_taps',
     xpReward: 200,
-    message: '🎖️ Мастер тапов! +200 XP за настойчивость!',
+    message: 'Мастер тапов! +200 XP за настойчивость!',
   },
   phone_shake: {
     id: 'phone_shake',
     xpReward: 150,
-    message: '📱 Шейкер! +150 XP за встряску!',
+    message: 'Шейкер! +150 XP за встряску!',
   },
   secret_code: {
     id: 'secret_code',
     xpReward: 75,
-    message: '🔐 Код принят! +75 XP за "MAIN"!',
+    message: 'Код принят! +75 XP за "MAIN"!',
   },
   speed_runner: {
     id: 'speed_runner',
@@ -175,7 +175,7 @@ export function useShakeDetector(onShake: () => void, requiredShakes = 3) {
 
               const egg = EASTER_EGGS.phone_shake
               if (user) {
-                addXP(user.id, egg.xpReward, 'EASTER_EGG_PHONE_SHAKE').catch(() => {})
+                addXP(user.id, egg.xpReward, 'EASTER_EGG_PHONE_SHAKE').catch(() => { })
               }
               addToast(egg.message, 'xp', egg.xpReward)
               onShake()
@@ -252,7 +252,7 @@ export function useSecretCode(
       if (user) {
         addXP(user.id, egg.xpReward, 'EASTER_EGG_SECRET_CODE')
           .then(() => addPoints(egg.xpReward))
-          .catch(() => {})
+          .catch(() => { })
       }
       addToast(egg.message, 'xp', egg.xpReward)
       onMatch()
@@ -296,7 +296,7 @@ export function useSpeedRunner(tabs: string[], timeLimit = 10000) {
           if (user) {
             addXP(user.id, egg.xpReward, 'EASTER_EGG_SPEED_RUNNER')
               .then(() => addPoints(egg.xpReward))
-              .catch(() => {})
+              .catch(() => { })
           }
           addToast(egg.message, 'xp', egg.xpReward)
         }

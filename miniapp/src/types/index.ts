@@ -64,19 +64,18 @@ export interface Achievement {
   id: AchievementId
   title: string
   description: string
-  emoji: string
   xpReward: number
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_step', title: 'Первый шаг', description: 'Посетите первое событие', emoji: '🥇', xpReward: 50 },
-  { id: 'on_fire', title: 'На волне', description: '3 события подряд', emoji: '🔥', xpReward: 100 },
-  { id: 'social_butterfly', title: 'Душа компании', description: '10 матчей', emoji: '💕', xpReward: 150 },
-  { id: 'critic', title: 'Критик', description: '5 фидбеков', emoji: '📝', xpReward: 75 },
-  { id: 'sniper', title: 'Снайпер', description: '100% посещаемость (5+ событий)', emoji: '🎯', xpReward: 200 },
-  { id: 'veteran', title: 'Ветеран', description: '1 год в сообществе', emoji: '👑', xpReward: 500 },
-  { id: 'networker', title: 'Нетворкер', description: '25 матчей', emoji: '🤝', xpReward: 200 },
-  { id: 'regular', title: 'Завсегдатай', description: '10 событий', emoji: '🏆', xpReward: 150 },
+  { id: 'first_step', title: 'Первый шаг', description: 'Посетите первое событие', xpReward: 50 },
+  { id: 'on_fire', title: 'На волне', description: '3 события подряд', xpReward: 100 },
+  { id: 'social_butterfly', title: 'Душа компании', description: '10 матчей', xpReward: 150 },
+  { id: 'critic', title: 'Критик', description: '5 фидбеков', xpReward: 75 },
+  { id: 'sniper', title: 'Снайпер', description: '100% посещаемость (5+ событий)', xpReward: 200 },
+  { id: 'veteran', title: 'Ветеран', description: '1 год в сообществе', xpReward: 500 },
+  { id: 'networker', title: 'Нетворкер', description: '25 матчей', xpReward: 200 },
+  { id: 'regular', title: 'Завсегдатай', description: '10 событий', xpReward: 150 },
 ]
 
 // Team roles/badges (legacy - kept for backwards compatibility)
@@ -88,12 +87,12 @@ export type TeamRole =
   | 'speaker'   // Спикер
   | null
 
-export const TEAM_BADGES: Record<Exclude<TeamRole, null>, { label: string; color: string; icon: string }> = {
-  core: { label: 'MAIN Team', color: 'bg-accent', icon: '💎' },
-  partner: { label: 'Партнёр', color: 'bg-blue-500', icon: '🤝' },
-  sponsor: { label: 'Спонсор', color: 'bg-yellow-500', icon: '⭐' },
-  volunteer: { label: 'Волонтёр', color: 'bg-green-500', icon: '💚' },
-  speaker: { label: 'Спикер', color: 'bg-purple-500', icon: '🎤' },
+export const TEAM_BADGES: Record<Exclude<TeamRole, null>, { label: string; color: string }> = {
+  core: { label: 'MAIN Team', color: 'bg-accent' },
+  partner: { label: 'Партнёр', color: 'bg-blue-500' },
+  sponsor: { label: 'Спонсор', color: 'bg-yellow-500' },
+  volunteer: { label: 'Волонтёр', color: 'bg-green-500' },
+  speaker: { label: 'Спикер', color: 'bg-purple-500' },
 }
 
 // ============================================
@@ -481,7 +480,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, {
     superlikesPerDay: 1,
     priorityInFeed: false,
     advancedFilters: true,
-    badge: '⭐',
+    badge: null,
   },
   pro: {
     dailySwipes: Infinity,
@@ -490,7 +489,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, {
     superlikesPerDay: 5,
     priorityInFeed: true,
     advancedFilters: true,
-    badge: '👑',
+    badge: null,
   },
 }
 

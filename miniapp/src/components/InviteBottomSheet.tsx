@@ -40,7 +40,7 @@ export const InviteBottomSheet: React.FC<InviteBottomSheetProps> = ({ onClose })
         const link = generateInviteLink(code)
         const webApp = getTelegramWebApp()
 
-        const text = `🎁 Приглашаю тебя в MAIN Community! Регистрируйся по ссылке и получи +50 XP:`
+        const text = `Приглашаю тебя в MAIN Community! Регистрируйся по ссылке и получи +50 XP:`
         const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`
 
         webApp?.openTelegramLink(url)
