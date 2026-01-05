@@ -1,0 +1,171 @@
+{
+    "hero": {
+        "title": "Professional Networking",
+        "titleHighlight": "in Telegram",
+        "subtitle": "Find valuable connections, attend events, grow with MAIN tech community",
+        "cta": "Open in Telegram",
+        "ctaSecondary": "Contact Us"
+    },
+    "nav": {
+        "features": "Features",
+        "howItWorks": "How It Works",
+        "pricing": "Pricing",
+        "faq": "FAQ"
+    },
+    "features": {
+        "title": "Platform Features",
+        "items": [
+            {
+                "title": "Smart Matching",
+                "description": "Swipe profiles and find people with similar interests and goals"
+            },
+            {
+                "title": "Events",
+                "description": "Register for events with one click and get your QR ticket"
+            },
+            {
+                "title": "Gamification",
+                "description": "Earn XP, level up your rank, unlock achievements"
+            },
+            {
+                "title": "Subscriptions",
+                "description": "Choose a plan that fits your networking needs"
+            },
+            {
+                "title": "Profile",
+                "description": "Customize avatar, add social links, showcase your expertise"
+            },
+            {
+                "title": "Community",
+                "description": "Become a volunteer, speaker, or community partner"
+            }
+        ]
+    },
+    "howItWorks": {
+        "title": "How to Start",
+        "steps": [
+            {
+                "number": "1",
+                "title": "Open the Bot",
+                "description": "Go to Telegram and start @MainCommunityBot"
+            },
+            {
+                "number": "2",
+                "title": "Fill Your Profile",
+                "description": "Tell about yourself, your interests and goals"
+            },
+            {
+                "number": "3",
+                "title": "Start Networking",
+                "description": "Swipe profiles and find valuable connections"
+            }
+        ]
+    },
+    "pricing": {
+        "title": "Pricing Plans",
+        "subtitle": "Choose the plan that suits you",
+        "plans": [
+            {
+                "name": "Free",
+                "price": "0",
+                "period": "forever",
+                "features": [
+                    "5 swipes per day",
+                    "Basic profile",
+                    "Event access",
+                    "Basic achievements"
+                ],
+                "cta": "Get Started Free"
+            },
+            {
+                "name": "Light",
+                "price": "5",
+                "period": "month",
+                "features": [
+                    "20 swipes per day",
+                    "See who liked you",
+                    "1 superlike per day",
+                    "Advanced filters"
+                ],
+                "cta": "Try Light",
+                "popular": true
+            },
+            {
+                "name": "Pro",
+                "price": "15",
+                "period": "month",
+                "features": [
+                    "Unlimited swipes",
+                    "5 superlikes per day",
+                    "Priority in feed",
+                    "VIP support"
+                ],
+                "cta": "Go Pro"
+            }
+        ]
+    },
+    "stats": {
+        "items": [
+            {
+                "value": "500+",
+                "label": "Members"
+            },
+            {
+                "value": "50+",
+                "label": "Events"
+            },
+            {
+                "value": "1000+",
+                "label": "Matches"
+            }
+        ]
+    },
+    "faq": {
+        "title": "FAQ",
+        "items": [
+            {
+                "question": "How do I join the community?",
+                "answer": "Simply open @MainCommunityBot in Telegram, fill out your profile and start meeting other members."
+            },
+            {
+                "question": "Is it free?",
+                "answer": "Yes! Basic features are completely free. Paid plans provide additional features for active networking."
+            },
+            {
+                "question": "What are XP and ranks?",
+                "answer": "XP are experience points you earn for activity: attending events, matches, filling your profile. The more XP, the higher your rank."
+            },
+            {
+                "question": "How does matching work?",
+                "answer": "Swipe through other members' profiles, like the interesting ones. If it's mutual — you get a match and can start chatting."
+            }
+        ]
+    },
+    "contact": {
+        "title": "Contact Us",
+        "subtitle": "Have questions or suggestions? Write to us!",
+        "form": {
+            "name": "Name",
+            "telegram": "Telegram username",
+            "email": "Email (optional)",
+            "type": "Request type",
+            "types": [
+                "Question",
+                "Suggestion",
+                "Partnership",
+                "Other"
+            ],
+            "message": "Message",
+            "submit": "Send"
+        }
+    },
+    "footer": {
+        "description": "Networking platform for tech community",
+        "links": {
+            "telegram": "Telegram channel",
+            "bot": "Open Bot",
+            "privacy": "Privacy Policy"
+        },
+        "copyright": "© 2026 MAIN Community. All rights reserved."
+    }
+}

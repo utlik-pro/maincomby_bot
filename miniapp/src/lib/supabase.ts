@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission } from '@/types'
+import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndpkxustvcijykzxqxrn.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -753,7 +753,211 @@ export async function checkAndUnlockAchievements(userId: number) {
     unlockedAchievements.push('networker')
   }
 
-  return unlockedAchievements
+  if (unlockedAchievements.length > 0) {
+    return unlockedAchievements
+  }
+
+  return []
+}
+
+// ============================================
+// App Settings & Invites System
+// ============================================
+
+// Get app setting value
+export async function getAppSetting<T>(key: AppSettingKey, defaultValue: T): Promise<T> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', key)
+    .single()
+
+  if (error || !data) {
+    return defaultValue
+  }
+
+  return data.value as T
+}
+
+// Update app setting (admins only)
+export async function updateAppSetting(key: AppSettingKey, value: any, updatedBy: number): Promise<boolean> {
+  const supabase = getSupabase()
+
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert({
+      key,
+      value,
+      updated_by: updatedBy,
+      updated_at: new Date().toISOString()
+    })
+
+  return !error
+}
+
+// Check if invite is required
+export async function isInviteRequired(): Promise<boolean> {
+  return getAppSetting<boolean>('invite_required', false)
+}
+
+// Check user access (is existing user or whitelisted)
+export async function checkUserAccess(tgUserId: number): Promise<{
+  hasAccess: boolean
+  isExistingUser: boolean
+  isWhitelisted: boolean
+}> {
+  const supabase = getSupabase()
+
+  // 1. Check if user exists
+  const { data: user } = await supabase
+    .from('bot_users')
+    .select('id')
+    .eq('tg_user_id', tgUserId)
+    .single()
+
+  if (user) {
+    return { hasAccess: true, isExistingUser: true, isWhitelisted: false }
+  }
+
+  // 2. Check whitelist
+  const { data: whitelist } = await supabase
+    .from('admin_whitelist')
+    .select('id')
+    .eq('tg_user_id', tgUserId)
+    .single()
+
+  if (whitelist) {
+    return { hasAccess: true, isExistingUser: false, isWhitelisted: true }
+  }
+
+  return { hasAccess: false, isExistingUser: false, isWhitelisted: false }
+}
+
+// Validate invite code
+export async function validateInviteCode(code: string): Promise<{
+  valid: boolean
+  inviterName?: string
+  error?: string
+  invite?: any
+}> {
+  const supabase = getSupabase()
+
+  const { data: invite, error } = await supabase
+    .from('invites')
+    .select('*, inviter:bot_users!inviter_id(first_name, last_name, username)')
+    .eq('code', code.toUpperCase())
+    .single()
+
+  if (error || !invite) {
+    return { valid: false, error: 'Код не найден' }
+  }
+
+  if (invite.invitee_id || invite.used_at) {
+    return { valid: false, error: 'Код уже использован' }
+  }
+
+  const inviterName = invite.inviter?.first_name
+    ? `${invite.inviter.first_name} ${invite.inviter.last_name || ''}`.trim()
+    : invite.inviter?.username || 'Друг'
+
+  return { valid: true, inviterName, invite }
+}
+
+// Use invite and create user
+export async function useInviteAndCreateUser(
+  code: string,
+  userData: { tg_user_id: number; username?: string | null; first_name?: string | null; last_name?: string | null; photo_url?: string | null }
+): Promise<{ success: boolean; user?: User; error?: string }> {
+  const supabase = getSupabase()
+
+  // 1. Validate code again
+  const { valid, invite, error: valError } = await validateInviteCode(code)
+  if (!valid || !invite) {
+    return { success: false, error: valError || 'Invalid code' }
+  }
+
+  // 2. Create user with invite info
+  const { data: newUser, error: createError } = await supabase
+    .from('bot_users')
+    .insert({
+      tg_user_id: userData.tg_user_id,
+      username: userData.username,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      invited_by: invite.inviter_id,
+      invite_code_used: code,
+      invites_remaining: 5, // Give 5 invites to new user
+      subscription_tier: 'free',
+      points: 50 // +50 XP for joining
+    })
+    .select()
+    .single()
+
+  if (createError || !newUser) {
+    console.error('Failed to create user:', createError)
+    return { success: false, error: 'Ошибка при создании пользователя' }
+  }
+
+  // 3. Mark invite as used
+  await supabase
+    .from('invites')
+    .update({
+      invitee_id: newUser.id,
+      used_at: new Date().toISOString()
+    })
+    .eq('id', invite.id)
+
+  // 4. Create 5 invites for new user
+  await supabase.rpc('create_user_invites', { p_user_id: newUser.id, p_count: 5 })
+
+  // 5. Reward inviter (+50 XP)
+  await addXP(invite.inviter_id, 50, 'FRIEND_INVITE')
+
+  // 6. Reward new user (already got 50 points, but let's log transaction)
+  await supabase
+    .from('xp_transactions')
+    .insert({
+      user_id: newUser.id,
+      amount: 50,
+      reason: 'INVITE_ACCEPTED'
+    })
+
+  // 7. Initialize profile for new user
+  try {
+    await createProfile(newUser.id, {
+      city: 'Минск',
+      photo_url: userData.photo_url || null
+    })
+  } catch (e) {
+    console.warn('Profile auto-creation failed, user can create later')
+  }
+
+  return { success: true, user: newUser }
+}
+
+// Get user invites
+export async function getUserInvites(userId: number): Promise<Invite[]> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('invites')
+    .select('*')
+    .eq('inviter_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get invites:', error)
+    return []
+  }
+
+  return data as Invite[]
+}
+
+// Generate invite link
+export function generateInviteLink(code: string): string {
+  return `https://t.me/MainCommunityBot/app?startapp=invite_${code}`
 }
 
 // Notifications

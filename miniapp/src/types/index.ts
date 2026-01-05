@@ -1,5 +1,6 @@
 // User subscription types
 export type SubscriptionTier = 'free' | 'light' | 'pro'
+export type AppSettingKey = 'invite_required' | 'maintenance_mode' | 'onboarding_enabled'
 
 // User ranks (community roles)
 export type UserRank =
@@ -224,6 +225,10 @@ export interface User {
   warns: number
   banned: boolean
   source: string | null
+  // Invite system
+  invites_remaining: number
+  invited_by: number | null
+  invite_code_used: string | null
   // Mini App specific
   subscription_tier: SubscriptionTier
   subscription_expires_at: string | null
@@ -578,4 +583,29 @@ declare global {
       WebApp: TelegramWebApp
     }
   }
+}
+
+export interface Invite {
+  id: string
+  code: string
+  inviter_id: number
+  invitee_id: number | null
+  used_at: string | null
+  created_at: string
+}
+
+export interface AdminWhitelist {
+  id: number
+  tg_user_id: number
+  added_by: number | null
+  reason: string | null
+  created_at: string
+}
+
+export interface AppSetting {
+  key: AppSettingKey
+  value: any
+  description: string | null
+  updated_at: string
+  updated_by: number | null
 }

@@ -44,7 +44,11 @@ import {
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported } from '@/lib/telegram'
 import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin } from '@/lib/supabase'
-import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
+import { Avatar, Badge, Button, Card, Input } from '@/components/ui'
+import { AvatarWithSkin, SkinPreview } from '@/components/AvatarWithSkin'
+import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
+import { InviteBottomSheet } from '@/components/InviteBottomSheet'
+import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
 import { CompanySelector } from '@/components/CompanySelector'
@@ -171,6 +175,8 @@ const ProfileScreen: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false)
   const [showSkinSelector, setShowSkinSelector] = useState(false)
   const [showSkinAdmin, setShowSkinAdmin] = useState(false)
+  const [showInviteSheet, setShowInviteSheet] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [showNetworkingGuide, setShowNetworkingGuide] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
@@ -596,6 +602,14 @@ const ProfileScreen: React.FC = () => {
   // Networking Guide
   if (showNetworkingGuide) {
     return <NetworkingGuide onClose={() => setShowNetworkingGuide(false)} />
+  }
+
+  if (showInviteSheet) {
+    return <InviteBottomSheet onClose={() => setShowInviteSheet(false)} />
+  }
+
+  if (showAdminPanel) {
+    return <AdminSettingsPanel onClose={() => setShowAdminPanel(false)} />
   }
 
   if (showSettings) {
@@ -1095,6 +1109,18 @@ const ProfileScreen: React.FC = () => {
             {rankInfo.ru}
           </Badge>
         </div>
+
+        {/* Superadmin Settings Button */}
+        {['dmitryutlik', 'utlik_offer'].includes(user?.username || '') && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowAdminPanel(true)}
+              className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-bold border border-red-500/30"
+            >
+              ⚙️ Superadmin
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Debug Console (hidden, activated by 7 taps on version) */}
@@ -1301,13 +1327,17 @@ const ProfileScreen: React.FC = () => {
             </div>
             <div className="flex-1">
               <div className="font-semibold">Пригласи друга</div>
-              <div className="text-xs text-gray-400">Получи +30 XP за каждого друга</div>
+              <div className="text-xs text-gray-400">
+                {user?.invites_remaining! > 0
+                  ? `Осталось ${user?.invites_remaining} инвайтов. +50 XP за друга.`
+                  : 'Инвайты закончились'}
+              </div>
             </div>
             <Button size="sm" variant="secondary" onClick={() => {
               hapticFeedback.medium()
-              addToast('Ссылка скопирована!', 'success')
+              setShowInviteSheet(true)
             }}>
-              Поделиться
+              Открыть
             </Button>
           </div>
         </Card>

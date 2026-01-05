@@ -50,6 +50,10 @@ interface AppState {
   lastSeenEventId: number | null
   lastDismissedAnnouncementEventId: number | null // For event announcement modal
   deepLinkTarget: string | null // For handling deep links like 'matches'
+  // Invite system
+  pendingInviteCode: string | null
+  accessDenied: boolean
+  inviteRequired: boolean
 
   // Actions
   setUser: (user: User | null) => void
@@ -57,6 +61,9 @@ interface AppState {
   setLoading: (loading: boolean) => void
   setActiveTab: (tab: AppState['activeTab']) => void
   setDeepLinkTarget: (target: string | null) => void
+  setPendingInviteCode: (code: string | null) => void
+  setAccessDenied: (denied: boolean) => void
+  setInviteRequired: (required: boolean) => void
   setVolunteerMode: (mode: boolean) => void
   completeOnboarding: () => void
   setLastSeenEventId: (eventId: number) => void
@@ -89,9 +96,15 @@ export const useAppStore = create<AppState>()(
       lastSeenEventId: null,
       lastDismissedAnnouncementEventId: null,
       deepLinkTarget: null,
+      pendingInviteCode: null,
+      accessDenied: false,
+      inviteRequired: false,
 
       // Actions
       setDeepLinkTarget: (target) => set({ deepLinkTarget: target }),
+      setPendingInviteCode: (pendingInviteCode) => set({ pendingInviteCode }),
+      setAccessDenied: (accessDenied) => set({ accessDenied }),
+      setInviteRequired: (inviteRequired) => set({ inviteRequired }),
       setUser: (user) => {
         // Ensure points are never negative in UI
         if (user && user.points < 0) {

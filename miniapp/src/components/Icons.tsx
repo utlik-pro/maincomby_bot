@@ -88,6 +88,7 @@ export {
   GraduationCap,
   Coffee,
   HandshakeIcon as Handshake,
+  HeartHandshake,
   Rocket,
   PartyPopper,
   Megaphone,
@@ -95,6 +96,12 @@ export {
   Code,
   Wrench,
   Palette,
+  Smartphone,
+  Edit3,
+  Dumbbell,
+  Diamond,
+  Mic2,
+  BookOpen,
 } from 'lucide-react'
 
 // Icon size presets

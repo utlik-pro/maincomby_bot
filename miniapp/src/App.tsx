@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp } from '@/lib/telegram'
-import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile } from '@/lib/supabase'
+import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -14,8 +14,10 @@ const HomeScreen = React.lazy(() => import('@/screens/HomeScreen'))
 const EventsScreen = React.lazy(() => import('@/screens/EventsScreen'))
 const NetworkScreen = React.lazy(() => import('@/screens/NetworkScreen'))
 const AchievementsScreen = React.lazy(() => import('@/screens/AchievementsScreen'))
+const AchievementsScreen = React.lazy(() => import('@/screens/AchievementsScreen'))
 const ProfileScreen = React.lazy(() => import('@/screens/ProfileScreen'))
 const OnboardingScreen = React.lazy(() => import('@/screens/OnboardingScreen'))
+const AccessGateScreen = React.lazy(() => import('@/screens/AccessGateScreen'))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -67,7 +69,7 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 )
 
 const App: React.FC = () => {
-  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, profile, setActiveTab, setDeepLinkTarget } = useAppStore()
+  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired } = useAppStore()
   const { addToast } = useToastStore()
 
   // Easter eggs - speed runner (visit all tabs quickly)
@@ -151,9 +153,68 @@ const App: React.FC = () => {
         // For dev with Supabase - use test user ID
         const userId = tgUser?.id || 1379584180 // Your TG ID for dev
 
-        // Get or create user in database
+        // 1. Check if invite system is enabled
+        const inviteRequired = await isInviteRequired()
+        setInviteRequired(inviteRequired)
+
+        // 2. Parse invite code from start_param
+        const webApp = getTelegramWebApp()
+        // @ts-ignore
+        const startParam = webApp?.initDataUnsafe?.start_param
+        let inviteCode: string | null = null
+        if (startParam?.startsWith('invite_')) {
+          inviteCode = startParam.replace('invite_', '')
+          setPendingInviteCode(inviteCode)
+        }
+
+        // 3. User Access Check (if invite required)
+        let hasAccess = true
+        let isExistingUser = false
+
+        if (inviteRequired) {
+          const access = await checkUserAccess(userId)
+          hasAccess = access.hasAccess
+          isExistingUser = access.isExistingUser
+
+          // If user doesn't have access and no invite code trying to use - DENY
+          if (!hasAccess && !inviteCode) {
+            setAccessDenied(true)
+            // Set basic user data for UI even if denied
+            setUser({
+              id: 0, // Placeholder
+              tg_user_id: userId,
+              username: tgUser?.username || null,
+              first_name: tgUser?.first_name || 'Guest',
+              last_name: tgUser?.last_name || null,
+              // @ts-ignore
+              points: 0
+            } as any)
+            setLoading(false)
+            return
+          }
+        }
+
+        // Get or create user in database (Normal Flow)
         let user = await getUserByTelegramId(userId)
-        const isNewUser = !user
+
+        // If invite required and user not found, and we have invite code -> continue to AccessGate to redeem
+        if (inviteRequired && !user && inviteCode) {
+          setAccessDenied(true) // Show access gate in "invite mode"
+          setUser({
+            id: 0, // Placeholder
+            tg_user_id: userId,
+            username: tgUser?.username || null,
+            first_name: tgUser?.first_name || 'Guest',
+            last_name: tgUser?.last_name || null,
+            // @ts-ignore
+            points: 0
+          } as any)
+          setLoading(false)
+          return
+        }
+
+        // Normal flow continued...
+        isExistingUser = !!user
 
         // Always update user data from Telegram (or create if new)
         if (tgUser) {
@@ -255,6 +316,17 @@ const App: React.FC = () => {
   // Show non-Telegram screen (only in production)
   if (!import.meta.env.DEV && !isTelegramWebApp()) {
     return <NotTelegramScreen />
+  }
+
+  // Show access gate if denied
+  if (accessDenied) {
+    return (
+      <div className="bg-bg min-h-screen text-white max-w-lg mx-auto">
+        <React.Suspense fallback={<LoadingScreen />}>
+          <AccessGateScreen />
+        </React.Suspense>
+      </div>
+    )
   }
 
   // Show onboarding for users who haven't seen current version
