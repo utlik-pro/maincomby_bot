@@ -64,14 +64,14 @@ const sizeClasses = {
 const badgeSizeClasses: Record<string, string> = {
   sm: 'px-1 py-0.5 text-[7px] gap-0.5 -bottom-1',
   md: 'px-1.5 py-0.5 text-[9px] gap-0.5 -bottom-1.5',
-  lg: 'px-2 py-0.5 text-[11px] gap-1 -bottom-2',
+  lg: 'px-1.5 py-0.5 text-[9px] gap-0.5 -bottom-1.5',  // уменьшен
   xl: 'px-2.5 py-0.5 text-xs gap-1 -bottom-2.5',
 }
 
 const badgeIconSizes: Record<string, number> = {
   sm: 8,
   md: 10,
-  lg: 12,
+  lg: 10,  // уменьшен с 12
   xl: 14,
 }
 
