@@ -1817,3 +1817,76 @@ export async function adminAssignSkin(userId: number, skinId: string | null): Pr
   }
   return true
 }
+
+// ============================================
+// User Role Management (Admin Only)
+// ============================================
+
+/**
+ * Update user role (admin only)
+ */
+export async function updateUserRole(
+  userId: number,
+  newRole: TeamRole
+): Promise<boolean> {
+  try {
+    const { error } = await getSupabase()
+      .from('bot_users')
+      .update({ team_role: newRole })
+      .eq('id', userId)
+
+    if (error) throw error
+    return true
+  } catch (e) {
+    console.error('Failed to update user role:', e)
+    return false
+  }
+}
+
+/**
+ * Search users by name or username (admin only)
+ */
+export async function searchUsers(query: string, limit = 20) {
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .select(`
+      id,
+      tg_user_id,
+      username,
+      first_name,
+      last_name,
+      team_role,
+      points,
+      profile:bot_profiles(photo_url, occupation)
+    `)
+    .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,username.ilike.%${query}%`)
+    .limit(limit)
+    .order('points', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Get all users with specific role (admin only)
+ */
+export async function getUsersByRole(role: Exclude<TeamRole, null>) {
+  const { data, error } = await getSupabase()
+    .from('bot_users')
+    .select(`
+      id,
+      tg_user_id,
+      username,
+      first_name,
+      last_name,
+      team_role,
+      points,
+      profile:bot_profiles(photo_url, occupation),
+      active_skin:avatar_skins(*)
+    `)
+    .eq('team_role', role)
+    .order('points', { ascending: false })
+
+  if (error) throw error
+  return data
+}

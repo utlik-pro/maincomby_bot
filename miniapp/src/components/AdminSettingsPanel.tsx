@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { isInviteRequired, updateAppSetting } from '@/lib/supabase'
-import { Settings, X, Shield, Users, AlertCircle } from 'lucide-react'
+import { Settings, X, Shield, Users, AlertCircle, UserCog } from 'lucide-react'
+import { UserRoleManager } from './UserRoleManager'
 
 interface AdminSettingsPanelProps {
     onClose: () => void
@@ -14,6 +15,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     const [inviteRequired, setLocalInviteRequired] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
+    const [showRoleManager, setShowRoleManager] = useState(false)
 
     // Verify superadmin status
     const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
@@ -104,6 +106,25 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                         </p>
                     </div>
 
+                    {/* User Role Management */}
+                    <button
+                        onClick={() => setShowRoleManager(true)}
+                        className="w-full p-4 rounded-xl bg-bg border border-border hover:border-accent/50 transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-accent/20 text-accent flex items-center justify-center">
+                                    <UserCog size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Управление ролями</div>
+                                    <div className="text-xs text-gray-400">Назначать core, volunteer и др.</div>
+                                </div>
+                            </div>
+                            <div className="text-accent">→</div>
+                        </div>
+                    </button>
+
                     {/* Future settings placeholders */}
                     <div className="p-4 rounded-xl bg-bg border border-border opacity-50">
                         <div className="flex items-center justify-between mb-2">
@@ -125,6 +146,11 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                     LOGGED AS: {user?.username} (SUPERADMIN)
                 </div>
             </div>
+
+            {/* User Role Manager Modal */}
+            {showRoleManager && (
+                <UserRoleManager onClose={() => setShowRoleManager(false)} />
+            )}
         </div>
     )
 }
