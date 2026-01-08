@@ -4,7 +4,7 @@ from datetime import datetime
 
 from aiogram import Router, F, Bot
 from aiogram.filters import Command, CommandStart, CommandObject
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo, FSInputFile
 from aiogram.fsm.context import FSMContext
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -200,19 +200,42 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
         )
         events = result.scalars().all()
 
-        if not events:
-            await message.answer(
-                "Привет! 👋\n\n"
-                "Пока нет активных мероприятий, но скоро они появятся. "
-                "Следи за обновлениями!"
+        # Приветственное сообщение с кнопкой Mini App
+        welcome_text = (
+            "<b>Добро пожаловать!</b>\n\n"
+            "Добро пожаловать в MAIN Community — сообщество для IT-специалистов и предпринимателей.\n\n"
+            "Нажимай \"Поехали\", регистрируйся на мероприятия и получай всю информацию в реальном времени."
+        )
+
+        welcome_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="🚀 Поехали",
+                web_app=WebAppInfo(url="https://t.me/maincomapp_bot/app")
+            )]
+        ])
+
+        # Отправляем приветствие с картинкой
+        import os
+        welcome_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "content", "welcome.jpg")
+        
+        if os.path.exists(welcome_image_path):
+            await message.answer_photo(
+                photo=FSInputFile(welcome_image_path),
+                caption=welcome_text,
+                parse_mode="HTML",
+                reply_markup=welcome_keyboard
             )
+        else:
+            await message.answer(
+                welcome_text,
+                parse_mode="HTML",
+                reply_markup=welcome_keyboard
+            )
+
+        if not events:
             return
 
-        # Показываем все активные мероприятия напрямую
-        await message.answer(
-            "Привет! 👋\n\n"
-            "Рады видеть тебя в боте ИИшницы!"
-        )
+        # Показываем все активные мероприятия
 
         # Показываем каждое мероприятие
         for event in events:

@@ -608,3 +608,81 @@ export interface AppSetting {
   updated_at: string
   updated_by: number | null
 }
+
+// ============================================
+// Backlog System (Feedback Collection)
+// ============================================
+
+export type BacklogItemType = 'bug' | 'feature' | 'improvement' | 'question' | 'ux' | 'other'
+export type BacklogPriority = 'critical' | 'high' | 'medium' | 'low'
+export type BacklogStatus = 'new' | 'in_review' | 'accepted' | 'rejected' | 'in_progress' | 'done'
+
+export const BACKLOG_TYPE_CONFIG: Record<BacklogItemType, { label: string; emoji: string; color: string }> = {
+  bug: { label: 'Баг', emoji: '🐛', color: 'bg-red-500' },
+  feature: { label: 'Фича', emoji: '✨', color: 'bg-purple-500' },
+  improvement: { label: 'Улучшение', emoji: '📈', color: 'bg-blue-500' },
+  question: { label: 'Вопрос', emoji: '❓', color: 'bg-yellow-500' },
+  ux: { label: 'UX/UI', emoji: '🎨', color: 'bg-pink-500' },
+  other: { label: 'Другое', emoji: '📝', color: 'bg-gray-500' },
+}
+
+export const BACKLOG_PRIORITY_CONFIG: Record<BacklogPriority, { label: string; color: string }> = {
+  critical: { label: 'Критический', color: 'bg-red-600 text-white' },
+  high: { label: 'Высокий', color: 'bg-orange-500 text-white' },
+  medium: { label: 'Средний', color: 'bg-yellow-500 text-black' },
+  low: { label: 'Низкий', color: 'bg-gray-400 text-white' },
+}
+
+export const BACKLOG_STATUS_CONFIG: Record<BacklogStatus, { label: string; color: string }> = {
+  new: { label: 'Новое', color: 'bg-blue-500' },
+  in_review: { label: 'На рассмотрении', color: 'bg-yellow-500' },
+  accepted: { label: 'Принято', color: 'bg-green-500' },
+  rejected: { label: 'Отклонено', color: 'bg-red-500' },
+  in_progress: { label: 'В работе', color: 'bg-purple-500' },
+  done: { label: 'Готово', color: 'bg-emerald-500' },
+}
+
+export interface BacklogItem {
+  id: number
+  telegram_message_id: number | null
+  telegram_chat_id: number | null
+  telegram_user_id: number | null
+  sender_username: string | null
+  sender_name: string | null
+  original_message: string
+  processed_content: string | null
+  item_type: BacklogItemType
+  priority: BacklogPriority
+  ai_confidence: number | null
+  ai_tags: string[] | null
+  ai_summary: string | null
+  status: BacklogStatus
+  assigned_to: number | null
+  reviewed_by: number | null
+  admin_notes: string | null
+  related_item_id: number | null
+  created_at: string
+  updated_at: string
+  reviewed_at: string | null
+}
+
+export interface BacklogStats {
+  total: number
+  new: number
+  in_review: number
+  accepted: number
+  in_progress: number
+  done: number
+  rejected: number
+  by_type: Record<BacklogItemType, number>
+  by_priority: Record<BacklogPriority, number>
+}
+
+export interface BacklogFilters {
+  status?: BacklogStatus | BacklogStatus[]
+  item_type?: BacklogItemType | BacklogItemType[]
+  priority?: BacklogPriority | BacklogPriority[]
+  search?: string
+  limit?: number
+  offset?: number
+}

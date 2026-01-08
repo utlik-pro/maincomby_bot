@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { LanguageSwitcher } from './LanguageSwitcher'
@@ -31,9 +32,13 @@ export function Navigation({ dict, locale }: NavigationProps) {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link href={`/${locale}`} className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center">
-                            <span className="text-black font-bold text-lg">M</span>
-                        </div>
+                        <Image
+                            src="/logo.png"
+                            alt="MAIN Logo"
+                            width={32}
+                            height={32}
+                            className="w-8 h-8"
+                        />
                         <span className="font-bold text-lg text-white">MAIN</span>
                     </Link>
 

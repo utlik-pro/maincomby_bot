@@ -11,14 +11,24 @@
       "Edit(./**)",
       "Glob(./**)",
       "Grep(./**)",
+      "Read(/Users/admin/maincomby_bot/**)",
+      "Write(/Users/admin/maincomby_bot/**)",
+      "Edit(/Users/admin/maincomby_bot/**)",
+      "Glob(/Users/admin/maincomby_bot/**)",
+      "Grep(/Users/admin/maincomby_bot/**)",
+      "Read(/Users/admin/maincomby_bot/.auto-claude/specs/004-/**)",
+      "Write(/Users/admin/maincomby_bot/.auto-claude/specs/004-/**)",
+      "Edit(/Users/admin/maincomby_bot/.auto-claude/specs/004-/**)",
       "Bash(*)",
-      "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs",
-      "mcp__graphiti-memory__search_nodes",
-      "mcp__graphiti-memory__search_facts",
-      "mcp__graphiti-memory__add_episode",
-      "mcp__graphiti-memory__get_episodes",
-      "mcp__graphiti-memory__get_entity_edge"
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
     ]
   }
 }

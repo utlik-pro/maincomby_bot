@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Send } from 'lucide-react'
 
 interface FooterProps {
@@ -21,9 +22,13 @@ export function Footer({ dict }: FooterProps) {
                     {/* Logo & Description */}
                     <div>
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center">
-                                <span className="text-black font-bold text-lg">M</span>
-                            </div>
+                            <Image
+                                src="/logo.png"
+                                alt="MAIN Logo"
+                                width={32}
+                                height={32}
+                                className="w-8 h-8"
+                            />
                             <span className="font-bold text-lg text-white">MAIN Community</span>
                         </div>
                         <p className="text-gray-400 text-sm">
@@ -48,7 +53,7 @@ export function Footer({ dict }: FooterProps) {
                             </li>
                             <li>
                                 <a
-                                    href="https://t.me/MainCommunityBot"
+                                    href="https://t.me/maincomapp_bot"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-gray-400 hover:text-white transition-colors text-sm"
@@ -71,7 +76,7 @@ export function Footer({ dict }: FooterProps) {
                     <div>
                         <h4 className="font-semibold text-white mb-4">Присоединяйся</h4>
                         <a
-                            href="https://t.me/MainCommunityBot"
+                            href="https://t.me/maincomapp_bot"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="haptic inline-flex items-center gap-2 px-6 py-3 bg-[var(--accent)] text-black font-semibold rounded-xl hover:bg-[var(--accent-dark)] transition-colors"

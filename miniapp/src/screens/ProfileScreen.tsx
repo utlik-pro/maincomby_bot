@@ -43,7 +43,7 @@ import {
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported } from '@/lib/telegram'
-import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin } from '@/lib/supabase'
+import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
 import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
@@ -162,7 +162,7 @@ function getProfileTheme(
 }
 
 const ProfileScreen: React.FC = () => {
-  const { user, profile, getRank, getSubscriptionTier, setActiveTab, setProfile, setShowInvites } = useAppStore()
+  const { user, profile, getRank, getSubscriptionTier, setActiveTab, setProfile, setShowInvites, setUser } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -193,6 +193,21 @@ const ProfileScreen: React.FC = () => {
     enabled: !!user,
     refetchInterval: 30000, // Refresh every 30 seconds
   })
+
+  // Fresh user data query to avoid stale store issues
+  const { data: freshUser } = useQuery({
+    queryKey: ['freshUser', user?.id],
+    queryFn: () => (user ? getUserById(user.id) : null),
+    enabled: !!user,
+    staleTime: 30000,
+  })
+
+  // Synchronize store when fresh data arrives
+  React.useEffect(() => {
+    if (freshUser && (freshUser.team_role !== user?.team_role || freshUser.points !== user?.points || freshUser.subscription_tier !== user?.subscription_tier)) {
+      setUser(freshUser as any)
+    }
+  }, [freshUser, user, setUser])
 
   // Fetch team members
   const { data: teamMembers = [] } = useQuery({
@@ -1045,8 +1060,8 @@ const ProfileScreen: React.FC = () => {
             name={user?.first_name || 'User'}
             size="xl"
             skin={activeSkin}
-            role={user?.team_role}
-            tier={user?.subscription_tier === 'pro' ? 'pro' : user?.subscription_tier === 'light' ? 'light' : null}
+            role={freshUser?.team_role || user?.team_role}
+            tier={freshUser?.subscription_tier === 'pro' ? 'pro' : freshUser?.subscription_tier === 'light' ? 'light' : user?.subscription_tier === 'pro' ? 'pro' : user?.subscription_tier === 'light' ? 'light' : null}
             className="mx-auto"
           />
         </div>

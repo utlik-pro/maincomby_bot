@@ -1,0 +1,16 @@
+# MAIN Feedback Bot - Dependencies
+
+# Telegram Bot
+aiogram==3.4.1
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Supabase client
+supabase==2.3.4
+
+# OpenAI for AI classification
+openai==1.12.0
+
+# HTTP client (required by supabase)
+httpx==0.27.0

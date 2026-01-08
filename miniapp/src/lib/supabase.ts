@@ -988,7 +988,7 @@ export async function createUserInvites(userId: number, count: number = 5): Prom
 
 // Generate invite link
 export function generateInviteLink(code: string): string {
-  return `https://t.me/MainCommunityBot/app?startapp=invite_${code}`
+  return `https://t.me/maincomapp_bot/app?startapp=invite_${code}`
 }
 
 // Notifications
@@ -1890,4 +1890,191 @@ export async function getUsersByRole(role: Exclude<TeamRole, null>) {
 
   if (error) throw error
   return data
+}
+
+// ============================================
+// Backlog System (Feedback Collection)
+// ============================================
+
+import type { BacklogItem, BacklogStats, BacklogFilters, BacklogStatus, BacklogItemType, BacklogPriority } from '@/types'
+
+/**
+ * Get backlog items with optional filters
+ */
+export async function getBacklogItems(filters?: BacklogFilters): Promise<BacklogItem[]> {
+  const supabase = getSupabase()
+
+  let query = supabase
+    .from('backlog_items')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (filters?.status) {
+    if (Array.isArray(filters.status)) {
+      query = query.in('status', filters.status)
+    } else {
+      query = query.eq('status', filters.status)
+    }
+  }
+
+  if (filters?.item_type) {
+    if (Array.isArray(filters.item_type)) {
+      query = query.in('item_type', filters.item_type)
+    } else {
+      query = query.eq('item_type', filters.item_type)
+    }
+  }
+
+  if (filters?.priority) {
+    if (Array.isArray(filters.priority)) {
+      query = query.in('priority', filters.priority)
+    } else {
+      query = query.eq('priority', filters.priority)
+    }
+  }
+
+  if (filters?.search) {
+    query = query.or(`original_message.ilike.%${filters.search}%,ai_summary.ilike.%${filters.search}%,sender_username.ilike.%${filters.search}%`)
+  }
+
+  if (filters?.limit) {
+    query = query.limit(filters.limit)
+  }
+
+  if (filters?.offset) {
+    query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+  return data as BacklogItem[]
+}
+
+/**
+ * Get a single backlog item by ID
+ */
+export async function getBacklogItem(id: number): Promise<BacklogItem | null> {
+  const { data, error } = await getSupabase()
+    .from('backlog_items')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data as BacklogItem | null
+}
+
+/**
+ * Update a backlog item
+ */
+export async function updateBacklogItem(
+  id: number,
+  updates: Partial<Pick<BacklogItem, 'status' | 'priority' | 'item_type' | 'admin_notes' | 'assigned_to' | 'reviewed_by' | 'reviewed_at'>>
+): Promise<BacklogItem> {
+  const { data, error } = await getSupabase()
+    .from('backlog_items')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as BacklogItem
+}
+
+/**
+ * Update backlog item status with reviewer info
+ */
+export async function updateBacklogStatus(
+  id: number,
+  status: BacklogStatus,
+  reviewerId: number
+): Promise<BacklogItem> {
+  const updates: Record<string, any> = {
+    status,
+    updated_at: new Date().toISOString()
+  }
+
+  if (['accepted', 'rejected', 'in_review'].includes(status)) {
+    updates.reviewed_by = reviewerId
+    updates.reviewed_at = new Date().toISOString()
+  }
+
+  const { data, error } = await getSupabase()
+    .from('backlog_items')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as BacklogItem
+}
+
+/**
+ * Get backlog statistics
+ */
+export async function getBacklogStats(): Promise<BacklogStats> {
+  const { data, error } = await getSupabase().rpc('get_backlog_stats')
+
+  if (error) {
+    // Fallback if RPC doesn't exist yet
+    console.warn('get_backlog_stats RPC not available, using fallback')
+    return {
+      total: 0,
+      new: 0,
+      in_review: 0,
+      accepted: 0,
+      in_progress: 0,
+      done: 0,
+      rejected: 0,
+      by_type: { bug: 0, feature: 0, improvement: 0, question: 0, ux: 0, other: 0 },
+      by_priority: { critical: 0, high: 0, medium: 0, low: 0 }
+    }
+  }
+
+  return data as BacklogStats
+}
+
+/**
+ * Create a new backlog item (for manual entry or bot)
+ */
+export async function createBacklogItem(item: Omit<BacklogItem, 'id' | 'created_at' | 'updated_at'>): Promise<BacklogItem> {
+  const { data, error } = await getSupabase()
+    .from('backlog_items')
+    .insert(item)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as BacklogItem
+}
+
+/**
+ * Delete a backlog item (admin only)
+ */
+export async function deleteBacklogItem(id: number): Promise<void> {
+  const { error } = await getSupabase()
+    .from('backlog_items')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+/**
+ * Get count of new backlog items (for badge)
+ */
+export async function getNewBacklogCount(): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from('backlog_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'new')
+
+  if (error) throw error
+  return count || 0
 }

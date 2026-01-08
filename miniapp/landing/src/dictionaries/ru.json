@@ -47,7 +47,7 @@
             {
                 "number": "1",
                 "title": "Открой бота",
-                "description": "Перейди в Telegram и запусти @MainCommunityBot"
+                "description": "Перейди в Telegram и запусти @maincomapp_bot"
             },
             {
                 "number": "2",
@@ -125,7 +125,7 @@
         "items": [
             {
                 "question": "Как присоединиться к сообществу?",
-                "answer": "Просто открой бота @MainCommunityBot в Telegram, заполни профиль и начни знакомиться с участниками."
+                "answer": "Просто открой бота @maincomapp_bot в Telegram, заполни профиль и начни знакомиться с участниками."
             },
             {
                 "question": "Это бесплатно?",

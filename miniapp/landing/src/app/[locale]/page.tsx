@@ -20,7 +20,7 @@ export default async function LocalePage({
     return (
         <main className="min-h-screen bg-[var(--background)]">
             <Navigation dict={dict.nav} locale={locale} />
-            <Hero dict={dict.hero} />
+            <Hero dict={dict.hero} locale={locale} />
             <Features dict={dict.features} />
             <HowItWorks dict={dict.howItWorks} />
             <Stats dict={dict.stats} />

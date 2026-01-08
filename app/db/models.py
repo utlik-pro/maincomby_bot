@@ -31,6 +31,7 @@ class User(Base):
     utm_medium: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     utm_campaign: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     referrer: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)  # Кто пригласил
+    team_role: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)  # core, partner, sponsor, volunteer, speaker
 
     posts: Mapped[list[Post]] = relationship(back_populates="author")
     roles: Mapped[list[UserRole]] = relationship(back_populates="user")

@@ -47,7 +47,7 @@
             {
                 "number": "1",
                 "title": "Open the Bot",
-                "description": "Go to Telegram and start @MainCommunityBot"
+                "description": "Go to Telegram and start @maincomapp_bot"
             },
             {
                 "number": "2",
@@ -125,7 +125,7 @@
         "items": [
             {
                 "question": "How do I join the community?",
-                "answer": "Simply open @MainCommunityBot in Telegram, fill out your profile and start meeting other members."
+                "answer": "Simply open @maincomapp_bot in Telegram, fill out your profile and start meeting other members."
             },
             {
                 "question": "Is it free?",

@@ -114,7 +114,8 @@ class SupabaseSync:
                 "utm_source": user.utm_source,
                 "utm_medium": user.utm_medium,
                 "utm_campaign": user.utm_campaign,
-                "referrer": user.referrer
+                "referrer": user.referrer,
+                "team_role": getattr(user, 'team_role', None)
             }
 
             if existing.data:

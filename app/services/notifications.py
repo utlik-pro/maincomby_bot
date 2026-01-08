@@ -25,27 +25,27 @@ logger = logging.getLogger(__name__)
 
 # Rank thresholds (same as Mini App)
 RANK_THRESHOLDS = {
-    'private': 0,
-    'corporal': 100,
-    'sergeant': 300,
-    'sergeant_major': 600,
-    'lieutenant': 1000,
-    'captain': 2000,
-    'major': 5000,
-    'colonel': 10000,
-    'general': 20000,
+    'newcomer': 0,
+    'member': 100,
+    'activist': 300,
+    'enthusiast': 600,
+    'contributor': 1000,
+    'ambassador': 2000,
+    'expert': 5000,
+    'leader': 10000,
+    'founder': 20000,
 }
 
 RANK_NAMES = {
-    'private': 'Рядовой',
-    'corporal': 'Капрал',
-    'sergeant': 'Сержант',
-    'sergeant_major': 'Старший сержант',
-    'lieutenant': 'Лейтенант',
-    'captain': 'Капитан',
-    'major': 'Майор',
-    'colonel': 'Полковник',
-    'general': 'Генерал',
+    'newcomer': 'Новичок',
+    'member': 'Участник',
+    'activist': 'Активист',
+    'enthusiast': 'Энтузиаст',
+    'contributor': 'Контрибьютор',
+    'ambassador': 'Амбассадор',
+    'expert': 'Эксперт',
+    'leader': 'Лидер',
+    'founder': 'Основатель',
 }
 
 # Achievement definitions
@@ -63,23 +63,23 @@ ACHIEVEMENTS = {
 
 def get_rank_from_points(points: int) -> str:
     """Get rank name from points"""
-    if points >= RANK_THRESHOLDS['general']:
-        return 'general'
-    if points >= RANK_THRESHOLDS['colonel']:
-        return 'colonel'
-    if points >= RANK_THRESHOLDS['major']:
-        return 'major'
-    if points >= RANK_THRESHOLDS['captain']:
-        return 'captain'
-    if points >= RANK_THRESHOLDS['lieutenant']:
-        return 'lieutenant'
-    if points >= RANK_THRESHOLDS['sergeant_major']:
-        return 'sergeant_major'
-    if points >= RANK_THRESHOLDS['sergeant']:
-        return 'sergeant'
-    if points >= RANK_THRESHOLDS['corporal']:
-        return 'corporal'
-    return 'private'
+    if points >= RANK_THRESHOLDS['founder']:
+        return 'founder'
+    if points >= RANK_THRESHOLDS['leader']:
+        return 'leader'
+    if points >= RANK_THRESHOLDS['expert']:
+        return 'expert'
+    if points >= RANK_THRESHOLDS['ambassador']:
+        return 'ambassador'
+    if points >= RANK_THRESHOLDS['contributor']:
+        return 'contributor'
+    if points >= RANK_THRESHOLDS['enthusiast']:
+        return 'enthusiast'
+    if points >= RANK_THRESHOLDS['activist']:
+        return 'activist'
+    if points >= RANK_THRESHOLDS['member']:
+        return 'member'
+    return 'newcomer'
 
 
 class NotificationService:
@@ -246,16 +246,16 @@ class NotificationService:
 
             # Rank emojis
             rank_emojis = {
-                'corporal': '🎖',
-                'sergeant': '🎖🎖',
-                'sergeant_major': '🎖🎖🎖',
-                'lieutenant': '⭐',
-                'captain': '⭐⭐',
-                'major': '⭐⭐⭐',
-                'colonel': '🌟',
-                'general': '🌟🌟',
+                'member': '👤',
+                'activist': '🔥',
+                'enthusiast': '🚀',
+                'contributor': '🛠',
+                'ambassador': '📢',
+                'expert': '🧠',
+                'leader': '👑',
+                'founder': '🏛',
             }
-            emoji = rank_emojis.get(new_rank, '⭐')
+            emoji = rank_emojis.get(new_rank, '👤')
 
             text = (
                 f"{emoji} <b>Повышение!</b>\n\n"

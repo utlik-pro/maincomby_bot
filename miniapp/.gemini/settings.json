@@ -1,0 +1,9 @@
+{
+  "general": {
+    "previewFeatures": true
+  },
+  "ui": {
+    "hideBanner": true,
+    "hideContextSummary": true
+  }
+}

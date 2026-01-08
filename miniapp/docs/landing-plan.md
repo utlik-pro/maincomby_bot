@@ -60,7 +60,7 @@ maincomby_bot/landing/
 ### 1. Hero
 - Заголовок: "Нетворкинг нового поколения в Telegram"
 - Подзаголовок: описание ценности
-- CTA: "Открыть в Telegram" → `t.me/MainCommunityBot`
+- CTA: "Открыть в Telegram" → `t.me/maincomapp_bot`
 - Визуал: мокап телефона с приложением
 
 ### 2. Features (6 карточек)
@@ -199,7 +199,7 @@ CSS классы:
 ---
 
 ## Ссылки
-- Telegram бот: `https://t.me/MainCommunityBot`
+- Telegram бот: `https://t.me/maincomapp_bot`
 - Deep links: `?startapp=events`, `?startapp=matches`
 
 ---

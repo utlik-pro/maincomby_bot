@@ -330,7 +330,7 @@ Onboarding → App
 ### Новый пользователь без инвайта
 
 ```
-Открытие t.me/MainCommunityBot (без параметров)
+Открытие t.me/maincomapp_bot (без параметров)
     ↓
 checkUserAccess() → hasAccess: false
     ↓
