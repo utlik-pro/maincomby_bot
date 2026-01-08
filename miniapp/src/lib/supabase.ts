@@ -1831,12 +1831,57 @@ export async function updateUserRole(
   newRole: TeamRole
 ): Promise<boolean> {
   try {
-    const { error } = await getSupabase()
+    const supabase = getSupabase()
+
+    // Get user info for notification
+    const { data: userData } = await supabase
+      .from('bot_users')
+      .select('tg_user_id, team_role')
+      .eq('id', userId)
+      .single()
+
+    const oldRole = userData?.team_role
+
+    // Update role
+    const { error } = await supabase
       .from('bot_users')
       .update({ team_role: newRole })
       .eq('id', userId)
 
     if (error) throw error
+
+    // Send notification if role was assigned (not removed)
+    if (newRole && newRole !== oldRole) {
+      const roleLabel = TEAM_BADGES[newRole]?.label || newRole
+
+      // Create in-app notification
+      try {
+        await createNotification(
+          userId,
+          'achievement',
+          'Добро пожаловать в команду!',
+          `Поздравляем! Вам назначена роль "${roleLabel}" в сообществе MAIN.`,
+          { role: newRole }
+        )
+      } catch (e) {
+        console.warn('Failed to create role notification:', e)
+      }
+
+      // Send Telegram notification
+      if (userData?.tg_user_id) {
+        try {
+          await sendNotification(
+            userData.tg_user_id,
+            'achievement',
+            'Добро пожаловать в команду!',
+            `Поздравляем! Вам назначена роль "${roleLabel}" в сообществе MAIN. 🎉`
+          )
+        } catch (e) {
+          console.warn('Failed to send Telegram role notification:', e)
+        }
+      }
+    }
+
     return true
   } catch (e) {
     console.error('Failed to update user role:', e)
@@ -1897,6 +1942,7 @@ export async function getUsersByRole(role: Exclude<TeamRole, null>) {
 // ============================================
 
 import type { BacklogItem, BacklogStats, BacklogFilters, BacklogStatus, BacklogItemType, BacklogPriority } from '@/types'
+import { TEAM_BADGES } from '@/types'
 
 /**
  * Get backlog items with optional filters
