@@ -4,7 +4,7 @@ from datetime import datetime
 
 from aiogram import Router, F, Bot
 from aiogram.filters import Command, CommandStart, CommandObject
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo, FSInputFile
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
 from aiogram.fsm.context import FSMContext
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -188,122 +188,27 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
             referrer=referrer,
         )
 
-        # Проверяем, есть ли активные мероприятия
-        result = await session.execute(
-            select(Event)
-            .where(
-                and_(
-                    Event.is_active == True,
-                    Event.event_date > datetime.utcnow()
-                )
-            )
-        )
-        events = result.scalars().all()
+        # Загружаем настройки для получения webapp_url
+        settings = load_settings()
 
-        # Приветственное сообщение с кнопкой Mini App
-        welcome_text = (
-            "<b>Добро пожаловать!</b>\n\n"
-            "Добро пожаловать в MAIN Community — сообщество для IT-специалистов и предпринимателей.\n\n"
-            "Нажимай \"Поехали\", регистрируйся на мероприятия и получай всю информацию в реальном времени."
-        )
-
-        welcome_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(
-                text="🚀 Поехали",
-                web_app=WebAppInfo(url="https://t.me/maincomapp_bot/app")
-            )]
-        ])
-
-        # Отправляем приветствие с картинкой
-        import os
-        welcome_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "content", "welcome.jpg")
-        
-        if os.path.exists(welcome_image_path):
-            await message.answer_photo(
-                photo=FSInputFile(welcome_image_path),
-                caption=welcome_text,
-                parse_mode="HTML",
-                reply_markup=welcome_keyboard
-            )
-        else:
-            await message.answer(
-                welcome_text,
-                parse_mode="HTML",
-                reply_markup=welcome_keyboard
-            )
-
-        if not events:
-            return
-
-        # Показываем все активные мероприятия
-
-        # Показываем каждое мероприятие
-        for event in events:
-            # Получаем количество зарегистрированных
-            result = await session.execute(
-                select(EventRegistration).where(
-                    and_(
-                        EventRegistration.event_id == event.id,
-                        EventRegistration.status == "registered"
-                    )
-                )
-            )
-            registered_count = len(result.scalars().all())
-
-            # Проверяем, зарегистрирован ли уже пользователь
-            is_registered = False
-            if user:
-                result = await session.execute(
-                    select(EventRegistration).where(
-                        and_(
-                            EventRegistration.event_id == event.id,
-                            EventRegistration.user_id == user.id,
-                            EventRegistration.status == "registered"
-                        )
-                    )
-                )
-                is_registered = result.scalar_one_or_none() is not None
-
-            # Формируем сообщение и кнопки
-            event_message = format_event_message(event, registered_count)
-
-            # Проверяем, можно ли показать кнопку чекина
-            from datetime import datetime, time, timezone, timedelta
-            from ..config import load_settings
-            settings = load_settings()
-            is_admin = message.from_user.id in settings.admin_ids
-
-            # Получаем текущее время в Минске (UTC+3)
-            minsk_tz = timezone(timedelta(hours=3))
-            now_minsk = datetime.now(minsk_tz)
-            current_time = now_minsk.time()
-            checkin_start = time(17, 0)  # 17:00
-            checkin_end = time(21, 0)    # 21:00
-            can_checkin = is_admin or (checkin_start <= current_time <= checkin_end)
-
-            if is_registered:
-                keyboard_buttons = [
-                    [InlineKeyboardButton(text="✅ Я иду!", callback_data="already_registered")],
-                    [InlineKeyboardButton(text="💕 Tinder", callback_data="tinder")],
-                    [InlineKeyboardButton(text="❌ Отменить регистрацию", callback_data=f"unregister_{event.id}")]
+        # Создаём клавиатуру с кнопкой "Поехали"
+        keyboard = None
+        if settings.webapp_url:
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(
+                        text="Поехали",
+                        web_app=WebAppInfo(url=settings.webapp_url)
+                    )]
                 ]
+            )
 
-                keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
-                event_message += "\n<b>✅ Вы уже зарегистрированы на это мероприятие!</b>"
-            else:
-                keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="😎 Иду!", callback_data=f"register_{event.id}")],
-                ])
-
-            if event.location_url:
-                keyboard.inline_keyboard.append([
-                    InlineKeyboardButton(text="📍 Показать на карте", url=event.location_url)
-                ])
-
-            await message.answer(event_message, parse_mode="HTML", reply_markup=keyboard)
-
-
-# Удалён обработчик выбора города - теперь показываем все мероприятия сразу
+        # Отправляем приглашение в приложение
+        await message.answer(
+            "Привет! Добро пожаловать в MAIN Community.\n\n"
+            "Нажми кнопку ниже, чтобы открыть приложение:",
+            reply_markup=keyboard
+        )
 
 
 @router.callback_query(F.data.regexp(r"^register_(\d+)$"))

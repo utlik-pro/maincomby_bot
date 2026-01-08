@@ -253,8 +253,8 @@ async def main() -> None:
     dp.include_router(feedback_router)
     # 3.5. broadcast_feedback_router - фидбек из рассылок
     dp.include_router(broadcast_feedback_router)
-    # 4. qa_router - должен быть ДО moderation_router, чтобы обрабатывать упоминания
-    dp.include_router(qa_router)
+    # 4. qa_router - ОТКЛЮЧЕН (ИИ консультации выключены)
+    # dp.include_router(qa_router)
     # 5. остальные роутеры
     dp.include_router(moderation_router)
     dp.include_router(news_moderation_router)
@@ -528,16 +528,9 @@ async def main() -> None:
 
         await message.answer(help_text, parse_mode="HTML")
 
-    # Устанавливаем команды меню
-    from aiogram.types import BotCommand
-    commands = [
-        BotCommand(command="start", description="🏠 Главное меню"),
-        BotCommand(command="checkin", description="✅ Чекин"),
-        BotCommand(command="tinder", description="💕 Тиндер"),
-        BotCommand(command="help", description="❓ Помощь"),
-    ]
-    await bot.set_my_commands(commands)
-    logger.info("Bot menu commands set successfully")
+    # Удаляем все команды из меню
+    await bot.delete_my_commands()
+    logger.info("Bot menu commands deleted")
 
     # Запускаем sync service перед polling
     if sync_service:
