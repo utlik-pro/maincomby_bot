@@ -841,50 +841,54 @@ const ProfileScreen: React.FC = () => {
           </h1>
           <p className="text-gray-400 text-sm mb-6">Люди, которые делают сообщество лучше</p>
 
-          {teamMembers.filter(m => m.team_role === 'core').length === 0 ? (
+          {teamMembers.length === 0 ? (
             <Card className="text-center py-8">
               <Users size={48} className="mx-auto text-gray-500 mb-3" />
               <p className="text-gray-400">Команда ещё формируется</p>
             </Card>
           ) : (
             <div className="space-y-3">
-              {teamMembers
-                .filter(m => m.team_role === 'core')
-                .map((member: any) => {
-                  const role = member.team_role as Exclude<TeamRole, null>
-                  const profileData = Array.isArray(member.profile) ? member.profile[0] : member.profile
-                  const skinData = Array.isArray(member.active_skin) ? member.active_skin[0] : member.active_skin
+              {teamMembers.map((member: any) => {
+                const role = member.team_role as Exclude<TeamRole, null>
+                const profileData = Array.isArray(member.profile) ? member.profile[0] : member.profile
+                const skinData = Array.isArray(member.active_skin) ? member.active_skin[0] : member.active_skin
+                const roleInfo = TEAM_BADGES[role]
 
-                  return (
-                    <Card key={member.id} className="flex items-center gap-3">
-                      <AvatarWithSkin
-                        src={profileData?.photo_url}
-                        name={member.first_name || 'User'}
-                        size="md"
-                        skin={skinData}
-                        role={role}
-                        tier={member.subscription_tier === 'pro' ? 'pro' : member.subscription_tier === 'light' ? 'light' : null}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold truncate">
-                          {member.first_name} {member.last_name}
-                        </div>
+                return (
+                  <Card key={member.id} className="flex items-center gap-3">
+                    <AvatarWithSkin
+                      src={profileData?.photo_url}
+                      name={member.first_name || 'User'}
+                      size="md"
+                      skin={skinData}
+                      role={role}
+                      tier={member.subscription_tier === 'pro' ? 'pro' : member.subscription_tier === 'light' ? 'light' : null}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold truncate">
+                        {member.first_name} {member.last_name}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${roleInfo?.color || 'bg-gray-500'} text-white`}>
+                          {roleInfo?.label || role}
+                        </span>
                         {profileData?.occupation && (
-                          <div className="text-sm text-gray-400 truncate">{profileData.occupation}</div>
+                          <span className="text-xs text-gray-400 truncate">{profileData.occupation}</span>
                         )}
                       </div>
-                      {member.username && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => openTelegramLink(`https://t.me/${member.username}`)}
-                        >
-                          <ExternalLink size={14} />
-                        </Button>
-                      )}
-                    </Card>
-                  )
-                })}
+                    </div>
+                    {member.username && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openTelegramLink(`https://t.me/${member.username}`)}
+                      >
+                        <ExternalLink size={14} />
+                      </Button>
+                    )}
+                  </Card>
+                )
+              })}
             </div>
           )}
         </div>
