@@ -554,7 +554,7 @@ const ProfileScreen: React.FC = () => {
           {/* Company Selector */}
           {user && (
             <CompanySelector
-              userId={user.tg_user_id}
+              userId={user.id}
               userCompany={userCompany || null}
               onCompanyChange={(updatedCompany) => {
                 queryClient.setQueryData(['userCompany', user.id], updatedCompany)
@@ -636,7 +636,7 @@ const ProfileScreen: React.FC = () => {
           {/* Social Links */}
           {user && (
             <SocialLinksEdit
-              userId={user.tg_user_id}
+              userId={user.id}
               links={userLinks}
               onLinksChange={(updatedLinks) => {
                 queryClient.setQueryData(['userLinks', user.id], updatedLinks)
