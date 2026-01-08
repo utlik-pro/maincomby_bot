@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import {
   getApprovedProfiles,
   createSwipe,
@@ -44,6 +44,20 @@ const NetworkScreen: React.FC = () => {
       setDeepLinkTarget(null)
     }
   }, [deepLinkTarget, setDeepLinkTarget])
+
+  // Handle Telegram BackButton
+  useEffect(() => {
+    if (showMatches) {
+      backButton.show(() => setShowMatches(false))
+    } else if (showProfileDetail) {
+      backButton.show(() => setShowProfileDetail(null))
+    } else {
+      backButton.hide()
+    }
+    return () => {
+      backButton.hide()
+    }
+  }, [showMatches, showProfileDetail])
 
   const tier = getSubscriptionTier()
   const swipesRemaining = getDailySwipesRemaining()

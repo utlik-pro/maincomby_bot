@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -42,7 +42,7 @@ import {
   BookOpen,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported } from '@/lib/telegram'
+import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported, backButton } from '@/lib/telegram'
 import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
@@ -180,6 +180,43 @@ const ProfileScreen: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [notificationsLoading, setNotificationsLoading] = useState(false)
   const [skinSaving, setSkinSaving] = useState(false)
+
+  // Determine which sub-screen is active for back button
+  const activeSubScreen = showSubscription ? 'subscription' :
+    showNotifications ? 'notifications' :
+    showTeamSection ? 'team' :
+    showSettings ? 'settings' :
+    showSkinSelector ? 'skin' :
+    showSkinAdmin ? 'skinAdmin' :
+    showAdminPanel ? 'admin' :
+    showNetworkingGuide ? 'guide' :
+    showDebug ? 'debug' :
+    isEditing ? 'editing' : null
+
+  // Handle Telegram BackButton
+  const handleBack = useCallback(() => {
+    if (showSubscription) setShowSubscription(false)
+    else if (showNotifications) setShowNotifications(false)
+    else if (showTeamSection) setShowTeamSection(false)
+    else if (showSettings) setShowSettings(false)
+    else if (showSkinSelector) setShowSkinSelector(false)
+    else if (showSkinAdmin) setShowSkinAdmin(false)
+    else if (showAdminPanel) setShowAdminPanel(false)
+    else if (showNetworkingGuide) setShowNetworkingGuide(false)
+    else if (showDebug) setShowDebug(false)
+    else if (isEditing) setIsEditing(false)
+  }, [showSubscription, showNotifications, showTeamSection, showSettings, showSkinSelector, showSkinAdmin, showAdminPanel, showNetworkingGuide, showDebug, isEditing])
+
+  useEffect(() => {
+    if (activeSubScreen) {
+      backButton.show(handleBack)
+    } else {
+      backButton.hide()
+    }
+    return () => {
+      backButton.hide()
+    }
+  }, [activeSubScreen, handleBack])
 
   // Easter eggs (tap-based)
   const { handleTap: handleAvatarTap } = useTapEasterEgg('avatar_taps', 5)

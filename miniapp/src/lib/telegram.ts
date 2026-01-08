@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { TelegramWebApp, TelegramUser } from '@/types'
 
 // Get Telegram WebApp instance
@@ -71,18 +72,43 @@ export const mainButton = {
 }
 
 // Back button controls
+let currentBackButtonCallback: (() => void) | null = null
+
 export const backButton = {
   show: (onClick: () => void) => {
     const webApp = getTelegramWebApp()
     if (webApp) {
+      // Remove previous callback if exists
+      if (currentBackButtonCallback) {
+        webApp.BackButton.offClick(currentBackButtonCallback)
+      }
+      currentBackButtonCallback = onClick
       webApp.BackButton.onClick(onClick)
       webApp.BackButton.show()
     }
   },
   hide: () => {
     const webApp = getTelegramWebApp()
-    webApp?.BackButton.hide()
+    if (webApp) {
+      if (currentBackButtonCallback) {
+        webApp.BackButton.offClick(currentBackButtonCallback)
+        currentBackButtonCallback = null
+      }
+      webApp.BackButton.hide()
+    }
   },
+}
+
+// React hook for BackButton
+export function useBackButton(onBack: () => void, enabled: boolean = true) {
+  useEffect(() => {
+    if (enabled) {
+      backButton.show(onBack)
+    }
+    return () => {
+      backButton.hide()
+    }
+  }, [onBack, enabled])
 }
 
 // Dialogs
