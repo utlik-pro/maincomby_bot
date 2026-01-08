@@ -30,14 +30,14 @@ def get_session() -> AsyncSession:
 
 
 def build_welcome_keyboard(webapp_url: str | None) -> InlineKeyboardMarkup | None:
-    """Создает клавиатуру с кнопкой 'Открыть приложение'."""
+    """Создает клавиатуру с кнопкой 'Поехали'."""
     if not webapp_url:
         return None
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
-                text="Открыть приложение",
+                text="Поехали",
                 web_app=WebAppInfo(url=webapp_url)
             )]
         ]
