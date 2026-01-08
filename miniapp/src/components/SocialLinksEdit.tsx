@@ -43,7 +43,7 @@ const URL_PATTERNS: Record<LinkType, RegExp> = {
   gitlab: /^(https?:\/\/)?(www\.)?gitlab\.com\/[\w-]+\/?$/i,
   behance: /^(https?:\/\/)?(www\.)?behance\.net\/[\w-]+\/?$/i,
   dribbble: /^(https?:\/\/)?(www\.)?dribbble\.com\/[\w-]+\/?$/i,
-  instagram: /^(https?:\/\/)?(www\.)?instagram\.com\/[\w.-]+\/?$/i,
+  instagram: /^(https?:\/\/)?(www\.)?instagram\.com\/[\w.-]+\/?(\?[^#]*)?$/i,
   telegram_channel: /^(https?:\/\/)?(www\.)?t\.me\/[\w-]+\/?$/i,
   portfolio: /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/.*)?$/i,
   website: /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/.*)?$/i,
@@ -171,10 +171,12 @@ export const SocialLinksEdit: React.FC<SocialLinksEditProps> = ({
       setEditingLink(null)
       hapticFeedback.success()
       addToast('Ссылка сохранена!', 'success')
-    } catch (err) {
-      setError('Не удалось сохранить ссылку')
+    } catch (err: any) {
+      console.error('Link save error:', err)
+      const errorMsg = err?.message || err?.code || JSON.stringify(err)
+      setError(`Ошибка: ${errorMsg}`)
       hapticFeedback.error()
-      addToast('Ошибка сохранения ссылки', 'error')
+      addToast(`Ошибка: ${errorMsg}`, 'error')
     } finally {
       setIsSaving(false)
     }

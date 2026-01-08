@@ -43,7 +43,7 @@ import {
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported, backButton } from '@/lib/telegram'
-import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById } from '@/lib/supabase'
+import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
 import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
@@ -55,6 +55,8 @@ import { SocialLinksEdit } from '@/components/SocialLinksEdit'
 import { NetworkingGuide } from '@/components/NetworkingGuide'
 import SkinAdminPanel from '@/components/SkinAdminPanel'
 import { TagInput } from '@/components/TagInput'
+import { PhotoUploader } from '@/components/PhotoUploader'
+import type { ProfilePhoto } from '@/types'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
@@ -180,6 +182,8 @@ const ProfileScreen: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [notificationsLoading, setNotificationsLoading] = useState(false)
   const [skinSaving, setSkinSaving] = useState(false)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [uploadingPosition, setUploadingPosition] = useState<number | null>(null)
 
   // Determine which sub-screen is active for back button
   const activeSubScreen = showSubscription ? 'subscription' :
@@ -293,6 +297,14 @@ const ProfileScreen: React.FC = () => {
     staleTime: 60000,
   })
 
+  // Fetch user's profile photos
+  const { data: profilePhotos = [], refetch: refetchPhotos } = useQuery({
+    queryKey: ['profilePhotos', user?.id],
+    queryFn: () => (user ? getProfilePhotos(user.id) : []),
+    enabled: !!user,
+    staleTime: 30000,
+  })
+
   // Get active skin from user's skins
   const activeSkin = userSkins.find(s => s.is_active_skin)?.skin || null
 
@@ -379,11 +391,75 @@ const ProfileScreen: React.FC = () => {
       setIsEditing(false)
       hapticFeedback.success()
       addToast('Профиль сохранён!', 'success')
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Profile save error:', error)
+      const errorMsg = error?.message || error?.code || JSON.stringify(error)
       hapticFeedback.error()
-      addToast('Ошибка сохранения', 'error')
+      addToast(`Ошибка: ${errorMsg}`, 'error')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Photo upload handler
+  const handlePhotoUpload = async (file: File, position: number) => {
+    if (!user) return
+
+    setIsUploadingPhoto(true)
+    setUploadingPosition(position)
+
+    try {
+      hapticFeedback.medium()
+      const result = await uploadProfilePhoto(user.id, file, position)
+
+      if (result.success) {
+        await refetchPhotos()
+        // Update profile photo_url if this is primary
+        if (position === 0 && result.photo) {
+          setProfile({ ...profile!, photo_url: result.photo.photo_url })
+        }
+        hapticFeedback.success()
+        addToast('Фото загружено!', 'success')
+      } else {
+        hapticFeedback.error()
+        addToast(result.error || 'Ошибка загрузки', 'error')
+      }
+    } catch (error) {
+      console.error('Photo upload error:', error)
+      hapticFeedback.error()
+      addToast('Ошибка загрузки фото', 'error')
+    } finally {
+      setIsUploadingPhoto(false)
+      setUploadingPosition(null)
+    }
+  }
+
+  // Photo delete handler
+  const handlePhotoDelete = async (photoId: string) => {
+    if (!user) return
+
+    try {
+      hapticFeedback.medium()
+      const success = await deleteProfilePhoto(photoId)
+
+      if (success) {
+        await refetchPhotos()
+        // Refresh profile to get updated photo_url
+        const updatedPhotos = await getProfilePhotos(user.id)
+        const primaryPhoto = updatedPhotos.find(p => p.is_primary)
+        if (profile) {
+          setProfile({ ...profile, photo_url: primaryPhoto?.photo_url || null })
+        }
+        hapticFeedback.success()
+        addToast('Фото удалено', 'success')
+      } else {
+        hapticFeedback.error()
+        addToast('Ошибка удаления', 'error')
+      }
+    } catch (error) {
+      console.error('Photo delete error:', error)
+      hapticFeedback.error()
+      addToast('Ошибка удаления фото', 'error')
     }
   }
 
@@ -446,24 +522,16 @@ const ProfileScreen: React.FC = () => {
           </button>
         </div>
 
-        {/* Photo */}
-        <div className="p-6 text-center">
-          <div className="relative inline-block">
-            <Avatar
-              src={profile?.photo_url}
-              name={user?.first_name || 'User'}
-              size="xl"
-              className="mx-auto"
-            />
-            {profile?.photo_url && (
-              <div className="absolute bottom-0 right-0 bg-accent text-bg p-1.5 rounded-full">
-                <Check size={14} />
-              </div>
-            )}
-          </div>
-          <p className="text-gray-400 text-sm mt-2">
-            Фото подтягивается из Telegram автоматически
-          </p>
+        {/* Photo Upload */}
+        <div className="p-4">
+          <PhotoUploader
+            photos={profilePhotos}
+            maxPhotos={3}
+            onPhotoUpload={handlePhotoUpload}
+            onPhotoDelete={handlePhotoDelete}
+            isUploading={isUploadingPhoto}
+            uploadingPosition={uploadingPosition}
+          />
         </div>
 
         {/* Form */}
