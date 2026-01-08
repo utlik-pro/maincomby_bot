@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from aiogram import Router, F, Bot
-from aiogram.types import Message, ChatMemberUpdated
+from aiogram.types import Message, ChatMemberUpdated, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.filters import ChatMemberUpdatedFilter, IS_NOT_MEMBER, IS_MEMBER
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +27,22 @@ def get_session() -> AsyncSession:
     if _session_factory is None:
         raise RuntimeError("Session factory not initialized. Call set_session_factory() first.")
     return _session_factory()
+
+
+def build_welcome_keyboard(webapp_url: str | None) -> InlineKeyboardMarkup | None:
+    """Создает клавиатуру с кнопкой 'Открыть приложение'."""
+    if not webapp_url:
+        return None
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text="Открыть приложение",
+                web_app=WebAppInfo(url=webapp_url)
+            )]
+        ]
+    )
+    return keyboard
 
 
 @router.message(F.new_chat_members)
@@ -86,11 +102,15 @@ async def on_new_chat_members(message: Message, bot: Bot):
             target_chat_id = settings.welcome_chat_id if settings.welcome_chat_id else chat.id
             message_thread_id = settings.welcome_thread_id if settings.welcome_thread_id else None
 
+            # Создаем клавиатуру с кнопкой "Открыть приложение"
+            keyboard = build_welcome_keyboard(settings.webapp_url)
+
             await bot.send_message(
                 chat_id=target_chat_id,
                 text=full_message,
                 parse_mode="HTML",
-                message_thread_id=message_thread_id
+                message_thread_id=message_thread_id,
+                reply_markup=keyboard
             )
             logger.info(f"Приветствие отправлено пользователю {user.id} в чат {target_chat_id}, ветка {message_thread_id}")
         except Exception as e:
@@ -149,11 +169,15 @@ async def on_user_join(event: ChatMemberUpdated, bot: Bot):
         target_chat_id = settings.welcome_chat_id if settings.welcome_chat_id else chat.id
         message_thread_id = settings.welcome_thread_id if settings.welcome_thread_id else None
 
+        # Создаем клавиатуру с кнопкой "Открыть приложение"
+        keyboard = build_welcome_keyboard(settings.webapp_url)
+
         await bot.send_message(
             chat_id=target_chat_id,
             text=full_message,
             parse_mode="HTML",
-            message_thread_id=message_thread_id
+            message_thread_id=message_thread_id,
+            reply_markup=keyboard
         )
         logger.info(f"Приветствие отправлено пользователю {user.id} в чат {target_chat_id}, ветка {message_thread_id}")
     except Exception as e:
@@ -182,11 +206,15 @@ async def test_welcome_message(message: Message, bot: Bot):
         target_chat_id = settings.welcome_chat_id if settings.welcome_chat_id else message.chat.id
         message_thread_id = settings.welcome_thread_id if settings.welcome_thread_id else None
 
+        # Создаем клавиатуру с кнопкой "Открыть приложение"
+        keyboard = build_welcome_keyboard(settings.webapp_url)
+
         await bot.send_message(
             chat_id=target_chat_id,
             text=full_message,
             parse_mode="HTML",
-            message_thread_id=message_thread_id
+            message_thread_id=message_thread_id,
+            reply_markup=keyboard
         )
         logger.info(f"Тестовое приветствие отправлено в чат {target_chat_id}, ветка {message_thread_id}")
     except Exception as e:
@@ -234,11 +262,15 @@ async def welcome_specific_user(message: Message, bot: Bot):
         target_chat_id = settings.welcome_chat_id if settings.welcome_chat_id else message.chat.id
         message_thread_id = settings.welcome_thread_id if settings.welcome_thread_id else None
 
+        # Создаем клавиатуру с кнопкой "Открыть приложение"
+        keyboard = build_welcome_keyboard(settings.webapp_url)
+
         await bot.send_message(
             chat_id=target_chat_id,
             text=full_message,
             parse_mode="HTML",
-            message_thread_id=message_thread_id
+            message_thread_id=message_thread_id,
+            reply_markup=keyboard
         )
         logger.info(f"Приветствие отправлено для пользователя {user_id} в чат {target_chat_id}, ветка {message_thread_id}")
         await message.reply(f"✅ Приветствие отправлено для {user.first_name}")
