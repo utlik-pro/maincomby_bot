@@ -1867,15 +1867,18 @@ export async function updateUserRole(
         console.warn('Failed to create role notification:', e)
       }
 
-      // Send Telegram notification
+      // Send Telegram notification via server-side API (bypasses CORS)
       if (userData?.tg_user_id) {
         try {
-          await sendNotification(
-            userData.tg_user_id,
-            'achievement',
-            'Добро пожаловать в команду!',
-            `Поздравляем! Вам назначена роль "${roleLabel}" в сообществе MAIN. 🎉`
-          )
+          await fetch('https://iishnica.vercel.app/api/send-role-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userTgId: userData.tg_user_id,
+              userId,
+              role: newRole
+            })
+          })
         } catch (e) {
           console.warn('Failed to send Telegram role notification:', e)
         }
