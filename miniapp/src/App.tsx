@@ -571,7 +571,7 @@ const App: React.FC = () => {
     init()
   }, [setLoading, setUser, setProfile, addToast])
 
-  // Handle deep links (startapp parameter)
+  // Handle deep links (startapp parameter or URL query params)
   useEffect(() => {
     if (isLoading) return
 
@@ -579,8 +579,14 @@ const App: React.FC = () => {
     // @ts-ignore - start_param might not be in types
     const startParam = webApp?.initDataUnsafe?.start_param
 
-    if (startParam) {
-      // Map startapp parameter to tab
+    // Also check URL query parameters (for web_app button links)
+    const urlParams = new URLSearchParams(window.location.search)
+    const screenParam = urlParams.get('screen')
+
+    const deepLinkValue = startParam || screenParam
+
+    if (deepLinkValue) {
+      // Map parameter to tab
       const screenMap: Record<string, typeof activeTab> = {
         'home': 'home',
         'events': 'events',
@@ -591,12 +597,12 @@ const App: React.FC = () => {
         'notifications': 'home', // notifications shown on home
       }
 
-      const targetTab = screenMap[startParam]
+      const targetTab = screenMap[deepLinkValue]
       if (targetTab) {
         setActiveTab(targetTab)
         // Set deep link target for specific sub-screens
-        if (startParam === 'matches' || startParam === 'notifications') {
-          setDeepLinkTarget(startParam)
+        if (deepLinkValue === 'matches' || deepLinkValue === 'notifications') {
+          setDeepLinkTarget(deepLinkValue)
         }
       }
     }
