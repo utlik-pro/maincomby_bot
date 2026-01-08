@@ -988,7 +988,7 @@ export async function createUserInvites(userId: number, count: number = 5): Prom
 
 // Generate invite link
 export function generateInviteLink(code: string): string {
-  return `https://t.me/maincomapp_bot/app?startapp=invite_${code}`
+  return `https://t.me/maincomapp_bot?startapp=invite_${code}`
 }
 
 // Notifications

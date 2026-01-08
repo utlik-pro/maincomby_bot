@@ -406,7 +406,7 @@ export const sendPushNotification = async (
       body.reply_markup = {
         inline_keyboard: [[{
           text: deepLink.buttonText || 'Открыть',
-          url: `https://t.me/maincomapp_bot/app?startapp=${deepLink.screen}`
+          url: `https://t.me/maincomapp_bot?startapp=${deepLink.screen}`
         }]]
       }
     }
