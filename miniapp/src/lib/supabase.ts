@@ -657,7 +657,7 @@ function getReasonText(reason: string): string {
     EVENT_REGISTER: 'регистрацию на событие',
     EVENT_CHECKIN: 'посещение события',
     PROFILE_COMPLETE: 'заполнение профиля',
-    MATCH: 'новый матч',
+    MATCH: 'новый контакт',
     INVITE_FRIEND: 'приглашение друга',
   }
   return reasons[reason] || reason
@@ -1392,13 +1392,13 @@ export async function sendNotification(
   }
 }
 
-// Notify user about new match
+// Notify user about new connection
 export async function notifyNewMatch(userTgId: number, matchName: string): Promise<boolean> {
   return sendNotification(
     userTgId,
     'match',
-    'У тебя новый матч!',
-    `${matchName} тоже хочет познакомиться с тобой! Напиши первым 👋`
+    'Новый контакт!',
+    `${matchName} тоже хочет познакомиться. Начните общение! 👋`
   )
 }
 

@@ -427,7 +427,7 @@ export const sendPushNotification = async (
 
 // ============ NOTIFICATION HELPERS ============
 
-// Notify about new match
+// Notify about new connection
 export const notifyNewMatch = async (
   userTgId: number,
   matchName: string
@@ -436,10 +436,10 @@ export const notifyNewMatch = async (
     userTgId,
     {
       type: 'match',
-      title: 'Новый матч!',
-      message: `Вы понравились друг другу с ${matchName}!`,
+      title: 'Новый контакт!',
+      message: `${matchName} тоже хочет познакомиться. Начните общение!`,
     },
-    { screen: 'matches', buttonText: '💬 Открыть матчи' }
+    { screen: 'matches', buttonText: '👋 Открыть контакты' }
   )
 }
 
@@ -492,14 +492,14 @@ export const notifyAchievement = async (
   })
 }
 
-// Notify when someone likes you (for premium users who can see likes)
+// Notify when someone wants to connect (for premium users who can see likes)
 export const notifyNewLike = async (
   userTgId: number,
   likerName: string
 ): Promise<boolean> => {
   return sendPushNotification(userTgId, {
     type: 'match',
-    title: 'Кто-то вас лайкнул!',
-    message: `${likerName} проявил(а) интерес к вашему профилю. Лайкните в ответ, чтобы начать общение!`,
+    title: 'Кто-то хочет познакомиться!',
+    message: `${likerName} заинтересован(а) в нетворкинге с вами. Ответьте взаимностью, чтобы начать общение!`,
   })
 }

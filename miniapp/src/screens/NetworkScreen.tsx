@@ -96,8 +96,8 @@ const NetworkScreen: React.FC = () => {
           const theirName = `${currentProfile.user?.first_name || ''} ${currentProfile.user?.last_name || ''}`.trim() || 'Участник'
 
           // Уведомления
-          createNotification(user.id, 'match', 'Новый матч!', `Вы понравились друг другу с ${theirName}!`, { matchedUserId: currentProfile.user_id }).catch(console.error)
-          createNotification(currentProfile.user_id, 'match', 'Новый матч!', `Вы понравились друг другу с ${myName}!`, { matchedUserId: user.id }).catch(console.error)
+          createNotification(user.id, 'match', 'Новый контакт!', `${theirName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: currentProfile.user_id }).catch(console.error)
+          createNotification(currentProfile.user_id, 'match', 'Новый контакт!', `${myName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: user.id }).catch(console.error)
 
           // Telegram уведомления
           if (currentProfile.user?.tg_user_id) {
@@ -116,7 +116,7 @@ const NetworkScreen: React.FC = () => {
           }
 
           hapticFeedback.success()
-          addToast(`Матч с ${theirName}!`, 'success')
+          addToast(`Новый контакт: ${theirName}!`, 'success')
           queryClient.invalidateQueries({ queryKey: ['matches'] })
         }
       }
