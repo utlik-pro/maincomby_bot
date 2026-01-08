@@ -686,3 +686,35 @@ export interface BacklogFilters {
   limit?: number
   offset?: number
 }
+
+// ============================================
+// Profile Photos System (Multiple Photos)
+// ============================================
+
+export interface ProfilePhoto {
+  id: string
+  user_id: number
+  photo_url: string
+  storage_path: string
+  position: number  // 0, 1, 2 (max 3 photos)
+  is_primary: boolean
+  uploaded_at: string
+  moderation_status: 'pending' | 'approved' | 'rejected'
+}
+
+export interface PhotoUploadResult {
+  success: boolean
+  photo?: ProfilePhoto
+  error?: string
+}
+
+// Extended profile data for swipe cards
+export interface SwipeCardProfile {
+  profile: UserProfile
+  user: User
+  photos: ProfilePhoto[]
+  activeSkin?: AvatarSkin | null
+}
+
+// Max photos per user
+export const MAX_PROFILE_PHOTOS = 3

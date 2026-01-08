@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User, TeamRole } from '@/types'
+import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User, TeamRole, ProfilePhoto, PhotoUploadResult, SwipeCardProfile, UserProfile } from '@/types'
 
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndpkxustvcijykzxqxrn.supabase.co'
@@ -2126,4 +2126,274 @@ export async function getNewBacklogCount(): Promise<number> {
 
   if (error) throw error
   return count || 0
+}
+
+// ============================================
+// Profile Photos Management
+// ============================================
+
+/**
+ * Upload a profile photo to Supabase Storage
+ */
+export async function uploadProfilePhoto(
+  userId: number,
+  file: File,
+  position: number
+): Promise<PhotoUploadResult> {
+  const supabase = getSupabase()
+
+  // Validate file size (5MB max)
+  const maxSize = 5 * 1024 * 1024
+  if (file.size > maxSize) {
+    return { success: false, error: 'Файл слишком большой (макс. 5MB)' }
+  }
+
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    return { success: false, error: 'Неподдерживаемый формат. Используйте JPEG, PNG или WebP' }
+  }
+
+  // Validate position
+  if (position < 0 || position > 2) {
+    return { success: false, error: 'Недопустимая позиция фото' }
+  }
+
+  // Generate unique filename
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const filename = `${userId}/${Date.now()}-${position}.${ext}`
+
+  // Delete existing photo at this position first
+  await deleteProfilePhotoByPosition(userId, position)
+
+  // Upload to storage
+  const { error: uploadError } = await supabase.storage
+    .from('profile-photos')
+    .upload(filename, file, {
+      cacheControl: '3600',
+      upsert: false
+    })
+
+  if (uploadError) {
+    console.error('[uploadProfilePhoto] Upload error:', uploadError)
+    return { success: false, error: 'Ошибка загрузки файла' }
+  }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('profile-photos')
+    .getPublicUrl(filename)
+
+  // Insert photo record
+  const { data: photo, error: insertError } = await supabase
+    .from('profile_photos')
+    .insert({
+      user_id: userId,
+      photo_url: publicUrl,
+      storage_path: filename,
+      position,
+      is_primary: position === 0,
+      moderation_status: 'approved'
+    })
+    .select()
+    .single()
+
+  if (insertError) {
+    console.error('[uploadProfilePhoto] Insert error:', insertError)
+    // Cleanup uploaded file
+    await supabase.storage.from('profile-photos').remove([filename])
+    return { success: false, error: 'Ошибка сохранения фото' }
+  }
+
+  // Update profile photo_url if this is the primary photo
+  if (position === 0) {
+    await supabase
+      .from('bot_profiles')
+      .update({ photo_url: publicUrl })
+      .eq('user_id', userId)
+  }
+
+  return { success: true, photo: photo as ProfilePhoto }
+}
+
+/**
+ * Get all profile photos for a user
+ */
+export async function getProfilePhotos(userId: number): Promise<ProfilePhoto[]> {
+  const { data, error } = await getSupabase()
+    .from('profile_photos')
+    .select('*')
+    .eq('user_id', userId)
+    .order('position', { ascending: true })
+
+  if (error) {
+    console.error('[getProfilePhotos] Error:', error)
+    return []
+  }
+
+  return (data || []) as ProfilePhoto[]
+}
+
+/**
+ * Delete a profile photo by ID
+ */
+export async function deleteProfilePhoto(photoId: string): Promise<boolean> {
+  const supabase = getSupabase()
+
+  // Get photo info first
+  const { data: photo } = await supabase
+    .from('profile_photos')
+    .select('storage_path, user_id, is_primary')
+    .eq('id', photoId)
+    .single()
+
+  if (!photo) return false
+
+  // Delete from storage
+  await supabase.storage
+    .from('profile-photos')
+    .remove([photo.storage_path])
+
+  // Delete record
+  const { error } = await supabase
+    .from('profile_photos')
+    .delete()
+    .eq('id', photoId)
+
+  if (error) {
+    console.error('[deleteProfilePhoto] Error:', error)
+    return false
+  }
+
+  // If was primary, promote next photo and update profile
+  if (photo.is_primary) {
+    const remaining = await getProfilePhotos(photo.user_id)
+    const newPrimary = remaining[0]
+
+    await supabase
+      .from('bot_profiles')
+      .update({ photo_url: newPrimary?.photo_url || null })
+      .eq('user_id', photo.user_id)
+
+    if (newPrimary) {
+      await supabase
+        .from('profile_photos')
+        .update({ is_primary: true, position: 0 })
+        .eq('id', newPrimary.id)
+    }
+  }
+
+  return true
+}
+
+/**
+ * Delete photo by position (internal helper)
+ */
+async function deleteProfilePhotoByPosition(userId: number, position: number): Promise<void> {
+  const supabase = getSupabase()
+
+  const { data: existing } = await supabase
+    .from('profile_photos')
+    .select('id, storage_path')
+    .eq('user_id', userId)
+    .eq('position', position)
+    .single()
+
+  if (existing) {
+    await supabase.storage.from('profile-photos').remove([existing.storage_path])
+    await supabase.from('profile_photos').delete().eq('id', existing.id)
+  }
+}
+
+/**
+ * Reorder profile photos
+ */
+export async function reorderProfilePhotos(
+  userId: number,
+  photoIds: string[]
+): Promise<boolean> {
+  const supabase = getSupabase()
+
+  try {
+    for (let i = 0; i < photoIds.length; i++) {
+      await supabase
+        .from('profile_photos')
+        .update({ position: i, is_primary: i === 0 })
+        .eq('id', photoIds[i])
+        .eq('user_id', userId)
+    }
+
+    // Update profile primary photo
+    const { data: primary } = await supabase
+      .from('profile_photos')
+      .select('photo_url')
+      .eq('user_id', userId)
+      .eq('is_primary', true)
+      .single()
+
+    if (primary) {
+      await supabase
+        .from('bot_profiles')
+        .update({ photo_url: primary.photo_url })
+        .eq('user_id', userId)
+    }
+
+    return true
+  } catch (error) {
+    console.error('[reorderProfilePhotos] Error:', error)
+    return false
+  }
+}
+
+/**
+ * Get approved profiles with photos for swipe feed
+ */
+export async function getApprovedProfilesWithPhotos(
+  excludeUserId: number,
+  city?: string
+): Promise<SwipeCardProfile[]> {
+  const supabase = getSupabase()
+
+  // Get swiped user IDs
+  const { data: swipedData } = await supabase
+    .from('bot_swipes')
+    .select('swiped_id')
+    .eq('swiper_id', excludeUserId)
+
+  const swipedIds = swipedData?.map(s => s.swiped_id) || []
+
+  // Get profiles with photos
+  let query = supabase
+    .from('bot_profiles')
+    .select(`
+      *,
+      user:bot_users(
+        *,
+        active_skin:avatar_skins(*)
+      ),
+      photos:profile_photos(*)
+    `)
+    .eq('is_visible', true)
+    .neq('user_id', excludeUserId)
+
+  if (city) {
+    query = query.eq('city', city)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+
+  // Filter and transform
+  return (data || [])
+    .filter(p => !swipedIds.includes(p.user_id))
+    .map(p => {
+      const userData = Array.isArray(p.user) ? p.user[0] : p.user
+      const skinData = userData?.active_skin
+      return {
+        profile: p as UserProfile,
+        user: userData as User,
+        photos: ((p.photos || []) as ProfilePhoto[]).sort((a, b) => a.position - b.position),
+        activeSkin: Array.isArray(skinData) ? skinData[0] : skinData
+      }
+    })
 }
