@@ -45,10 +45,10 @@ const NotTelegramScreen: React.FC = () => (
     <p className="text-gray-400 text-sm mb-6">
       Это приложение работает только внутри Telegram.
       <br />
-      Откройте бота @MainCommunityBot и запустите Mini App.
+      Откройте бота @maincomapp_bot и запустите Mini App.
     </p>
     <a
-      href="https://t.me/MainCommunityBot"
+      href="https://t.me/maincomapp_bot"
       className="bg-accent text-bg px-6 py-3 rounded-button font-semibold"
     >
       Открыть бота

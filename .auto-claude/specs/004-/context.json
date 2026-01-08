@@ -1,0 +1,23 @@
+{
+  "task_description": "Add welcome greeting message for new bot members with 'Open App' button, adapted to the application context based on screenshot reference",
+  "scoped_services": ["main"],
+  "files_to_modify": [
+    "app/services/llm.py",
+    "app/handlers/welcome.py"
+  ],
+  "files_to_reference": [
+    "app/handlers/events.py"
+  ],
+  "patterns": {
+    "inline_keyboards": "Use InlineKeyboardButton with webapp_url from config",
+    "welcome_handlers": "on_new_chat_members and on_user_join handlers in welcome.py",
+    "fallback_messages": "LLM personalization with fallback template in llm.py"
+  },
+  "service_contexts": {
+    "main": {
+      "purpose": "Telegram bot with welcome message functionality",
+      "key_files": ["app/handlers/welcome.py", "app/services/llm.py"]
+    }
+  },
+  "created_at": "2026-01-08T10:05:00.000Z"
+}

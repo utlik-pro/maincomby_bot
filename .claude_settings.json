@@ -11,14 +11,19 @@
       "Edit(./**)",
       "Glob(./**)",
       "Grep(./**)",
+      "Read(/Users/admin/maincomby_bot/.worktrees/004-/**)",
+      "Write(/Users/admin/maincomby_bot/.worktrees/004-/**)",
+      "Edit(/Users/admin/maincomby_bot/.worktrees/004-/**)",
+      "Glob(/Users/admin/maincomby_bot/.worktrees/004-/**)",
+      "Grep(/Users/admin/maincomby_bot/.worktrees/004-/**)",
+      "Read(/Users/admin/maincomby_bot/.worktrees/004-/.auto-claude/specs/004-/**)",
+      "Write(/Users/admin/maincomby_bot/.worktrees/004-/.auto-claude/specs/004-/**)",
+      "Edit(/Users/admin/maincomby_bot/.worktrees/004-/.auto-claude/specs/004-/**)",
       "Bash(*)",
-      "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs",
-      "mcp__graphiti-memory__search_nodes",
-      "mcp__graphiti-memory__search_facts",
-      "mcp__graphiti-memory__add_episode",
-      "mcp__graphiti-memory__get_episodes",
-      "mcp__graphiti-memory__get_entity_edge"
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)"
     ]
   }
 }

@@ -1,0 +1,99 @@
+{
+  "spec_name": "welcome-message-update",
+  "feature": "Welcome Message Update for New Bot Members",
+  "description": "Update welcome greeting message for new bot members to match screenshot style with Open App button",
+  "workflow_type": "simple",
+  "total_phases": 1,
+  "recommended_workers": 1,
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Implementation",
+      "description": "Update welcome message and add Open App button",
+      "depends_on": [],
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Update welcome message template in llm.py and add InlineKeyboardButton in welcome.py handlers",
+          "service": "main",
+          "status": "completed",
+          "files_to_create": [],
+          "files_to_modify": [
+            "app/services/llm.py",
+            "app/handlers/welcome.py"
+          ],
+          "patterns_from": [
+            "app/handlers/events.py"
+          ],
+          "verification": {
+            "type": "manual",
+            "run": "Send /test_welcome command in Telegram to verify new message format with button"
+          },
+          "notes": "Updated fallback welcome message template in llm.py to new format: \"\u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c! \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c \u0432 M.AI.N - AI Community \u2014 \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u0441\u0442\u0432\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u043e\u043d\u0430\u043b\u043e\u0432 \u0432 \u043e\u0431\u043b\u0430\u0441\u0442\u0438 \u0442\u0435\u0445\u043d\u043e\u043b\u043e\u0433\u0438\u0439, AI \u0438 \u0438\u043d\u043d\u043e\u0432\u0430\u0446\u0438\u0439! \u041d\u0430\u0436\u043c\u0438 \u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435\u00bb, \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u0443\u0439\u0441\u044f \u0438 \u043f\u043e\u043b\u0443\u0447\u0430\u0439 \u0432\u0441\u044e \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044e \u043e \u043c\u0435\u0440\u043e\u043f\u0440\u0438\u044f\u0442\u0438\u044f\u0445 \u0432 \u0440\u0435\u0430\u043b\u044c\u043d\u043e\u043c \u0432\u0440\u0435\u043c\u0435\u043d\u0438.\" Added build_welcome_keyboard() helper function and InlineKeyboardButton with \"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435\" (WebAppInfo) in all 4 welcome handlers: on_new_chat_members, on_user_join, test_welcome_message, welcome_specific_user. Added webapp_url config setting and WEBAPP_URL env variable.",
+          "updated_at": "2026-01-08T11:03:02.589015+00:00"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-01-08T09:46:44.004Z",
+    "updated_at": "2026-01-08T10:01:45.939Z",
+    "complexity": "simple",
+    "estimated_sessions": 1
+  },
+  "status": "human_review",
+  "planStatus": "review",
+  "last_updated": "2026-01-08T20:40:52.770580+00:00",
+  "qa_signoff": {
+    "status": "approved",
+    "qa_session": 1,
+    "issues_found": [
+      {
+        "description": "None - Re-validation confirms all requirements implemented correctly. Python syntax valid, no security issues, all handlers include the Open App button."
+      }
+    ],
+    "tests_passed": {
+      "python_compile": "3/3",
+      "security_review": "pass",
+      "pattern_compliance": "pass"
+    },
+    "timestamp": "2026-01-08T20:40:52.770559+00:00",
+    "ready_for_qa_revalidation": false
+  },
+  "qa_iteration_history": [
+    {
+      "iteration": 1,
+      "status": "approved",
+      "timestamp": "2026-01-08T11:05:45.012789+00:00",
+      "issues": [],
+      "duration_seconds": 142.28
+    },
+    {
+      "iteration": 1,
+      "status": "approved",
+      "timestamp": "2026-01-08T20:21:37.808767+00:00",
+      "issues": [],
+      "duration_seconds": 186.93
+    },
+    {
+      "iteration": 1,
+      "status": "approved",
+      "timestamp": "2026-01-08T20:24:18.364988+00:00",
+      "issues": [],
+      "duration_seconds": 3.08
+    },
+    {
+      "iteration": 2,
+      "status": "approved",
+      "timestamp": "2026-01-08T20:41:02.044889+00:00",
+      "issues": [],
+      "duration_seconds": 108.61
+    }
+  ],
+  "qa_stats": {
+    "total_iterations": 4,
+    "last_iteration": 2,
+    "last_status": "approved",
+    "issues_by_type": {}
+  }
+}
