@@ -14,11 +14,27 @@ from aiogram.types import (
 from aiogram.filters import Command
 from loguru import logger
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.database import get_session
-from app.db.models import User, Payment
+from ..db.models import User, Payment
 
 router = Router()
+
+# Global session factory
+_session_factory = None
+
+
+def set_session_factory(factory):
+    """Set the session factory."""
+    global _session_factory
+    _session_factory = factory
+
+
+def get_session() -> AsyncSession:
+    """Get database session."""
+    if _session_factory is None:
+        raise RuntimeError("Session factory not initialized. Call set_session_factory() first.")
+    return _session_factory()
 
 # Subscription prices in Telegram Stars
 SUBSCRIPTION_PRICES = {

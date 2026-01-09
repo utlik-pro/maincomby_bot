@@ -171,6 +171,7 @@ async def main() -> None:
     from .handlers.matching import set_session_factory as set_matching_session_factory
     from .handlers.feedback import set_session_factory as set_feedback_session_factory
     from .handlers.broadcast_feedback import set_session_factory as set_broadcast_feedback_session_factory
+    from .handlers.payments import set_session_factory as set_payments_session_factory
     set_news_session_factory(session_factory)
     set_qa_session_factory(session_factory)
     set_events_session_factory(session_factory)
@@ -180,6 +181,7 @@ async def main() -> None:
     set_matching_session_factory(session_factory)
     set_feedback_session_factory(session_factory)
     set_broadcast_feedback_session_factory(session_factory)
+    set_payments_session_factory(session_factory)
 
     # Инициализируем Supabase sync service (async версия)
     sync_service = None
