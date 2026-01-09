@@ -98,11 +98,23 @@ export const EventAnnouncementModal: React.FC<EventAnnouncementModalProps> = ({
                   </div>
 
                   {event.location && (
-                    <div className="flex items-center gap-3 text-sm">
+                    <div
+                      className={`flex items-center gap-3 text-sm ${event.location_url ? 'cursor-pointer active:opacity-80' : ''}`}
+                      onClick={() => {
+                        if (event.location_url) {
+                          window.open(event.location_url, '_blank')
+                        }
+                      }}
+                    >
                       <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
                         <MapPin size={18} className="text-accent" />
                       </div>
-                      <span className="text-gray-200">{event.location}</span>
+                      <div>
+                        <span className="text-gray-200">{event.location}</span>
+                        {event.location_url && (
+                          <div className="text-xs text-accent">Открыть карту</div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

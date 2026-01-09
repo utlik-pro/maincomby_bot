@@ -247,14 +247,24 @@ const TicketView: React.FC<{
           </div>
         </Card>
 
-        <Card>
+        <Card
+          onClick={() => {
+            if (event.location_url) {
+              hapticFeedback.light()
+              window.open(event.location_url, '_blank')
+            }
+          }}
+          className={event.location_url ? 'cursor-pointer active:opacity-80' : ''}
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
               <MapPin size={20} className="text-accent" />
             </div>
             <div>
               <div className="font-medium">{event.location}</div>
-              <div className="text-sm text-accent">Открыть на карте</div>
+              {event.location_url && (
+                <div className="text-sm text-accent">Открыть на карте</div>
+              )}
             </div>
           </div>
         </Card>
@@ -320,13 +330,23 @@ const EventDetail: React.FC<{
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div
+            className={`flex items-center gap-3 ${event.location_url ? 'cursor-pointer active:opacity-80' : ''}`}
+            onClick={() => {
+              if (event.location_url) {
+                hapticFeedback.light()
+                window.open(event.location_url, '_blank')
+              }
+            }}
+          >
             <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
               <MapPin size={20} className="text-accent" />
             </div>
             <div>
               <div className="font-medium">{event.location}</div>
-              <div className="text-sm text-accent">Показать на карте</div>
+              {event.location_url && (
+                <div className="text-sm text-accent">Показать на карте</div>
+              )}
             </div>
           </div>
 
