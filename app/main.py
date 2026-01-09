@@ -7,7 +7,7 @@ from aiogram import F, Bot
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from .bot import create_bot_and_dispatcher
-from .db.session import create_engine, create_session_factory, init_models
+from .db.session import create_engine, create_session_factory, init_models, run_migrations
 from .handlers.moderation import router as moderation_router
 from .handlers.news_moderation import router as news_moderation_router
 from .handlers.utils import router as utils_router
@@ -159,6 +159,7 @@ async def main() -> None:
     # DB init (SQLite/Async)
     engine = create_engine()
     await init_models(engine)
+    await run_migrations(engine)  # Auto-add missing columns
     session_factory = create_session_factory(engine)
     
     # Инициализируем сессию в хендлерах
