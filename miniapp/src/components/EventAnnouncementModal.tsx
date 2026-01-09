@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Calendar, MapPin, Clock, X, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { Event } from '@/types'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 interface EventAnnouncementModalProps {
   isOpen: boolean
@@ -12,17 +13,33 @@ interface EventAnnouncementModalProps {
   onViewDetails: () => void
 }
 
+// Generate Yandex Maps URL from location string
+const generateMapUrl = (location: string, city?: string): string => {
+  const searchQuery = city ? `${location}, ${city}` : location
+  return `https://yandex.by/maps/?text=${encodeURIComponent(searchQuery)}`
+}
+
+// Get map URL - use location_url if exists, otherwise generate from location
+const getMapUrl = (event: Event): string | null => {
+  if (event.location_url) return event.location_url
+  if (event.location) return generateMapUrl(event.location, event.city)
+  return null
+}
+
 export const EventAnnouncementModal: React.FC<EventAnnouncementModalProps> = ({
   isOpen,
   event,
   onClose,
   onViewDetails,
 }) => {
+  const [showMapConfirm, setShowMapConfirm] = useState(false)
+
   if (!event) return null
 
   const eventDate = new Date(event.event_date)
   const formattedDate = format(eventDate, 'd MMMM', { locale: ru })
   const formattedTime = format(eventDate, 'HH:mm')
+  const mapUrl = getMapUrl(event)
 
   const eventTypeLabels: Record<string, string> = {
     meetup: 'Митап',
@@ -35,6 +52,20 @@ export const EventAnnouncementModal: React.FC<EventAnnouncementModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Map confirmation dialog */}
+          <ConfirmDialog
+            isOpen={showMapConfirm}
+            title="Открыть карту?"
+            message="Вы покидаете мини-приложение. Откроется Яндекс.Карты с местоположением мероприятия."
+            confirmText="Открыть"
+            cancelText="Отмена"
+            onConfirm={() => {
+              if (mapUrl) window.open(mapUrl, '_blank')
+              setShowMapConfirm(false)
+            }}
+            onCancel={() => setShowMapConfirm(false)}
+          />
+
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -99,10 +130,10 @@ export const EventAnnouncementModal: React.FC<EventAnnouncementModalProps> = ({
 
                   {event.location && (
                     <div
-                      className={`flex items-center gap-3 text-sm ${event.location_url ? 'cursor-pointer active:opacity-80' : ''}`}
+                      className={`flex items-center gap-3 text-sm ${mapUrl ? 'cursor-pointer active:opacity-80' : ''}`}
                       onClick={() => {
-                        if (event.location_url) {
-                          window.open(event.location_url, '_blank')
+                        if (mapUrl) {
+                          setShowMapConfirm(true)
                         }
                       }}
                     >
@@ -111,7 +142,7 @@ export const EventAnnouncementModal: React.FC<EventAnnouncementModalProps> = ({
                       </div>
                       <div>
                         <span className="text-gray-200">{event.location}</span>
-                        {event.location_url && (
+                        {mapUrl && (
                           <div className="text-xs text-accent">Открыть карту</div>
                         )}
                       </div>

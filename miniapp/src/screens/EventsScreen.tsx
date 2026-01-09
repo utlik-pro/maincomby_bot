@@ -53,6 +53,19 @@ const eventTypeIcons: Record<string, React.ReactNode> = {
   default: <Calendar size={32} className="text-accent" />,
 }
 
+// Generate Yandex Maps URL from location string
+const generateMapUrl = (location: string, city?: string): string => {
+  const searchQuery = city ? `${location}, ${city}` : location
+  return `https://yandex.by/maps/?text=${encodeURIComponent(searchQuery)}`
+}
+
+// Get map URL - use location_url if exists, otherwise generate from location
+const getMapUrl = (event: Event): string | null => {
+  if (event.location_url) return event.location_url
+  if (event.location) return generateMapUrl(event.location, event.city)
+  return null
+}
+
 // QR Scanner component with real camera
 const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void }> = ({ onScan, onClose }) => {
   const [manualCode, setManualCode] = useState('')
@@ -166,15 +179,30 @@ const TicketView: React.FC<{
   event: Event
   onClose: () => void
 }> = ({ registration, event, onClose }) => {
+  const [showMapConfirm, setShowMapConfirm] = useState(false)
   const eventDate = new Date(event.event_date)
   const checkInStart = addHours(eventDate, -1)
   const canCheckIn = isAfter(new Date(), checkInStart) && isBefore(new Date(), eventDate)
 
   // Generate fallback ticket code if missing
   const ticketCode = registration.ticket_code || `MAIN-${registration.id}-${registration.event_id}`
+  const mapUrl = getMapUrl(event)
 
   return (
     <div className="fixed inset-0 bg-bg z-50 flex flex-col">
+      {/* Map confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showMapConfirm}
+        title="Открыть карту?"
+        message="Вы покидаете мини-приложение. Откроется Яндекс.Карты с местоположением мероприятия."
+        confirmText="Открыть"
+        cancelText="Отмена"
+        onConfirm={() => {
+          if (mapUrl) window.open(mapUrl, '_blank')
+          setShowMapConfirm(false)
+        }}
+        onCancel={() => setShowMapConfirm(false)}
+      />
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3">
         <button onClick={onClose} className="text-gray-400 flex items-center gap-2">
@@ -249,12 +277,12 @@ const TicketView: React.FC<{
 
         <Card
           onClick={() => {
-            if (event.location_url) {
+            if (mapUrl) {
               hapticFeedback.light()
-              window.open(event.location_url, '_blank')
+              setShowMapConfirm(true)
             }
           }}
-          className={event.location_url ? 'cursor-pointer active:opacity-80' : ''}
+          className={mapUrl ? 'cursor-pointer active:opacity-80' : ''}
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
@@ -262,7 +290,7 @@ const TicketView: React.FC<{
             </div>
             <div>
               <div className="font-medium">{event.location}</div>
-              {event.location_url && (
+              {mapUrl && (
                 <div className="text-sm text-accent">Открыть на карте</div>
               )}
             </div>
@@ -283,11 +311,26 @@ const EventDetail: React.FC<{
   onShowTicket: () => void
   onCancelRegistration: () => void
 }> = ({ event, registration, onClose, onRegister, onShowTicket, onCancelRegistration }) => {
+  const [showMapConfirm, setShowMapConfirm] = useState(false)
   const eventDate = new Date(event.event_date)
   const IconComponent = eventTypeIcons[event.event_type || 'default'] || eventTypeIcons.default
+  const mapUrl = getMapUrl(event)
 
   return (
     <div className="h-full flex flex-col">
+      {/* Map confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showMapConfirm}
+        title="Открыть карту?"
+        message="Вы покидаете мини-приложение. Откроется Яндекс.Карты с местоположением мероприятия."
+        confirmText="Открыть"
+        cancelText="Отмена"
+        onConfirm={() => {
+          if (mapUrl) window.open(mapUrl, '_blank')
+          setShowMapConfirm(false)
+        }}
+        onCancel={() => setShowMapConfirm(false)}
+      />
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card">
         <button onClick={onClose} className="p-4 text-gray-400 flex items-center gap-2">
@@ -331,11 +374,11 @@ const EventDetail: React.FC<{
           </div>
 
           <div
-            className={`flex items-center gap-3 ${event.location_url ? 'cursor-pointer active:opacity-80' : ''}`}
+            className={`flex items-center gap-3 ${mapUrl ? 'cursor-pointer active:opacity-80' : ''}`}
             onClick={() => {
-              if (event.location_url) {
+              if (mapUrl) {
                 hapticFeedback.light()
-                window.open(event.location_url, '_blank')
+                setShowMapConfirm(true)
               }
             }}
           >
@@ -344,7 +387,7 @@ const EventDetail: React.FC<{
             </div>
             <div>
               <div className="font-medium">{event.location}</div>
-              {event.location_url && (
+              {mapUrl && (
                 <div className="text-sm text-accent">Показать на карте</div>
               )}
             </div>
