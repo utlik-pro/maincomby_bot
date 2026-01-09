@@ -693,34 +693,39 @@ const EventsScreen: React.FC = () => {
   }
 
   // Handle phone from Telegram
-  // Note: requestContact sends phone to BOT, not mini app
-  // We need to wait for bot to save it, then refetch user
+  // requestContact returns contact directly to mini app (Telegram 6.9+)
   const handlePhoneFromTelegram = async () => {
     try {
-      const shared = await requestContact()
-      if (shared) {
-        // Phone was shared with bot - wait for bot to save it
+      const contact = await requestContact()
+      if (contact && contact.phone_number) {
         addToast('Сохраняем номер...', 'info')
 
-        // Wait 2 seconds for bot to process
-        await new Promise(resolve => setTimeout(resolve, 2000))
-
-        // Refetch user from database
-        const updatedUser = await getUserByTelegramId(user!.tg_user_id)
-        if (updatedUser?.phone_number) {
-          setUser(updatedUser)
-          setPhoneDialog({ show: false, eventId: null })
-          // Continue registration
-          if (phoneDialog.eventId) {
-            registerMutation.mutate(phoneDialog.eventId)
-          }
-          return
+        // Format phone number
+        let phone = contact.phone_number
+        if (!phone.startsWith('+')) {
+          phone = '+' + phone
         }
 
-        // If still no phone, ask to enter manually
+        // Save directly to Supabase (no need to wait for bot)
+        await createOrUpdateUser({
+          tg_user_id: user!.tg_user_id,
+          phone_number: phone,
+        })
+
+        setUser({ ...user!, phone_number: phone })
+        setPhoneDialog({ show: false, eventId: null })
+
+        // Continue registration
+        if (phoneDialog.eventId) {
+          registerMutation.mutate(phoneDialog.eventId)
+        }
+        return
+      } else {
+        // Contact not shared or not supported
         addToast('Введите номер вручную', 'info')
       }
     } catch (e) {
+      console.error('Error getting contact:', e)
       addToast('Не удалось получить номер', 'error')
     }
     setPhoneDialog({ show: false, eventId: null })
