@@ -42,6 +42,7 @@ import {
   BookOpen,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
+import { APP_VERSION } from '@/lib/version'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported, backButton } from '@/lib/telegram'
 import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
@@ -917,7 +918,7 @@ const ProfileScreen: React.FC = () => {
             <div className="space-y-2 text-sm text-gray-400">
               <div className="flex justify-between">
                 <span>Версия</span>
-                <span>1.0.0</span>
+                <span>{APP_VERSION}</span>
               </div>
               <div className="flex justify-between">
                 <span>Telegram версия</span>
@@ -933,12 +934,7 @@ const ProfileScreen: React.FC = () => {
   // Team Section
   if (showTeamSection) {
     return (
-      <div className="pb-6">
-        <button onClick={() => setShowTeamSection(false)} className="p-4 text-gray-400 flex items-center gap-2">
-          <ArrowLeft size={16} />
-          Назад
-        </button>
-
+      <div className="pb-6 pt-4">
         <div className="px-4">
           <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
             <Shield size={24} className="text-accent" />
@@ -966,31 +962,31 @@ const ProfileScreen: React.FC = () => {
                       name={member.first_name || 'User'}
                       size="md"
                       skin={skinData}
-                      role={role}
-                      tier={member.subscription_tier === 'pro' ? 'pro' : member.subscription_tier === 'light' ? 'light' : null}
+                      role={null}
+                      tier={null}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold truncate">
                         {member.first_name} {member.last_name}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${roleInfo?.color || 'bg-gray-500'} text-white`}>
-                          {roleInfo?.label || role}
-                        </span>
-                        {profileData?.occupation && (
-                          <span className="text-xs text-gray-400 truncate">{profileData.occupation}</span>
-                        )}
-                      </div>
+                      {profileData?.occupation && (
+                        <div className="text-xs text-gray-400 truncate">{profileData.occupation}</div>
+                      )}
                     </div>
-                    {member.username && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openTelegramLink(`https://t.me/${member.username}`)}
-                      >
-                        <ExternalLink size={14} />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${roleInfo?.color || 'bg-gray-500'} text-bg font-medium`}>
+                        {roleInfo?.label || role}
+                      </span>
+                      {member.username && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => openTelegramLink(`https://t.me/${member.username}`)}
+                        >
+                          <ExternalLink size={14} />
+                        </Button>
+                      )}
+                    </div>
                   </Card>
                 )
               })}
