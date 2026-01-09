@@ -102,8 +102,8 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
 
   return (
     <div className="fixed inset-0 bg-bg z-50 flex flex-col">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3">
+      {/* Sticky Header with safe area */}
+      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
         <button onClick={onClose} className="text-gray-400 flex items-center gap-2">
           <ArrowLeft size={20} />
           Закрыть сканер
@@ -203,8 +203,8 @@ const TicketView: React.FC<{
         }}
         onCancel={() => setShowMapConfirm(false)}
       />
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3">
+      {/* Sticky Header with safe area */}
+      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
         <button onClick={onClose} className="text-gray-400 flex items-center gap-2">
           <ArrowLeft size={20} />
           Назад
