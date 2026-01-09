@@ -962,8 +962,8 @@ const ProfileScreen: React.FC = () => {
                       name={member.first_name || 'User'}
                       size="md"
                       skin={skinData}
-                      role={null}
-                      tier={null}
+                      role={role}
+                      tier={member.subscription_tier === 'pro' ? 'pro' : member.subscription_tier === 'light' ? 'light' : null}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold truncate">
