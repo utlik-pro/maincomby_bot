@@ -483,8 +483,7 @@ const NetworkScreen: React.FC = () => {
               <Button
                 className="w-full"
                 onClick={() => {
-                  // Open PRO subscription link
-                  window.open('https://t.me/maincomapp_bot?start=subscribe_pro', '_blank')
+                  openTelegramLink('https://t.me/maincomapp_bot?start=subscribe')
                 }}
               >
                 <Crown size={18} className="mr-2" />
