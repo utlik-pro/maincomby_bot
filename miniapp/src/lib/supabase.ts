@@ -2142,10 +2142,10 @@ export async function uploadProfilePhoto(
 ): Promise<PhotoUploadResult> {
   const supabase = getSupabase()
 
-  // Validate file size (5MB max)
-  const maxSize = 5 * 1024 * 1024
+  // Validate file size (10MB max)
+  const maxSize = 10 * 1024 * 1024
   if (file.size > maxSize) {
-    return { success: false, error: 'Файл слишком большой (макс. 5MB)' }
+    return { success: false, error: 'Файл слишком большой (макс. 10MB)' }
   }
 
   // Validate file type
@@ -2176,7 +2176,9 @@ export async function uploadProfilePhoto(
 
   if (uploadError) {
     console.error('[uploadProfilePhoto] Upload error:', uploadError)
-    return { success: false, error: 'Ошибка загрузки файла' }
+    // Show actual error for debugging
+    const errorMsg = uploadError.message || 'Ошибка загрузки файла'
+    return { success: false, error: `Ошибка: ${errorMsg}` }
   }
 
   // Get public URL
@@ -2202,7 +2204,8 @@ export async function uploadProfilePhoto(
     console.error('[uploadProfilePhoto] Insert error:', insertError)
     // Cleanup uploaded file
     await supabase.storage.from('profile-photos').remove([filename])
-    return { success: false, error: 'Ошибка сохранения фото' }
+    const errorMsg = insertError.message || 'Ошибка сохранения фото'
+    return { success: false, error: `БД: ${errorMsg}` }
   }
 
   // Update profile photo_url if this is the primary photo
@@ -2347,6 +2350,7 @@ export async function reorderProfilePhotos(
 
 /**
  * Get approved profiles with photos for swipe feed
+ * Falls back to profiles without photos if profile_photos table doesn't exist
  */
 export async function getApprovedProfilesWithPhotos(
   excludeUserId: number,
@@ -2362,7 +2366,7 @@ export async function getApprovedProfilesWithPhotos(
 
   const swipedIds = swipedData?.map(s => s.swiped_id) || []
 
-  // Get profiles with photos
+  // Try to get profiles with photos first
   let query = supabase
     .from('bot_profiles')
     .select(`
@@ -2380,7 +2384,33 @@ export async function getApprovedProfilesWithPhotos(
     query = query.eq('city', city)
   }
 
-  const { data, error } = await query
+  let { data, error } = await query
+
+  // Fallback: if profile_photos table doesn't exist, query without it
+  if (error && error.message?.includes('profile_photos')) {
+    console.warn('[getApprovedProfilesWithPhotos] profile_photos table not found, using fallback')
+
+    let fallbackQuery = supabase
+      .from('bot_profiles')
+      .select(`
+        *,
+        user:bot_users(
+          *,
+          active_skin:avatar_skins(*)
+        )
+      `)
+      .eq('is_visible', true)
+      .neq('user_id', excludeUserId)
+
+    if (city) {
+      fallbackQuery = fallbackQuery.eq('city', city)
+    }
+
+    const fallbackResult = await fallbackQuery
+    data = fallbackResult.data
+    error = fallbackResult.error
+  }
+
   if (error) throw error
 
   // Filter and transform
