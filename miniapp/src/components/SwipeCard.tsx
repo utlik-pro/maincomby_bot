@@ -37,7 +37,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   onViewProfile,
   isProcessing = false
 }) => {
-  const { profile, user, photos, activeSkin } = cardData
+  const { profile, user, photos = [], activeSkin } = cardData
 
   // Motion values for drag
   const x = useMotionValue(0)

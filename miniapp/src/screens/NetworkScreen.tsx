@@ -195,73 +195,109 @@ const NetworkScreen: React.FC = () => {
     )
   }
 
-  // Profile detail view
+  // Profile detail view - full profile page
   if (showProfileDetail) {
     const p = showProfileDetail
-    return (
-      <div className="h-full overflow-y-auto">
-        <button onClick={() => setShowProfileDetail(null)} className="absolute top-4 left-4 z-20 text-white bg-black/50 rounded-full p-2">
-          <ArrowLeft size={20} />
-        </button>
+    const photos = p.photos || []
+    const displayName = `${p.user?.first_name || ''} ${p.user?.last_name || ''}`.trim() || 'Участник'
 
-        {/* Large Photo */}
-        <div className="w-full aspect-[3/4] max-h-[60vh] relative">
-          <PhotoGallery
-            photos={p.photos}
-            fallbackUrl={p.profile.photo_url}
-            userName={p.user?.first_name}
-            showIndicator={true}
-          />
+    return (
+      <div className="h-full overflow-y-auto pb-24">
+        {/* Header with back button */}
+        <div className="sticky top-0 z-20 bg-bg/90 backdrop-blur-sm p-4 flex items-center gap-3 border-b border-white/10">
+          <button
+            onClick={() => setShowProfileDetail(null)}
+            className="w-10 h-10 bg-bg-card rounded-full flex items-center justify-center"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-lg font-semibold">Профиль</h1>
         </div>
 
-        {/* Profile Info */}
-        <div className="p-4 space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold">{p.user?.first_name} {p.user?.last_name}</h2>
-            {p.profile.occupation && (
-              <p className="text-accent flex items-center gap-1 mt-1">
-                <Briefcase size={16} />
-                {p.profile.occupation}
-              </p>
-            )}
-            {p.profile.city && (
-              <p className="text-gray-400 flex items-center gap-1">
-                <MapPin size={14} />
-                {p.profile.city}
-              </p>
-            )}
+        {/* Profile Header - compact photo + name */}
+        <div className="p-4">
+          <div className="flex items-start gap-4">
+            {/* Photo - small square */}
+            <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-bg-card">
+              {photos.length > 0 || p.profile.photo_url ? (
+                <img
+                  src={photos[0]?.photo_url || p.profile.photo_url || ''}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <User size={40} className="text-gray-500" />
+                </div>
+              )}
+            </div>
+
+            {/* Name and basic info */}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold truncate">{displayName}</h2>
+              {p.profile.occupation && (
+                <p className="text-accent flex items-center gap-1.5 mt-1 text-sm">
+                  <Briefcase size={14} />
+                  <span className="truncate">{p.profile.occupation}</span>
+                </p>
+              )}
+              {p.profile.city && (
+                <p className="text-gray-400 flex items-center gap-1.5 text-sm">
+                  <MapPin size={14} />
+                  {p.profile.city}
+                </p>
+              )}
+            </div>
           </div>
 
+          {/* Photo gallery if multiple photos */}
+          {photos.length > 1 && (
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+              {photos.map((photo, i) => (
+                <div key={photo.id || i} className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                  <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Profile sections */}
+        <div className="px-4 space-y-3">
+          {/* Bio */}
           {p.profile.bio && (
             <Card>
               <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
                 <User size={14} />
                 О себе
               </h4>
-              <p>{p.profile.bio}</p>
+              <p className="text-sm leading-relaxed">{p.profile.bio}</p>
             </Card>
           )}
 
+          {/* Looking for */}
           {p.profile.looking_for && (
             <Card>
               <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
-                <Target size={14} />
+                <Target size={14} className="text-accent" />
                 Ищу
               </h4>
-              <p>{p.profile.looking_for}</p>
+              <p className="text-sm leading-relaxed">{p.profile.looking_for}</p>
             </Card>
           )}
 
+          {/* Can help with */}
           {p.profile.can_help_with && (
             <Card>
               <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
-                <HandshakeIcon size={14} />
+                <HandshakeIcon size={14} className="text-success" />
                 Могу помочь
               </h4>
-              <p>{p.profile.can_help_with}</p>
+              <p className="text-sm leading-relaxed">{p.profile.can_help_with}</p>
             </Card>
           )}
 
+          {/* Skills */}
           {p.profile.skills && p.profile.skills.length > 0 && (
             <Card>
               <h4 className="text-sm text-gray-400 mb-2">Навыки</h4>
@@ -272,11 +308,23 @@ const NetworkScreen: React.FC = () => {
               </div>
             </Card>
           )}
+
+          {/* Interests */}
+          {p.profile.interests && p.profile.interests.length > 0 && (
+            <Card>
+              <h4 className="text-sm text-gray-400 mb-2">Интересы</h4>
+              <div className="flex flex-wrap gap-2">
+                {p.profile.interests.map((interest, i) => (
+                  <span key={i} className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm">{interest}</span>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg to-transparent">
-          <div className="flex gap-4">
+        {/* Action Buttons - fixed at bottom */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-bg via-bg to-transparent">
+          <div className="flex gap-3 max-w-lg mx-auto">
             <Button
               variant="outline"
               className="flex-1"
