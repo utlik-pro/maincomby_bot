@@ -5,7 +5,6 @@ import { QRCodeSVG } from 'qrcode.react'
 import { format, isToday, isTomorrow, addHours, isBefore, isAfter } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
-  ArrowLeft,
   Calendar,
   CalendarDays,
   Clock,
@@ -23,7 +22,7 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported } from '@/lib/telegram'
+import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton } from '@/lib/telegram'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PhoneDialog } from '@/components/PhoneDialog'
 import {
@@ -101,15 +100,7 @@ const QRScanner: React.FC<{ onScan: (code: string) => void; onClose: () => void 
   }
 
   return (
-    <div className="fixed inset-0 bg-bg z-50 flex flex-col">
-      {/* Sticky Header with safe area */}
-      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
-        <button onClick={onClose} className="text-gray-400 flex items-center gap-2">
-          <ArrowLeft size={20} />
-          Закрыть сканер
-        </button>
-      </div>
-
+    <div className="fixed inset-0 bg-bg z-50 flex flex-col pt-4">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4">
         <h1 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -189,7 +180,7 @@ const TicketView: React.FC<{
   const mapUrl = getMapUrl(event)
 
   return (
-    <div className="fixed inset-0 bg-bg z-50 flex flex-col">
+    <div className="fixed inset-0 bg-bg z-50 flex flex-col pt-4">
       {/* Map confirmation dialog */}
       <ConfirmDialog
         isOpen={showMapConfirm}
@@ -203,13 +194,6 @@ const TicketView: React.FC<{
         }}
         onCancel={() => setShowMapConfirm(false)}
       />
-      {/* Sticky Header with safe area */}
-      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card px-4 py-3" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
-        <button onClick={onClose} className="text-gray-400 flex items-center gap-2">
-          <ArrowLeft size={20} />
-          Назад
-        </button>
-      </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4 pb-24">
@@ -331,13 +315,6 @@ const EventDetail: React.FC<{
         }}
         onCancel={() => setShowMapConfirm(false)}
       />
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card">
-        <button onClick={onClose} className="p-4 text-gray-400 flex items-center gap-2">
-          <ArrowLeft size={20} />
-          Назад
-        </button>
-      </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto pb-6">
@@ -466,6 +443,23 @@ const EventsScreen: React.FC = () => {
     show: false,
     eventId: null,
   })
+
+  // Handle Telegram BackButton
+  useEffect(() => {
+    if (showScanner) {
+      backButton.show(() => setShowScanner(false))
+    } else if (showTicket) {
+      backButton.show(() => setShowTicket(null))
+    } else if (selectedEvent) {
+      backButton.show(() => setSelectedEvent(null))
+    } else {
+      backButton.hide()
+    }
+
+    return () => {
+      backButton.hide()
+    }
+  }, [showScanner, showTicket, selectedEvent])
 
   // Fetch events
   const { data: events, isLoading } = useQuery({
