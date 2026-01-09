@@ -462,6 +462,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, {
   superlikesPerDay: number
   priorityInFeed: boolean
   advancedFilters: boolean
+  canMessageMatches: boolean
   badge: string | null
 }> = {
   free: {
@@ -471,6 +472,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, {
     superlikesPerDay: 0,
     priorityInFeed: false,
     advancedFilters: false,
+    canMessageMatches: false,
     badge: null,
   },
   light: {
@@ -480,6 +482,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, {
     superlikesPerDay: 1,
     priorityInFeed: false,
     advancedFilters: true,
+    canMessageMatches: true,
     badge: null,
   },
   pro: {
@@ -489,6 +492,7 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, {
     superlikesPerDay: 5,
     priorityInFeed: true,
     advancedFilters: true,
+    canMessageMatches: true,
     badge: null,
   },
 }

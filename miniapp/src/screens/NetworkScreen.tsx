@@ -16,9 +16,10 @@ import {
   Filter,
   Crown,
   Clock,
+  Lock,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, backButton } from '@/lib/telegram'
+import { hapticFeedback, backButton, openTelegramLink } from '@/lib/telegram'
 import {
   getApprovedProfilesWithPhotos,
   createSwipe,
@@ -41,6 +42,7 @@ const NetworkScreen: React.FC = () => {
   const [showMatches, setShowMatches] = useState(false)
   const [showProfileDetail, setShowProfileDetail] = useState<SwipeCardProfile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
   useEffect(() => {
     if (deepLinkTarget === 'matches') {
@@ -164,6 +166,29 @@ const NetworkScreen: React.FC = () => {
     }
   }
 
+  // Handle message to match
+  const handleMessageMatch = (matchUser: any) => {
+    const currentTier = getSubscriptionTier()
+
+    // Free users can't message matches
+    if (currentTier === 'free') {
+      setShowSubscriptionModal(true)
+      hapticFeedback.error()
+      return
+    }
+
+    // Open Telegram chat
+    hapticFeedback.light()
+    if (matchUser?.username) {
+      openTelegramLink(`https://t.me/${matchUser.username}`)
+    } else if (matchUser?.tg_user_id) {
+      // Fallback to user ID if no username
+      openTelegramLink(`tg://user?id=${matchUser.tg_user_id}`)
+    } else {
+      addToast('Не удалось открыть чат', 'error')
+    }
+  }
+
   // Matches view
   if (showMatches) {
     return (
@@ -199,7 +224,11 @@ const NetworkScreen: React.FC = () => {
                     <div className="font-semibold">{matchUser?.first_name} {matchUser?.last_name}</div>
                     <div className="text-sm text-gray-400">{matchProfile?.occupation || 'Участник'}</div>
                   </div>
-                  <Button variant="secondary" size="sm">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleMessageMatch(matchUser)}
+                  >
                     <MessageCircle size={16} />
                   </Button>
                 </Card>
@@ -208,6 +237,40 @@ const NetworkScreen: React.FC = () => {
           </div>
         ) : (
           <EmptyState icon={<Search size={48} className="text-gray-500" />} title="Пока нет матчей" description="Свайпайте вправо, чтобы найти совпадения!" />
+        )}
+
+        {/* Subscription Modal */}
+        {showSubscriptionModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <Card className="w-full max-w-sm mx-4 p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/20 flex items-center justify-center">
+                <Lock size={32} className="text-accent" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Нужна подписка</h2>
+              <p className="text-gray-400 mb-6">
+                Чтобы писать матчам, оформите подписку Light или PRO
+              </p>
+              <div className="space-y-3">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    openTelegramLink('https://t.me/maincomapp_bot?start=subscribe')
+                    setShowSubscriptionModal(false)
+                  }}
+                >
+                  <Crown size={18} className="mr-2" />
+                  Оформить подписку
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setShowSubscriptionModal(false)}
+                >
+                  Закрыть
+                </Button>
+              </div>
+            </Card>
+          </div>
         )}
       </div>
     )
