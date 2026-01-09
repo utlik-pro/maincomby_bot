@@ -193,6 +193,58 @@ export async function createSwipe(swiperId: number, swipedId: number, action: 'l
   return data
 }
 
+/**
+ * Increment daily swipes counter for a user
+ * Resets counter if it's a new day
+ */
+export async function incrementDailySwipes(userId: number): Promise<{ daily_swipes_used: number; daily_swipes_reset_at: string }> {
+  const supabase = getSupabase()
+
+  // Get current user data
+  const { data: user, error: fetchError } = await supabase
+    .from('bot_users')
+    .select('daily_swipes_used, daily_swipes_reset_at')
+    .eq('id', userId)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  const now = new Date()
+  const resetAt = user?.daily_swipes_reset_at ? new Date(user.daily_swipes_reset_at) : null
+
+  // Check if we need to reset (new day or never set)
+  const needsReset = !resetAt || now >= resetAt
+
+  let newCount: number
+  let newResetAt: string
+
+  if (needsReset) {
+    // Reset to 1 and set next reset time to tomorrow midnight
+    newCount = 1
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    newResetAt = tomorrow.toISOString()
+  } else {
+    // Increment counter
+    newCount = (user?.daily_swipes_used || 0) + 1
+    newResetAt = user?.daily_swipes_reset_at || now.toISOString()
+  }
+
+  // Update user
+  const { error: updateError } = await supabase
+    .from('bot_users')
+    .update({
+      daily_swipes_used: newCount,
+      daily_swipes_reset_at: newResetAt
+    })
+    .eq('id', userId)
+
+  if (updateError) throw updateError
+
+  return { daily_swipes_used: newCount, daily_swipes_reset_at: newResetAt }
+}
+
 export async function getCoreTeamUsers() {
   const supabase = getSupabase()
   const { data, error } = await supabase

@@ -14,6 +14,8 @@ import {
   MessageCircle,
   Sparkles,
   Filter,
+  Crown,
+  Clock,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, backButton } from '@/lib/telegram'
@@ -24,6 +26,7 @@ import {
   createMatch,
   getUserMatches,
   createNotification,
+  incrementDailySwipes,
 } from '@/lib/supabase'
 import { AvatarWithSkin, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { SwipeCard } from '@/components/SwipeCard'
@@ -31,7 +34,7 @@ import { PhotoGallery } from '@/components/PhotoGallery'
 import type { SwipeCardProfile } from '@/types'
 
 const NetworkScreen: React.FC = () => {
-  const { user, getSubscriptionTier, getDailySwipesRemaining, profile, deepLinkTarget, setDeepLinkTarget } = useAppStore()
+  const { user, setUser, getSubscriptionTier, getDailySwipesRemaining, profile, deepLinkTarget, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -85,10 +88,10 @@ const NetworkScreen: React.FC = () => {
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (!currentProfile || !user || isProcessing) return
 
-    if (direction === 'right' && swipesRemaining <= 0 && tier === 'free') {
+    // Check swipe limit for non-PRO users
+    if (swipesRemaining <= 0 && tier !== 'pro') {
       hapticFeedback.error()
-      addToast('Лимит свайпов исчерпан. Получите Premium!', 'error')
-      return
+      return // Will show the "swipes exhausted" screen
     }
 
     setIsProcessing(true)
@@ -99,6 +102,21 @@ const NetworkScreen: React.FC = () => {
 
       // Save swipe
       await createSwipe(user.id, currentProfile.profile.user_id, action)
+
+      // Increment daily swipes counter (for non-PRO users)
+      if (tier !== 'pro') {
+        try {
+          const { daily_swipes_used, daily_swipes_reset_at } = await incrementDailySwipes(user.id)
+          // Update user in store
+          setUser({
+            ...user,
+            daily_swipes_used,
+            daily_swipes_reset_at
+          })
+        } catch (e) {
+          console.warn('Failed to increment swipes:', e)
+        }
+      }
 
       // Check for match
       if (action === 'like') {
@@ -385,6 +403,48 @@ const NetworkScreen: React.FC = () => {
             title="Ошибка загрузки"
             description="Не удалось загрузить профили."
           />
+        ) : swipesRemaining <= 0 && tier !== 'pro' ? (
+          // Swipes exhausted screen
+          <Card className="w-full max-w-sm p-6 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-accent/20 flex items-center justify-center">
+              <Clock size={40} className="text-accent" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Свайпы закончились</h2>
+            <p className="text-gray-400 mb-6">
+              {tier === 'free'
+                ? 'У вас было 5 свайпов на сегодня. Новые свайпы будут доступны завтра.'
+                : 'У вас было 20 свайпов на сегодня. Новые свайпы будут доступны завтра.'}
+            </p>
+
+            <div className="space-y-3">
+              <Button
+                className="w-full"
+                onClick={() => {
+                  // Open PRO subscription link
+                  window.open('https://t.me/maincomapp_bot?start=subscribe_pro', '_blank')
+                }}
+              >
+                <Crown size={18} className="mr-2" />
+                Получить PRO — безлимит
+              </Button>
+
+              <p className="text-xs text-gray-500">
+                PRO-подписка даёт безлимитные свайпы и другие преимущества
+              </p>
+            </div>
+
+            {/* Show matches button */}
+            {matches && matches.length > 0 && (
+              <Button
+                variant="outline"
+                className="w-full mt-4"
+                onClick={() => setShowMatches(true)}
+              >
+                <Heart size={16} className="mr-2 text-success fill-success" />
+                Посмотреть матчи ({matches.length})
+              </Button>
+            )}
+          </Card>
         ) : !currentProfile ? (
           <EmptyState
             icon={<Sparkles size={48} className="text-accent" />}
@@ -402,7 +462,7 @@ const NetworkScreen: React.FC = () => {
       </div>
 
       {/* Action Buttons */}
-      {currentProfile && !isLoading && (
+      {currentProfile && !isLoading && swipesRemaining > 0 && (
         <div className="flex justify-center gap-6 py-4">
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -422,7 +482,7 @@ const NetworkScreen: React.FC = () => {
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => handleSwipe('right')}
-            disabled={isProcessing || (swipesRemaining <= 0 && tier === 'free')}
+            disabled={isProcessing}
             className="w-16 h-16 rounded-full bg-accent flex items-center justify-center disabled:opacity-50"
           >
             <Heart size={28} className="text-bg" />
