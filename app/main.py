@@ -19,6 +19,7 @@ from .handlers.broadcast import router as broadcast_router
 from .handlers.matching import router as matching_router
 from .handlers.feedback import router as feedback_router
 from .handlers.broadcast_feedback import router as broadcast_feedback_router
+from .handlers.payments import router as payments_router
 
 
 async def main() -> None:
@@ -245,6 +246,8 @@ async def main() -> None:
     dp.include_router(welcome_router)
     # 1. events_router - для обработки /start с deep link
     dp.include_router(events_router)
+    # 1.5. payments_router - оплата подписок через Telegram Stars
+    dp.include_router(payments_router)
     dp.include_router(event_admin_router)
     dp.include_router(broadcast_router)
     # 2. matching_router - система матчинга

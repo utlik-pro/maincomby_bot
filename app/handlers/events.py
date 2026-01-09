@@ -166,6 +166,13 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
         await cmd_checkin(message)
         return
 
+    # Deep link для подписки: /start subscribe
+    if deep_link == "subscribe":
+        logger.info(f"Subscription deep link от пользователя {message.from_user.id}")
+        from app.handlers.payments import cmd_subscribe
+        await cmd_subscribe(message)
+        return
+
     async with get_session() as session:
         # Парсим deep link (формат: /start source_utm_campaign_referrer)
         parts = deep_link.split("_")

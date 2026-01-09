@@ -115,7 +115,12 @@ class SupabaseSync:
                 "utm_medium": user.utm_medium,
                 "utm_campaign": user.utm_campaign,
                 "referrer": user.referrer,
-                "team_role": getattr(user, 'team_role', None)
+                "team_role": getattr(user, 'team_role', None),
+                # Subscription fields
+                "subscription_tier": getattr(user, 'subscription_tier', 'free'),
+                "subscription_expires_at": user.subscription_expires_at.isoformat() if getattr(user, 'subscription_expires_at', None) else None,
+                "daily_swipes_used": getattr(user, 'daily_swipes_used', 0),
+                "daily_swipes_reset_at": user.daily_swipes_reset_at.isoformat() if getattr(user, 'daily_swipes_reset_at', None) else None,
             }
 
             if existing.data:

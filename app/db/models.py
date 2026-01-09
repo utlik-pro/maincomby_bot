@@ -33,6 +33,12 @@ class User(Base):
     referrer: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)  # Кто пригласил
     team_role: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)  # core, partner, sponsor, volunteer, speaker
 
+    # Subscription fields
+    subscription_tier: Mapped[str] = mapped_column(String(32), default='free')  # free, light, pro
+    subscription_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    daily_swipes_used: Mapped[int] = mapped_column(Integer, default=0)
+    daily_swipes_reset_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     posts: Mapped[list[Post]] = relationship(back_populates="author")
     roles: Mapped[list[UserRole]] = relationship(back_populates="user")
     registrations: Mapped[list["EventRegistration"]] = relationship(back_populates="user")
@@ -257,3 +263,17 @@ class EventFeedback(Base):
     user: Mapped[User] = relationship()
 
 
+class Payment(Base):
+    """Telegram Stars payment record."""
+    __tablename__ = "bot_payments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), index=True)
+    amount_stars: Mapped[int] = mapped_column(Integer)  # Amount in Telegram Stars
+    subscription_type: Mapped[str] = mapped_column(String(32))  # light, pro
+    telegram_payment_charge_id: Mapped[str] = mapped_column(String(256), unique=True)  # Telegram payment ID
+    provider_payment_charge_id: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default='completed')  # completed, refunded
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    user: Mapped[User] = relationship()
