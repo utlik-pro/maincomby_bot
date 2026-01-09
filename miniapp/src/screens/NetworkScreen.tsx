@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Heart,
   X,
@@ -13,21 +13,22 @@ import {
   HandshakeIcon,
   MessageCircle,
   Sparkles,
+  Filter,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, backButton } from '@/lib/telegram'
 import {
-  getApprovedProfiles,
+  getApprovedProfilesWithPhotos,
   createSwipe,
   checkMutualLike,
   createMatch,
   getUserMatches,
   createNotification,
 } from '@/lib/supabase'
-import { Avatar, AvatarWithSkin, Button, Card, EmptyState, Skeleton } from '@/components/ui'
-import { SUBSCRIPTION_LIMITS, UserProfile, User as UserType } from '@/types'
-
-type ProfileWithUser = UserProfile & { user: UserType }
+import { AvatarWithSkin, Button, Card, EmptyState, Skeleton } from '@/components/ui'
+import { SwipeCard } from '@/components/SwipeCard'
+import { PhotoGallery } from '@/components/PhotoGallery'
+import type { SwipeCardProfile } from '@/types'
 
 const NetworkScreen: React.FC = () => {
   const { user, getSubscriptionTier, getDailySwipesRemaining, profile, deepLinkTarget, setDeepLinkTarget } = useAppStore()
@@ -35,7 +36,7 @@ const NetworkScreen: React.FC = () => {
   const queryClient = useQueryClient()
 
   const [showMatches, setShowMatches] = useState(false)
-  const [showProfileDetail, setShowProfileDetail] = useState<ProfileWithUser | null>(null)
+  const [showProfileDetail, setShowProfileDetail] = useState<SwipeCardProfile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
@@ -62,13 +63,12 @@ const NetworkScreen: React.FC = () => {
   const tier = getSubscriptionTier()
   const swipesRemaining = getDailySwipesRemaining()
 
-  // Простой запрос профилей - каждый раз свежие данные
+  // Fetch profiles with photos
   const { data: profiles, isLoading, error: profilesError, refetch } = useQuery({
-    queryKey: ['swipeProfiles', user?.id],
+    queryKey: ['swipeProfilesWithPhotos', user?.id],
     queryFn: async () => {
       if (!user) return []
-      const allProfiles = await getApprovedProfiles(user.id, profile?.city)
-      return allProfiles as ProfileWithUser[]
+      return getApprovedProfilesWithPhotos(user.id, profile?.city)
     },
     enabled: !!user,
   })
@@ -79,7 +79,7 @@ const NetworkScreen: React.FC = () => {
     enabled: !!user,
   })
 
-  // Текущий профиль - просто первый из списка
+  // Current profile - first from list
   const currentProfile = profiles && profiles.length > 0 ? profiles[0] : undefined
 
   const handleSwipe = async (direction: 'left' | 'right') => {
@@ -97,35 +97,35 @@ const NetworkScreen: React.FC = () => {
     try {
       const action = direction === 'right' ? 'like' : 'skip'
 
-      // Сохраняем свайп
-      await createSwipe(user.id, currentProfile.user_id, action)
+      // Save swipe
+      await createSwipe(user.id, currentProfile.profile.user_id, action)
 
-      // Проверяем матч
+      // Check for match
       if (action === 'like') {
-        const isMutual = await checkMutualLike(user.id, currentProfile.user_id)
+        const isMutual = await checkMutualLike(user.id, currentProfile.profile.user_id)
         if (isMutual) {
-          await createMatch(user.id, currentProfile.user_id)
+          await createMatch(user.id, currentProfile.profile.user_id)
 
           const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Участник'
           const theirName = `${currentProfile.user?.first_name || ''} ${currentProfile.user?.last_name || ''}`.trim() || 'Участник'
 
-          // Уведомления
-          createNotification(user.id, 'match', 'Новый контакт!', `${theirName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: currentProfile.user_id }).catch(console.error)
-          createNotification(currentProfile.user_id, 'match', 'Новый контакт!', `${myName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: user.id }).catch(console.error)
+          // Notifications
+          createNotification(user.id, 'match', 'Новый контакт!', `${theirName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: currentProfile.profile.user_id }).catch(console.error)
+          createNotification(currentProfile.profile.user_id, 'match', 'Новый контакт!', `${myName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: user.id }).catch(console.error)
 
-          // Telegram уведомления
+          // Telegram notifications
           if (currentProfile.user?.tg_user_id) {
             fetch('https://iishnica.vercel.app/api/send-match-notification', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userTgId: currentProfile.user.tg_user_id, matchName: myName, matchedUserId: user.id, userId: currentProfile.user_id }),
+              body: JSON.stringify({ userTgId: currentProfile.user.tg_user_id, matchName: myName, matchedUserId: user.id, userId: currentProfile.profile.user_id }),
             }).catch(console.error)
           }
           if (user.tg_user_id) {
             fetch('https://iishnica.vercel.app/api/send-match-notification', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userTgId: user.tg_user_id, matchName: theirName, matchedUserId: currentProfile.user_id, userId: user.id }),
+              body: JSON.stringify({ userTgId: user.tg_user_id, matchName: theirName, matchedUserId: currentProfile.profile.user_id, userId: user.id }),
             }).catch(console.error)
           }
 
@@ -135,7 +135,7 @@ const NetworkScreen: React.FC = () => {
         }
       }
 
-      // Рефетчим профили - свайпнутый пользователь уже не вернётся
+      // Refetch profiles
       await refetch()
 
     } catch (error) {
@@ -198,140 +198,188 @@ const NetworkScreen: React.FC = () => {
   // Profile detail view
   if (showProfileDetail) {
     const p = showProfileDetail
-    const profileSkin = (p.user as any)?.active_skin
-    const profileSkinData = Array.isArray(profileSkin) ? profileSkin[0] : profileSkin
     return (
-      <div className="p-4">
-        <button onClick={() => setShowProfileDetail(null)} className="text-gray-400 mb-4 flex items-center gap-2">
+      <div className="h-full overflow-y-auto">
+        <button onClick={() => setShowProfileDetail(null)} className="absolute top-4 left-4 z-20 text-white bg-black/50 rounded-full p-2">
           <ArrowLeft size={20} />
-          Назад
         </button>
 
-        <Card className="mb-6">
-          <div className="flex gap-4 items-center">
-            <AvatarWithSkin
-              src={p.photo_url}
-              name={p.user?.first_name}
-              size="xl"
-              skin={profileSkinData}
-              role={p.user?.team_role}
-              tier={(p.user as any)?.subscription_tier === 'pro' ? 'pro' : (p.user as any)?.subscription_tier === 'light' ? 'light' : null}
-            />
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold truncate">{p.user?.first_name} {p.user?.last_name}</h2>
-              <p className="text-accent flex items-center gap-1"><Briefcase size={14} /><span className="truncate">{p.occupation || 'Участник'}</span></p>
-              <p className="text-gray-400 flex items-center gap-1"><MapPin size={14} />{p.city}</p>
-            </div>
-          </div>
-        </Card>
-
-        <div className="space-y-4">
-          {p.bio && <Card><h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2"><User size={14} />О себе</h4><p>{p.bio}</p></Card>}
-          {p.looking_for && <Card><h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2"><Target size={14} />Ищу</h4><p>{p.looking_for}</p></Card>}
-          {p.can_help_with && <Card><h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2"><HandshakeIcon size={14} />Могу помочь</h4><p>{p.can_help_with}</p></Card>}
+        {/* Large Photo */}
+        <div className="w-full aspect-[3/4] max-h-[60vh] relative">
+          <PhotoGallery
+            photos={p.photos}
+            fallbackUrl={p.profile.photo_url}
+            userName={p.user?.first_name}
+            showIndicator={true}
+          />
         </div>
 
-        <div className="flex gap-4 mt-6">
-          <Button variant="outline" className="flex-1" onClick={() => { setShowProfileDetail(null); handleSwipe('left') }} disabled={isProcessing}>
-            <X size={18} /> Скип
-          </Button>
-          <Button className="flex-1" onClick={() => { setShowProfileDetail(null); handleSwipe('right') }} disabled={isProcessing}>
-            <Heart size={18} /> Лайк
-          </Button>
+        {/* Profile Info */}
+        <div className="p-4 space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold">{p.user?.first_name} {p.user?.last_name}</h2>
+            {p.profile.occupation && (
+              <p className="text-accent flex items-center gap-1 mt-1">
+                <Briefcase size={16} />
+                {p.profile.occupation}
+              </p>
+            )}
+            {p.profile.city && (
+              <p className="text-gray-400 flex items-center gap-1">
+                <MapPin size={14} />
+                {p.profile.city}
+              </p>
+            )}
+          </div>
+
+          {p.profile.bio && (
+            <Card>
+              <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+                <User size={14} />
+                О себе
+              </h4>
+              <p>{p.profile.bio}</p>
+            </Card>
+          )}
+
+          {p.profile.looking_for && (
+            <Card>
+              <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+                <Target size={14} />
+                Ищу
+              </h4>
+              <p>{p.profile.looking_for}</p>
+            </Card>
+          )}
+
+          {p.profile.can_help_with && (
+            <Card>
+              <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+                <HandshakeIcon size={14} />
+                Могу помочь
+              </h4>
+              <p>{p.profile.can_help_with}</p>
+            </Card>
+          )}
+
+          {p.profile.skills && p.profile.skills.length > 0 && (
+            <Card>
+              <h4 className="text-sm text-gray-400 mb-2">Навыки</h4>
+              <div className="flex flex-wrap gap-2">
+                {p.profile.skills.map((skill, i) => (
+                  <span key={i} className="px-3 py-1 bg-bg rounded-full text-sm">{skill}</span>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg to-transparent">
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => { setShowProfileDetail(null); handleSwipe('left') }}
+              disabled={isProcessing}
+            >
+              <X size={18} /> Пропустить
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => { setShowProfileDetail(null); handleSwipe('right') }}
+              disabled={isProcessing}
+            >
+              <Heart size={18} /> Интересно
+            </Button>
+          </div>
         </div>
       </div>
     )
   }
 
-  // Main view
+  // Main view - Tinder style
   return (
-    <div className="p-4">
+    <div className="h-full flex flex-col p-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-xl font-bold">Нетворкинг</h1>
-          <p className="text-gray-400 text-sm">Найди полезные контакты</p>
+          <p className="text-gray-400 text-sm">{swipesRemaining} свайпов осталось</p>
         </div>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowMatches(true)} className="bg-bg-card px-4 py-2 rounded-xl flex items-center gap-2">
-          <Heart size={16} className="text-success fill-success" />
-          <span className="font-semibold">{matches?.length || 0}</span>
-        </motion.button>
+        <div className="flex gap-2">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="w-10 h-10 bg-bg-card rounded-xl flex items-center justify-center"
+          >
+            <Filter size={18} className="text-gray-400" />
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowMatches(true)}
+            className="bg-bg-card px-4 py-2 rounded-xl flex items-center gap-2"
+          >
+            <Heart size={16} className="text-success fill-success" />
+            <span className="font-semibold">{matches?.length || 0}</span>
+          </motion.button>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <Card className="text-center py-3">
-          <div className="text-xl font-bold text-accent">{matches?.length || 0}</div>
-          <div className="text-xs text-gray-400">Матчей</div>
-        </Card>
-        <Card className="text-center py-3">
-          <div className="text-xl font-bold text-success">{swipesRemaining}</div>
-          <div className="text-xs text-gray-400">Свайпов</div>
-        </Card>
-        <Card className="text-center py-3">
-          <div className="text-xl font-bold">{profiles?.length || 0}</div>
-          <div className="text-xs text-gray-400">В очереди</div>
-        </Card>
-      </div>
-
-      {/* Swipe Card */}
-      {isLoading ? (
-        <Card className="h-96 flex items-center justify-center">
-          <Skeleton className="w-24 h-24 rounded-full" />
-        </Card>
-      ) : profilesError ? (
-        <EmptyState icon={<X size={48} className="text-danger" />} title="Ошибка загрузки" description="Не удалось загрузить профили." />
-      ) : !currentProfile ? (
-        <EmptyState icon={<Sparkles size={48} className="text-accent" />} title="Все просмотрено!" description="Загляните позже, появятся новые участники" />
-      ) : (
-        <>
-          <Card className="p-4">
-            <div className="flex gap-4 items-start">
-              <div className="flex-shrink-0">
-                {(() => {
-                  const swipeSkin = (currentProfile.user as any)?.active_skin
-                  const swipeSkinData = Array.isArray(swipeSkin) ? swipeSkin[0] : swipeSkin
-                  return (
-                    <AvatarWithSkin
-                      src={currentProfile.photo_url}
-                      name={currentProfile.user?.first_name}
-                      size="xl"
-                      skin={swipeSkinData}
-                      role={currentProfile.user?.team_role}
-                      tier={(currentProfile.user as any)?.subscription_tier === 'pro' ? 'pro' : (currentProfile.user as any)?.subscription_tier === 'light' ? 'light' : null}
-                    />
-                  )
-                })()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-bold truncate">{currentProfile.user?.first_name} {currentProfile.user?.last_name}</h2>
-                <p className="text-accent text-sm flex items-center gap-1 mb-1"><Briefcase size={12} /><span className="truncate">{currentProfile.occupation || 'Участник'}</span></p>
-                <p className="text-gray-500 text-xs flex items-center gap-1 mb-2"><MapPin size={10} />{currentProfile.city}</p>
-                {currentProfile.bio && <p className="text-gray-400 text-sm italic line-clamp-2">"{currentProfile.bio}"</p>}
-              </div>
-            </div>
-            {(currentProfile.looking_for || currentProfile.can_help_with) && (
-              <div className="mt-3 pt-3 border-t border-bg space-y-2">
-                {currentProfile.looking_for && <div className="flex gap-2"><Target size={14} className="text-accent flex-shrink-0 mt-0.5" /><div className="text-sm text-gray-300 line-clamp-2">{currentProfile.looking_for}</div></div>}
-                {currentProfile.can_help_with && <div className="flex gap-2"><HandshakeIcon size={14} className="text-success flex-shrink-0 mt-0.5" /><div className="text-sm text-gray-300 line-clamp-2">{currentProfile.can_help_with}</div></div>}
-              </div>
-            )}
+      {/* Swipe Card Area */}
+      <div className="flex-1 flex items-center justify-center">
+        {isLoading ? (
+          <Card className="w-full aspect-[3/4] max-h-[calc(100vh-220px)] flex items-center justify-center">
+            <Skeleton className="w-32 h-32 rounded-full" />
           </Card>
+        ) : profilesError ? (
+          <EmptyState
+            icon={<X size={48} className="text-danger" />}
+            title="Ошибка загрузки"
+            description="Не удалось загрузить профили."
+          />
+        ) : !currentProfile ? (
+          <EmptyState
+            icon={<Sparkles size={48} className="text-accent" />}
+            title="Все просмотрено!"
+            description="Загляните позже, появятся новые участники"
+          />
+        ) : (
+          <SwipeCard
+            profile={currentProfile}
+            onSwipe={handleSwipe}
+            onViewProfile={() => setShowProfileDetail(currentProfile)}
+            isProcessing={isProcessing}
+          />
+        )}
+      </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-center gap-6 mt-6">
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleSwipe('left')} disabled={isProcessing} className="w-16 h-16 rounded-full border-2 border-danger flex items-center justify-center disabled:opacity-50">
-              <X size={28} className="text-danger" />
-            </motion.button>
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowProfileDetail(currentProfile)} className="w-14 h-14 rounded-full bg-bg-card flex items-center justify-center">
-              <User size={24} className="text-gray-400" />
-            </motion.button>
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleSwipe('right')} disabled={isProcessing || (swipesRemaining <= 0 && tier === 'free')} className="w-16 h-16 rounded-full bg-success flex items-center justify-center disabled:opacity-50">
-              <Heart size={28} className="text-bg" />
-            </motion.button>
-          </div>
-          <p className="text-center text-gray-500 text-xs mt-4">Пропустить • Профиль • Интересен</p>
-        </>
+      {/* Action Buttons */}
+      {currentProfile && !isLoading && (
+        <div className="flex justify-center gap-6 py-4">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => handleSwipe('left')}
+            disabled={isProcessing}
+            className="w-16 h-16 rounded-full border-2 border-danger flex items-center justify-center disabled:opacity-50"
+          >
+            <X size={28} className="text-danger" />
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowProfileDetail(currentProfile)}
+            className="w-14 h-14 rounded-full bg-bg-card flex items-center justify-center"
+          >
+            <User size={24} className="text-gray-400" />
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => handleSwipe('right')}
+            disabled={isProcessing || (swipesRemaining <= 0 && tier === 'free')}
+            className="w-16 h-16 rounded-full bg-accent flex items-center justify-center disabled:opacity-50"
+          >
+            <Heart size={28} className="text-bg" />
+          </motion.button>
+        </div>
       )}
     </div>
   )

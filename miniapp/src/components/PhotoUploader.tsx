@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, X, Image, Loader2 } from 'lucide-react'
 import type { ProfilePhoto } from '@/types'
+import { resizeImageForProfile, formatFileSize } from '@/lib/imageUtils'
 
 interface PhotoUploaderProps {
   photos: ProfilePhoto[]
@@ -42,11 +43,38 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     fileInputRef.current?.click()
   }
 
+  const [resizingStatus, setResizingStatus] = useState<string | null>(null)
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || selectedPosition === null) return
 
-    await onPhotoUpload(file, selectedPosition)
+    try {
+      // Show resizing status
+      const originalSize = formatFileSize(file.size)
+      setResizingStatus(`${originalSize}...`)
+
+      // Resize image for optimal quality and size
+      // 1200x1600 is ideal for 3:4 profile cards
+      const resizedFile = await resizeImageForProfile(file, {
+        maxWidth: 1200,
+        maxHeight: 1600,
+        quality: 0.85,
+        format: 'jpeg'
+      })
+
+      const newSize = formatFileSize(resizedFile.size)
+      console.log(`[PhotoUploader] Resized: ${originalSize} -> ${newSize}`)
+
+      setResizingStatus(null)
+      await onPhotoUpload(resizedFile, selectedPosition)
+    } catch (error) {
+      console.error('[PhotoUploader] Resize error:', error)
+      setResizingStatus(null)
+      // Fallback to original file if resize fails
+      await onPhotoUpload(file, selectedPosition)
+    }
+
     setSelectedPosition(null)
 
     // Clear input
@@ -121,8 +149,13 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               <>
                 {/* Empty slot */}
                 <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                  {isUploading && uploadingPosition === index ? (
-                    <Loader2 size={24} className="text-accent animate-spin" />
+                  {(isUploading && uploadingPosition === index) || (resizingStatus && selectedPosition === index) ? (
+                    <>
+                      <Loader2 size={24} className="text-accent animate-spin" />
+                      {resizingStatus && (
+                        <span className="text-xs text-gray-400">{resizingStatus}</span>
+                      )}
+                    </>
                   ) : (
                     <>
                       <div className="w-10 h-10 rounded-full bg-bg flex items-center justify-center">
@@ -148,7 +181,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             <p className="mb-1">Рекомендации:</p>
             <ul className="list-disc list-inside space-y-0.5">
               <li>Формат: JPEG, PNG или WebP</li>
-              <li>Максимальный размер: 5 MB</li>
+              <li>Максимальный размер: 10 MB</li>
               <li>Лучше использовать фото в портретной ориентации</li>
             </ul>
           </div>
