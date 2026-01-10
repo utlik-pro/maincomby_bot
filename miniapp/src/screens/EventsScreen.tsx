@@ -1339,24 +1339,42 @@ const EventsScreen: React.FC = () => {
                       Активные билеты ({activeRegistrations.length})
                     </h3>
                     {activeRegistrations.map((reg: any) => (
-                      <Card
+                      <div
                         key={reg.id}
                         onClick={() => setShowTicket({ registration: reg, event: reg.event })}
-                        className="mb-3"
-                        highlighted
+                        className="mb-3 bg-bg-card rounded-2xl overflow-hidden border-2 border-accent cursor-pointer active:scale-[0.98] transition-transform"
                       >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="font-semibold">{reg.event?.title || `Событие #${reg.event_id}`}</div>
-                            <div className="text-sm text-gray-400">
-                              {reg.event?.event_date
-                                ? format(new Date(reg.event.event_date), 'd MMM, HH:mm', { locale: ru })
-                                : 'Дата не указана'}
+                        <div className="flex">
+                          {/* Left side - ticket icon */}
+                          <div className="w-16 bg-accent/20 flex items-center justify-center border-r border-dashed border-accent/30">
+                            <Ticket size={24} className="text-accent" />
+                          </div>
+                          {/* Right side - event info */}
+                          <div className="flex-1 p-4 flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold text-sm">{reg.event?.title || `Событие #${reg.event_id}`}</div>
+                              <div className="text-xs text-gray-400 flex items-center gap-2 mt-1">
+                                <span className="flex items-center gap-1">
+                                  <CalendarDays size={12} />
+                                  {reg.event?.event_date
+                                    ? format(new Date(reg.event.event_date), 'd MMM', { locale: ru })
+                                    : '—'}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock size={12} />
+                                  {reg.event?.event_date
+                                    ? format(new Date(reg.event.event_date), 'HH:mm')
+                                    : '—'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant="accent">Активен</Badge>
+                              <span className="text-[10px] text-gray-500">Нажми для QR</span>
                             </div>
                           </div>
-                          <Badge variant="accent">Активен</Badge>
                         </div>
-                      </Card>
+                      </div>
                     ))}
                   </>
                 )}
@@ -1369,40 +1387,44 @@ const EventsScreen: React.FC = () => {
                       Посещённые ({pastAttendedRegistrations.length})
                     </h3>
                     {pastAttendedRegistrations.map((reg: any) => (
-                      <Card
+                      <div
                         key={reg.id}
                         onClick={() => setSelectedEvent(reg.event)}
-                        className="mb-3"
+                        className="mb-3 bg-bg-card rounded-2xl overflow-hidden border border-gray-700 cursor-pointer active:scale-[0.98] transition-transform"
                       >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="font-semibold">{reg.event?.title || `Событие #${reg.event_id}`}</div>
-                            <div className="text-sm text-gray-400">
-                              {reg.event?.event_date
-                                ? format(new Date(reg.event.event_date), 'd MMM, HH:mm', { locale: ru })
-                                : 'Дата не указана'}
+                        <div className="flex">
+                          {/* Left side - check icon */}
+                          <div className="w-16 bg-green-500/10 flex items-center justify-center border-r border-dashed border-gray-700">
+                            <Check size={24} className="text-green-500" />
+                          </div>
+                          {/* Right side - event info */}
+                          <div className="flex-1 p-4 flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold text-sm">{reg.event?.title || `Событие #${reg.event_id}`}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {reg.event?.event_date
+                                  ? format(new Date(reg.event.event_date), 'd MMM yyyy', { locale: ru })
+                                  : 'Дата не указана'}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-accent">Оставить отзыв</span>
+                              <Star size={16} className="text-yellow-400" />
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-accent">Оставить отзыв</span>
-                            <Badge variant="success">
-                              <Check size={12} />
-                            </Badge>
-                          </div>
                         </div>
-                      </Card>
+                      </div>
                     ))}
                   </>
                 )}
 
                 {/* Empty state */}
                 {activeRegistrations.length === 0 && pastAttendedRegistrations.length === 0 && !registrationsError && (
-                  <Card className="mb-3">
-                    <div className="text-center text-gray-400 py-4">
-                      <Ticket size={24} className="mx-auto mb-2 opacity-50" />
-                      <div className="text-sm">Нет билетов</div>
-                    </div>
-                  </Card>
+                  <div className="bg-bg-card rounded-2xl p-8 text-center border border-dashed border-gray-700">
+                    <Ticket size={32} className="mx-auto mb-3 text-gray-500" />
+                    <div className="text-gray-400 text-sm">Нет билетов</div>
+                    <div className="text-gray-500 text-xs mt-1">Зарегистрируйтесь на мероприятие</div>
+                  </div>
                 )}
               </>
             )
