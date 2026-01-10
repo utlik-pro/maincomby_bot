@@ -33,6 +33,7 @@ MINIAPP_PKG="$PROJECT_ROOT/miniapp/package.json"
 LANDING_PKG="$PROJECT_ROOT/miniapp/landing/package.json"
 MINIAPP_VERSION_TS="$PROJECT_ROOT/miniapp/src/lib/version.ts"
 LANDING_VERSION_TS="$PROJECT_ROOT/miniapp/landing/src/lib/version.ts"
+LANDING_RELEASES_FILE="$PROJECT_ROOT/miniapp/landing/src/data/releases.json"
 
 # Read current version
 if [ -f "$VERSION_FILE" ]; then
@@ -250,6 +251,12 @@ data["releases"].insert(0, new_release)
 releases_file.write_text(json.dumps(data, indent=2))
 print("  \033[32m✓\033[0m releases/releases.json updated")
 EOF
+
+    # Sync to landing folder
+    if [ -f "$RELEASES_FILE" ]; then
+        cp "$RELEASES_FILE" "$LANDING_RELEASES_FILE"
+        echo -e "  ${GREEN}✓${NC} Synced to miniapp/landing/src/data/releases.json"
+    fi
 }
 
 # Parse arguments
