@@ -1,10 +1,11 @@
 {
     "hero": {
-        "title": "Professional Networking",
-        "titleHighlight": "in Telegram",
-        "subtitle": "Find valuable connections, attend events, grow with MAIN tech community",
-        "cta": "Open in Telegram",
-        "ctaSecondary": "Contact Us"
+        "title": "Launch Your App",
+        "titleHighlight": "for",
+        "rotatingWords": ["Business", "Networking", "Bloggers", "Community", "Clubs"],
+        "subtitle": "Ready-made platform for networking, events and monetization. No development needed — just customize for your brand",
+        "cta": "Request Demo",
+        "ctaSecondary": "See Example"
     },
     "nav": {
         "features": "Features",
@@ -13,31 +14,361 @@
         "faq": "FAQ"
     },
     "features": {
-        "title": "Platform Features",
+        "title": "What Your Community Gets",
         "items": [
             {
-                "title": "Smart Matching",
-                "description": "Swipe profiles and find people with similar interests and goals"
+                "title": "Networking",
+                "description": "Let members find each other through smart matching by interests and goals"
             },
             {
                 "title": "Events",
-                "description": "Register for events with one click and get your QR ticket"
+                "description": "Create events with registration, QR tickets and automatic reminders"
+            },
+            {
+                "title": "Monetization",
+                "description": "Subscriptions, paid tickets, donations — built-in tools for earning"
             },
             {
                 "title": "Gamification",
-                "description": "Earn XP, level up your rank, unlock achievements"
+                "description": "XP, ranks, achievements — boost member engagement"
             },
+            {
+                "title": "Branding",
+                "description": "Customize colors, logo and name to match your brand"
+            },
+            {
+                "title": "Analytics",
+                "description": "Track growth, activity and revenue in real-time"
+            }
+        ]
+    },
+    "adminDemo": {
+        "title": "Powerful Admin Panel",
+        "subtitle": "Full control over your community in one place",
+        "features": [
+            {
+                "title": "Member Management",
+                "description": "View profiles, assign roles, moderate content"
+            },
+            {
+                "title": "Analytics",
+                "description": "Track growth, activity and member engagement"
+            },
+            {
+                "title": "Events",
+                "description": "Create events, manage registrations, export lists"
+            },
+            {
+                "title": "Statistics",
+                "description": "Detailed reports on revenue, subscriptions and conversions"
+            },
+            {
+                "title": "Moderation",
+                "description": "Tools for handling complaints and violations"
+            },
+            {
+                "title": "Integrations",
+                "description": "Webhook setup, API access, external systems"
+            }
+        ]
+    },
+    "adminShowcase": {
+        "title": "Complete Community Control",
+        "subtitle": "All tools for management, analytics, and monetization of your community in one admin panel",
+        "badge": "Admin Panel",
+        "screens": {
+            "dashboard": "Dashboard",
+            "members": "Members",
+            "events": "Events",
+            "analytics": "Analytics"
+        },
+        "categories": [
+            {
+                "name": "Members",
+                "features": [
+                    {
+                        "title": "Profile Management",
+                        "description": "View, edit, and moderate member profiles with complete activity history"
+                    },
+                    {
+                        "title": "Role System",
+                        "description": "Assign roles: admin, moderator, speaker, volunteer, VIP with different access rights"
+                    },
+                    {
+                        "title": "Verification",
+                        "description": "Confirm members manually or automatically based on criteria"
+                    },
+                    {
+                        "title": "Ban & Moderation",
+                        "description": "Block violators, issue warnings, track moderation history"
+                    },
+                    {
+                        "title": "Search & Filters",
+                        "description": "Powerful search across all profile fields with saved filters"
+                    },
+                    {
+                        "title": "Tags & Segments",
+                        "description": "Create tags for audience segmentation and targeted broadcasts"
+                    }
+                ]
+            },
+            {
+                "name": "Events",
+                "features": [
+                    {
+                        "title": "Event Creation",
+                        "description": "Full event editor: description, date, location, capacity, pricing"
+                    },
+                    {
+                        "title": "Registration Management",
+                        "description": "Attendee lists, confirmations, waitlist, bulk actions"
+                    },
+                    {
+                        "title": "QR Tickets",
+                        "description": "Automatic generation and validation of QR codes for entry"
+                    },
+                    {
+                        "title": "Check-in System",
+                        "description": "Ticket scanning, attendance tracking, occupancy statistics"
+                    },
+                    {
+                        "title": "Recurring Events",
+                        "description": "Set up regular events with automatic creation"
+                    }
+                ]
+            },
+            {
+                "name": "Analytics",
+                "features": [
+                    {
+                        "title": "Metrics Dashboard",
+                        "description": "Key indicators in real-time: growth, activity, retention"
+                    },
+                    {
+                        "title": "Cohort Analysis",
+                        "description": "Track user group behavior by registration date"
+                    },
+                    {
+                        "title": "Conversion Funnel",
+                        "description": "Analyze user journey from registration to subscription purchase"
+                    },
+                    {
+                        "title": "Report Export",
+                        "description": "Export data to CSV, Excel, PDF with customizable parameters"
+                    }
+                ]
+            },
+            {
+                "name": "Monetization",
+                "features": [
+                    {
+                        "title": "Subscription Management",
+                        "description": "Create plans, set pricing, trial periods, promo codes"
+                    },
+                    {
+                        "title": "Payment Analytics",
+                        "description": "MRR, LTV, churn rate, revenue forecasts and payment details"
+                    },
+                    {
+                        "title": "Refunds & Disputes",
+                        "description": "Process refunds, transaction history, subscription management"
+                    },
+                    {
+                        "title": "Referral Program",
+                        "description": "Configure referral rewards and track invitations"
+                    }
+                ]
+            },
+            {
+                "name": "Communication",
+                "features": [
+                    {
+                        "title": "Push Notifications",
+                        "description": "Mass and personal notifications via Telegram with segmentation"
+                    },
+                    {
+                        "title": "Email Campaigns",
+                        "description": "Email templates, automatic triggers, open rate statistics"
+                    },
+                    {
+                        "title": "In-App Announcements",
+                        "description": "Publish news and updates directly in the app interface"
+                    },
+                    {
+                        "title": "Auto-Responses",
+                        "description": "Set up automatic replies to frequently asked questions"
+                    }
+                ]
+            },
+            {
+                "name": "Settings",
+                "features": [
+                    {
+                        "title": "Branding",
+                        "description": "Customize colors, logo, name and description of your community"
+                    },
+                    {
+                        "title": "Access Rights",
+                        "description": "Flexible permission settings for different admin roles"
+                    },
+                    {
+                        "title": "API & Webhooks",
+                        "description": "Integration with external services, Zapier, CRM systems"
+                    },
+                    {
+                        "title": "Security",
+                        "description": "Two-factor authentication, action logs, backup"
+                    }
+                ]
+            }
+        ]
+    },
+    "targetAudience": {
+        "title": "Who Is This For",
+        "subtitle": "Solutions for communities of any size and focus",
+        "audiences": [
+            {
+                "title": "Professional Communities",
+                "description": "IT communities, entrepreneur clubs, professional associations",
+                "examples": ["IT Meetups", "Business Clubs", "HR Communities"]
+            },
+            {
+                "title": "Educational Projects",
+                "description": "Online schools, courses, accelerators with strong community",
+                "examples": ["Edtech", "Bootcamps", "Accelerators"]
+            },
+            {
+                "title": "Conferences & Events",
+                "description": "Event organizers who want to build long-term community",
+                "examples": ["Conferences", "Hackathons", "Workshops"]
+            },
+            {
+                "title": "Corporate Communities",
+                "description": "Company alumni clubs, internal networking platforms",
+                "examples": ["Alumni", "Employee Networks", "Partnerships"]
+            }
+        ]
+    },
+    "monetization": {
+        "title": "Monetization Models",
+        "subtitle": "Earn from your community in multiple ways",
+        "streams": [
             {
                 "title": "Subscriptions",
-                "description": "Choose a plan that fits your networking needs"
+                "description": "Premium access for members",
+                "percentage": "40%"
             },
             {
-                "title": "Profile",
-                "description": "Customize avatar, add social links, showcase your expertise"
+                "title": "Tickets",
+                "description": "Event ticket sales",
+                "percentage": "30%"
             },
             {
-                "title": "Community",
-                "description": "Become a volunteer, speaker, or community partner"
+                "title": "Advertising",
+                "description": "Partner promotions in feed",
+                "percentage": "20%"
+            },
+            {
+                "title": "Donations",
+                "description": "Support from members",
+                "percentage": "10%"
+            }
+        ]
+    },
+    "integration": {
+        "title": "Integration Pricing",
+        "subtitle": "Choose a payment model that fits your needs",
+        "tabs": {
+            "subscription": "Subscription",
+            "purchase": "One-time Purchase"
+        },
+        "subscriptionPlans": [
+            {
+                "name": "Starter",
+                "price": "100",
+                "period": "mo",
+                "description": "For small communities",
+                "features": [
+                    "Up to 500 members",
+                    "Basic admin panel",
+                    "Email support",
+                    "Standard customization"
+                ],
+                "cta": "Get Started"
+            },
+            {
+                "name": "Growth",
+                "price": "300",
+                "period": "mo",
+                "description": "For growing communities",
+                "features": [
+                    "Up to 5,000 members",
+                    "Full analytics",
+                    "Priority support",
+                    "API access",
+                    "Custom branding"
+                ],
+                "cta": "Choose Plan",
+                "popular": true
+            },
+            {
+                "name": "Enterprise",
+                "price": "Custom",
+                "period": "",
+                "description": "For large organizations",
+                "features": [
+                    "Unlimited members",
+                    "Dedicated manager",
+                    "99.9% SLA",
+                    "Custom development",
+                    "On-premise option"
+                ],
+                "cta": "Contact Us"
+            }
+        ],
+        "purchasePlans": [
+            {
+                "name": "Basic",
+                "price": "5,000",
+                "period": "",
+                "description": "Full license forever",
+                "features": [
+                    "Up to 1,000 members",
+                    "Platform source code",
+                    "Basic documentation",
+                    "30 days support",
+                    "Self-hosted"
+                ],
+                "cta": "Buy Now"
+            },
+            {
+                "name": "Professional",
+                "price": "10,000",
+                "period": "",
+                "description": "Extended license",
+                "features": [
+                    "Up to 10,000 members",
+                    "Source code + customization",
+                    "Full documentation",
+                    "90 days support",
+                    "Deployment assistance"
+                ],
+                "cta": "Buy Now",
+                "popular": true
+            },
+            {
+                "name": "Enterprise",
+                "price": "Custom",
+                "period": "",
+                "description": "Custom solution",
+                "features": [
+                    "Unlimited members",
+                    "Full customization",
+                    "Dedicated team",
+                    "12 months support",
+                    "White-label + training"
+                ],
+                "cta": "Discuss"
             }
         ]
     },
@@ -124,20 +455,44 @@
         "title": "FAQ",
         "items": [
             {
-                "question": "How do I join the community?",
-                "answer": "Simply open @maincomapp_bot in Telegram, fill out your profile and start meeting other members."
+                "question": "How long does it take to launch?",
+                "answer": "With subscription — from 3 days. We set up the platform for your brand, connect payments and hand over access. With license purchase — 1-2 weeks for deployment and setup."
             },
             {
-                "question": "Is it free?",
-                "answer": "Yes! Basic features are completely free. Paid plans provide additional features for active networking."
+                "question": "Do I need developers?",
+                "answer": "No! The platform is fully ready to use. All configuration is done through the admin panel without code. When purchasing a license, we help with deployment."
             },
             {
-                "question": "What are XP and ranks?",
-                "answer": "XP are experience points you earn for activity: attending events, matches, filling your profile. The more XP, the higher your rank."
+                "question": "Can I customize the design?",
+                "answer": "Yes. You can customize colors, logo, name and description. Growth and above plans include advanced customization. License purchase gives full source code access."
             },
             {
-                "question": "How does matching work?",
-                "answer": "Swipe through other members' profiles, like the interesting ones. If it's mutual — you get a match and can start chatting."
+                "question": "How do payments work?",
+                "answer": "We integrate with Telegram Payments and Stars. You receive revenue from subscriptions and tickets directly. Platform commission — 0% on Enterprise plan."
+            },
+            {
+                "question": "What support is included?",
+                "answer": "Starter — email support. Growth — priority support with 24-hour response. Enterprise — dedicated manager and 99.9% SLA."
+            },
+            {
+                "question": "Can I migrate an existing community?",
+                "answer": "Yes! We'll help import members from a Telegram group or other platform. Migration is included in Growth plan and above."
+            },
+            {
+                "question": "What's included in the license purchase?",
+                "answer": "Full platform source code, documentation, right to modify and commercial use. You host on your servers and own the data."
+            },
+            {
+                "question": "How secure is the platform?",
+                "answer": "Data is stored encrypted. Two-factor authentication for admins. Regular backups. Enterprise plan offers on-premise hosting option."
+            },
+            {
+                "question": "Can I add custom features?",
+                "answer": "Yes. Through API and webhooks you can integrate external services. License purchase gives full code access for any modifications."
+            },
+            {
+                "question": "Is there a trial period?",
+                "answer": "Yes! 14 days free trial on Growth plan. You can also see a live example — MAIN community runs on our platform."
             }
         ]
     },
@@ -166,6 +521,6 @@
             "bot": "Open Bot",
             "privacy": "Privacy Policy"
         },
-        "copyright": "© 2026 MAIN Community. All rights reserved."
+        "copyright": "© 2026 MAIN Platform. All rights reserved. Made with love at Utlik. Co"
     }
 }

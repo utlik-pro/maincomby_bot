@@ -1,11 +1,14 @@
 import { getDictionary, Locale } from '@/lib/i18n'
 import { Hero } from '@/components/sections/Hero'
-import { Features } from '@/components/sections/Features'
-import { HowItWorks } from '@/components/sections/HowItWorks'
 import { Stats } from '@/components/sections/Stats'
-import { Pricing } from '@/components/sections/Pricing'
+import { Features } from '@/components/sections/Features'
+import { AdminDemo } from '@/components/sections/AdminDemo'
+import { AdminPanelShowcase } from '@/components/sections/AdminPanelShowcase'
+import { TargetAudience } from '@/components/sections/TargetAudience'
+import { HowItWorks } from '@/components/sections/HowItWorks'
+import { Monetization } from '@/components/sections/Monetization'
+import { IntegrationPricing } from '@/components/sections/IntegrationPricing'
 import { FAQ } from '@/components/sections/FAQ'
-import { Contact } from '@/components/sections/Contact'
 import { Footer } from '@/components/sections/Footer'
 import { Navigation } from '@/components/Navigation'
 
@@ -21,12 +24,15 @@ export default async function LocalePage({
         <main className="min-h-screen bg-[var(--background)]">
             <Navigation dict={dict.nav} locale={locale} />
             <Hero dict={dict.hero} locale={locale} />
-            <Features dict={dict.features} />
-            <HowItWorks dict={dict.howItWorks} />
             <Stats dict={dict.stats} />
-            <Pricing dict={dict.pricing} />
+            <Features dict={dict.features} />
+            <AdminDemo dict={dict.adminDemo} />
+            <AdminPanelShowcase dict={dict.adminShowcase} />
+            <TargetAudience dict={dict.targetAudience} />
+            <Monetization dict={dict.monetization} />
+            <HowItWorks dict={dict.howItWorks} />
+            <IntegrationPricing dict={dict.integration} />
             <FAQ dict={dict.faq} />
-            <Contact dict={dict.contact} />
             <Footer dict={dict.footer} />
         </main>
     )
