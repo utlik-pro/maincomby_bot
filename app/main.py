@@ -20,6 +20,7 @@ from .handlers.matching import router as matching_router
 from .handlers.feedback import router as feedback_router
 from .handlers.broadcast_feedback import router as broadcast_feedback_router
 from .handlers.payments import router as payments_router
+from .version import __version__, BOT_NAME
 
 
 async def main() -> None:
@@ -173,6 +174,7 @@ async def main() -> None:
     from .handlers.feedback import set_session_factory as set_feedback_session_factory
     from .handlers.broadcast_feedback import set_session_factory as set_broadcast_feedback_session_factory
     from .handlers.payments import set_session_factory as set_payments_session_factory
+    from .handlers.utils import set_session_factory as set_utils_session_factory
     set_news_session_factory(session_factory)
     set_qa_session_factory(session_factory)
     set_events_session_factory(session_factory)
@@ -183,6 +185,7 @@ async def main() -> None:
     set_feedback_session_factory(session_factory)
     set_broadcast_feedback_session_factory(session_factory)
     set_payments_session_factory(session_factory)
+    set_utils_session_factory(session_factory)
 
     # Инициализируем Supabase sync service (async версия)
     sync_service = None
@@ -553,7 +556,7 @@ async def main() -> None:
     except Exception as e:
         logger.warning(f"Scheduler не запущен: {e}")
 
-    logger.info("Starting bot long-polling…")
+    logger.info(f"Starting {BOT_NAME} v{__version__}")
     # Явно указываем типы обновлений, которые хотим получать
     await dp.start_polling(
         bot,

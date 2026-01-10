@@ -1,0 +1,65 @@
+{
+  "$schema": "./releases.schema.json",
+  "schemaVersion": "1.0",
+  "projectName": "MAIN Community",
+  "repository": "https://github.com/maincomby/maincomby_bot",
+  "releases": [
+    {
+      "version": "1.0.0",
+      "date": "2026-01-10",
+      "tag": "v1.0.0",
+      "type": "major",
+      "summary": "Initial release of MAIN Community platform",
+      "highlights": [
+        "Telegram Mini App launch",
+        "Networking/matching system",
+        "Event management",
+        "Achievement system"
+      ],
+      "features": [
+        {
+          "description": "Profile management with photo gallery",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Swipe-based matching system",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Daily swipes limit with subscription tiers",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Event registration with calendar",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Achievement and XP system",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Push notifications",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Telegram Stars payments",
+          "scope": "bot"
+        },
+        {
+          "description": "Event management commands",
+          "scope": "bot"
+        },
+        {
+          "description": "Admin statistics panel",
+          "scope": "bot"
+        },
+        {
+          "description": "Multi-language landing page",
+          "scope": "landing"
+        }
+      ],
+      "fixes": [],
+      "breaking": []
+    }
+  ]
+}

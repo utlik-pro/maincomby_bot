@@ -47,6 +47,7 @@ interface AppState {
   activeTab: 'home' | 'events' | 'network' | 'achievements' | 'profile'
   isVolunteerMode: boolean
   onboardingVersion: number
+  lastSeenAppVersion: number // For "What's New" modal
   lastSeenEventId: number | null
   lastDismissedAnnouncementEventId: number | null // For event announcement modal
   deepLinkTarget: string | null // For handling deep links like 'matches'
@@ -68,6 +69,7 @@ interface AppState {
   setShowInvites: (show: boolean) => void
   setVolunteerMode: (mode: boolean) => void
   completeOnboarding: () => void
+  setLastSeenAppVersion: (version: number) => void
   setLastSeenEventId: (eventId: number) => void
   dismissEventAnnouncement: (eventId: number) => void
   addPoints: (amount: number) => void
@@ -75,6 +77,7 @@ interface AppState {
 
   // Computed
   shouldShowOnboarding: () => boolean
+  shouldShowWhatsNew: () => boolean
 
   // Computed
   getRank: () => UserRank
@@ -95,6 +98,7 @@ export const useAppStore = create<AppState>()(
       activeTab: 'home',
       isVolunteerMode: false,
       onboardingVersion: 0,
+      lastSeenAppVersion: 0,
       lastSeenEventId: null,
       lastDismissedAnnouncementEventId: null,
       deepLinkTarget: null,
@@ -121,6 +125,7 @@ export const useAppStore = create<AppState>()(
       setActiveTab: (activeTab) => set({ activeTab }),
       setVolunteerMode: (isVolunteerMode) => set({ isVolunteerMode }),
       completeOnboarding: () => set({ onboardingVersion: CURRENT_ONBOARDING_VERSION }),
+      setLastSeenAppVersion: (lastSeenAppVersion) => set({ lastSeenAppVersion }),
       setLastSeenEventId: (lastSeenEventId) => set({ lastSeenEventId }),
       dismissEventAnnouncement: (eventId) => set({ lastDismissedAnnouncementEventId: eventId }),
 
@@ -128,6 +133,14 @@ export const useAppStore = create<AppState>()(
       shouldShowOnboarding: () => {
         const { onboardingVersion } = get()
         return onboardingVersion < CURRENT_ONBOARDING_VERSION
+      },
+      // Computed - check if "What's New" modal should be shown
+      shouldShowWhatsNew: () => {
+        // Import dynamically to avoid circular deps
+        const { CURRENT_APP_VERSION } = require('@/lib/version')
+        const { lastSeenAppVersion, onboardingVersion } = get()
+        // Only show if user has completed onboarding and hasn't seen this version
+        return onboardingVersion >= CURRENT_ONBOARDING_VERSION && lastSeenAppVersion < CURRENT_APP_VERSION
       },
       addPoints: (amount) => {
         const { user } = get()

@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import "../globals.css";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { BackToTop } from "@/components/BackToTop";
+import { ScrollProgress } from "@/components/ScrollProgress";
+import { Particles } from "@/components/Particles";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
 export const metadata: Metadata = {
-    title: "MAIN Community - Профессиональный нетворкинг в Telegram",
+    title: "MAIN Platform - Профессиональный нетворкинг в Telegram",
     description: "Находи полезные контакты, посещай мероприятия, развивайся вместе с техсообществом MAIN",
     keywords: ["networking", "telegram", "tech community", "events", "нетворкинг", "сообщество"],
     openGraph: {
-        title: "MAIN Community",
+        title: "MAIN Platform",
         description: "Профессиональный нетворкинг в Telegram",
         type: "website",
         locale: "ru_RU",
@@ -35,7 +40,12 @@ export default async function LocaleLayout({
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
             </head>
             <body className="antialiased">
+                <LoadingScreen />
+                <ScrollProgress />
+                <Particles />
+                <UpdateBanner />
                 {children}
+                <BackToTop />
             </body>
         </html>
     );

@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
+import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp } from '@/lib/telegram'
 import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
@@ -21,6 +22,8 @@ const ProfileScreen = React.lazy(() => import('@/screens/ProfileScreen'))
 const OnboardingScreen = React.lazy(() => import('@/screens/OnboardingScreen'))
 const AccessGateScreen = React.lazy(() => import('@/screens/AccessGateScreen'))
 const InviteBottomSheet = React.lazy(() => import('@/components/InviteBottomSheet').then(m => ({ default: m.InviteBottomSheet })))
+const WhatsNewModal = React.lazy(() => import('@/components/WhatsNewModal'))
+const UpdateBanner = React.lazy(() => import('@/components/UpdateBanner'))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -72,8 +75,20 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 )
 
 const App: React.FC = () => {
-  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired, showInvites, setShowInvites } = useAppStore()
+  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, shouldShowWhatsNew, setLastSeenAppVersion, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired, showInvites, setShowInvites } = useAppStore()
   const { addToast } = useToastStore()
+
+  // What's New modal state
+  const [showWhatsNewModal, setShowWhatsNewModal] = useState(false)
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false)
+
+  // Check if should show What's New after loading
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && !shouldShowOnboarding() && shouldShowWhatsNew()) {
+      // Show banner first, user can open modal from it
+      setShowUpdateBanner(true)
+    }
+  }, [isLoading, isAuthenticated])
 
   // Easter eggs - speed runner (visit all tabs quickly)
   const { recordTabVisit } = useSpeedRunner(['home', 'events', 'network', 'achievements', 'profile'], 10000)
@@ -678,6 +693,36 @@ const App: React.FC = () => {
         {showInvites && (
           <React.Suspense fallback={null}>
             <InviteBottomSheet onClose={() => setShowInvites(false)} />
+          </React.Suspense>
+        )}
+      </AnimatePresence>
+
+      {/* Update Banner - shows at top when new version available */}
+      <React.Suspense fallback={null}>
+        <UpdateBanner
+          isVisible={showUpdateBanner}
+          onDismiss={() => {
+            setShowUpdateBanner(false)
+            setLastSeenAppVersion(CURRENT_APP_VERSION)
+          }}
+          onViewDetails={() => {
+            setShowUpdateBanner(false)
+            setShowWhatsNewModal(true)
+          }}
+        />
+      </React.Suspense>
+
+      {/* What's New Modal */}
+      <AnimatePresence>
+        {showWhatsNewModal && (
+          <React.Suspense fallback={null}>
+            <WhatsNewModal
+              isOpen={showWhatsNewModal}
+              onClose={() => {
+                setShowWhatsNewModal(false)
+                setLastSeenAppVersion(CURRENT_APP_VERSION)
+              }}
+            />
           </React.Suspense>
         )}
       </AnimatePresence>

@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MAIN Community Releases",
+  "description": "Schema for releases.json tracking version history",
+  "type": "object",
+  "required": ["schemaVersion", "projectName", "releases"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Version of this schema format"
+    },
+    "projectName": {
+      "type": "string",
+      "description": "Name of the project"
+    },
+    "repository": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the project repository"
+    },
+    "releases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Release"
+      }
+    }
+  },
+  "definitions": {
+    "Release": {
+      "type": "object",
+      "required": ["version", "date", "type", "summary"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Semantic version (e.g., 1.0.0)"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Release date in YYYY-MM-DD format"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Git tag for this release"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["major", "minor", "patch"],
+          "description": "Type of version bump"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Brief summary of the release"
+        },
+        "highlights": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Key highlights for users"
+        },
+        "features": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Change" },
+          "description": "New features added"
+        },
+        "fixes": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Change" },
+          "description": "Bug fixes"
+        },
+        "improvements": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Change" },
+          "description": "Improvements to existing features"
+        },
+        "breaking": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Change" },
+          "description": "Breaking changes"
+        }
+      }
+    },
+    "Change": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Description of the change"
+        },
+        "commit": {
+          "type": "string",
+          "description": "Git commit hash"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["bot", "miniapp", "landing", "all"],
+          "description": "Which part of the project this affects"
+        }
+      }
+    }
+  }
+}

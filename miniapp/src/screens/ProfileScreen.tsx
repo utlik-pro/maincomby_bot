@@ -61,6 +61,7 @@ import type { ProfilePhoto } from '@/types'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
+import { ChangelogSheet } from '@/components/ChangelogSheet'
 
 // Icon mapping for ranks
 const RANK_ICONS: Record<UserRank, React.ReactNode> = {
@@ -178,6 +179,7 @@ const ProfileScreen: React.FC = () => {
   const [showSkinAdmin, setShowSkinAdmin] = useState(false)
   const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [showNetworkingGuide, setShowNetworkingGuide] = useState(false)
+  const [showChangelog, setShowChangelog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
@@ -916,16 +918,25 @@ const ProfileScreen: React.FC = () => {
           <Card>
             <h3 className="font-semibold mb-3">О приложении</h3>
             <div className="space-y-2 text-sm text-gray-400">
-              <div className="flex justify-between">
+              <button
+                onClick={() => setShowChangelog(true)}
+                className="flex justify-between items-center w-full hover:text-white transition-colors"
+              >
                 <span>Версия</span>
-                <span>{APP_VERSION}</span>
-              </div>
+                <span className="flex items-center gap-1">
+                  {APP_VERSION}
+                  <ChevronRight size={14} />
+                </span>
+              </button>
               <div className="flex justify-between">
                 <span>Telegram версия</span>
                 <span>{window.Telegram?.WebApp?.version || 'N/A'}</span>
               </div>
             </div>
           </Card>
+
+          {/* Changelog Sheet */}
+          <ChangelogSheet isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
         </div>
       </div>
     )
