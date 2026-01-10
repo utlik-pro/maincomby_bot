@@ -197,6 +197,7 @@ export const useAppStore = create<AppState>()(
         activeTab: state.activeTab,
         isVolunteerMode: state.isVolunteerMode,
         onboardingVersion: state.onboardingVersion,
+        lastSeenAppVersion: state.lastSeenAppVersion,
         lastSeenEventId: state.lastSeenEventId,
         lastDismissedAnnouncementEventId: state.lastDismissedAnnouncementEventId,
       }),
