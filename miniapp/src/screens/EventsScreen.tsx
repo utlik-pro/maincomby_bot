@@ -1410,8 +1410,8 @@ const EventsScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Events List (hide when checkins, leads, or calendar filter is active) */}
-      {filter !== 'checkins' && filter !== 'leads' && filter !== 'calendar' && (
+      {/* Events List (hide when checkins, leads, calendar, or registered filter is active) */}
+      {filter !== 'checkins' && filter !== 'leads' && filter !== 'calendar' && filter !== 'registered' && (
       <div className="px-4">
         {isLoading ? (
           <div className="space-y-4">
@@ -1422,9 +1422,6 @@ const EventsScreen: React.FC = () => {
           <div className="space-y-3">
             {events.map((event: Event) => {
               const registration = getRegistrationForEvent(event.id)
-
-              if (filter === 'registered' && !registration) return null
-
               const IconComponent = eventTypeIcons[event.event_type || 'default'] || eventTypeIcons.default
 
               return (
