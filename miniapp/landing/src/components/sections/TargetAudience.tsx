@@ -35,7 +35,7 @@ const itemVariants = {
         y: 0,
         scale: 1,
         transition: {
-            type: 'spring',
+            type: 'spring' as const,
             stiffness: 200,
             damping: 20
         }
@@ -83,7 +83,7 @@ export function TargetAudience({ dict }: TargetAudienceProps) {
                                     >
                                         <motion.div
                                             whileHover={{ scale: 1.1, rotate: -5 }}
-                                            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                                            transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
                                             className="w-16 h-16 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-6"
                                         >
                                             <Icon size={32} className="text-[var(--accent)]" />

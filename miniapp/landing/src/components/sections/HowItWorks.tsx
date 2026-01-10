@@ -29,7 +29,7 @@ const itemVariants = {
         y: 0,
         scale: 1,
         transition: {
-            type: 'spring',
+            type: 'spring' as const as const,
             stiffness: 300,
             damping: 24
         }
@@ -85,7 +85,7 @@ export function HowItWorks({ dict }: HowItWorksProps) {
                         >
                             <motion.div
                                 whileHover={{ scale: 1.1, rotate: 5 }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                                transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
                                 className="relative z-10 mx-auto w-20 h-20 rounded-full bg-[var(--bg-card)] border-2 border-[var(--accent)] flex items-center justify-center mb-6 group-hover:shadow-[0_0_30px_rgba(200,255,0,0.4)] transition-shadow duration-300"
                             >
                                 <span className="text-3xl font-bold gradient-text">{step.number}</span>

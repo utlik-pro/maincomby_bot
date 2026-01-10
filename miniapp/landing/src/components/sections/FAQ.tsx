@@ -63,7 +63,7 @@ export function FAQ({ dict }: FAQProps) {
                                     </span>
                                     <motion.div
                                         animate={{ rotate: isOpen ? 180 : 0 }}
-                                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                        transition={{ type: 'spring' as const, stiffness: 300, damping: 20 }}
                                     >
                                         <ChevronDown
                                             size={20}
@@ -78,7 +78,7 @@ export function FAQ({ dict }: FAQProps) {
                                             animate={{ height: 'auto', opacity: 1 }}
                                             exit={{ height: 0, opacity: 0 }}
                                             transition={{
-                                                type: 'spring',
+                                                type: 'spring' as const,
                                                 stiffness: 400,
                                                 damping: 30,
                                                 opacity: { duration: 0.2 }
