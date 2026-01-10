@@ -10,7 +10,7 @@ export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 3
+export const CURRENT_APP_VERSION = 4
 
 export interface ReleaseHighlight {
   title: string
