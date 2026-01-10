@@ -7,7 +7,7 @@ import { getDictionary, Locale } from '@/lib/i18n'
 import { APP_VERSION } from '@/lib/version'
 
 // Import releases data
-import releasesData from '../../../../../../releases/releases.json'
+import releasesData from '@/data/releases.json'
 
 export const metadata: Metadata = {
     title: 'Changelog - MAIN Platform',

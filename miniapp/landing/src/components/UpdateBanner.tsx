@@ -6,7 +6,7 @@ import { Sparkles, X, ArrowRight } from 'lucide-react'
 import { APP_VERSION } from '@/lib/version'
 
 // Import releases data
-import releasesData from '../../../../releases/releases.json'
+import releasesData from '@/data/releases.json'
 
 const STORAGE_KEY = 'main_last_seen_version'
 
