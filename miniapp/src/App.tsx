@@ -22,8 +22,7 @@ const ProfileScreen = React.lazy(() => import('@/screens/ProfileScreen'))
 const OnboardingScreen = React.lazy(() => import('@/screens/OnboardingScreen'))
 const AccessGateScreen = React.lazy(() => import('@/screens/AccessGateScreen'))
 const InviteBottomSheet = React.lazy(() => import('@/components/InviteBottomSheet').then(m => ({ default: m.InviteBottomSheet })))
-const WhatsNewModal = React.lazy(() => import('@/components/WhatsNewModal'))
-const UpdateBanner = React.lazy(() => import('@/components/UpdateBanner'))
+const ChangelogSheet = React.lazy(() => import('@/components/ChangelogSheet'))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -78,15 +77,14 @@ const App: React.FC = () => {
   const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, shouldShowWhatsNew, setLastSeenAppVersion, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired, showInvites, setShowInvites } = useAppStore()
   const { addToast } = useToastStore()
 
-  // What's New modal state
-  const [showWhatsNewModal, setShowWhatsNewModal] = useState(false)
-  const [showUpdateBanner, setShowUpdateBanner] = useState(false)
+  // What's New changelog sheet state
+  const [showChangelog, setShowChangelog] = useState(false)
 
   // Check if should show What's New after loading
   useEffect(() => {
     if (!isLoading && isAuthenticated && !shouldShowOnboarding() && shouldShowWhatsNew()) {
-      // Show modal directly when there's an update
-      setShowWhatsNewModal(true)
+      // Show changelog sheet when there's an update
+      setShowChangelog(true)
     }
   }, [isLoading, isAuthenticated])
 
@@ -697,35 +695,16 @@ const App: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Update Banner - shows at top when new version available */}
+      {/* What's New Changelog Sheet */}
       <React.Suspense fallback={null}>
-        <UpdateBanner
-          isVisible={showUpdateBanner}
-          onDismiss={() => {
-            setShowUpdateBanner(false)
+        <ChangelogSheet
+          isOpen={showChangelog}
+          onClose={() => {
+            setShowChangelog(false)
             setLastSeenAppVersion(CURRENT_APP_VERSION)
-          }}
-          onViewDetails={() => {
-            setShowUpdateBanner(false)
-            setShowWhatsNewModal(true)
           }}
         />
       </React.Suspense>
-
-      {/* What's New Modal */}
-      <AnimatePresence>
-        {showWhatsNewModal && (
-          <React.Suspense fallback={null}>
-            <WhatsNewModal
-              isOpen={showWhatsNewModal}
-              onClose={() => {
-                setShowWhatsNewModal(false)
-                setLastSeenAppVersion(CURRENT_APP_VERSION)
-              }}
-            />
-          </React.Suspense>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
