@@ -218,7 +218,8 @@ async def cmd_create_event_deadline(message: Message, state: FSMContext):
                 f"<b>{event.title}</b>\n"
                 f"ID: {event.id}\n"
                 f"Дата: {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n\n"
-                f"Теперь пользователи смогут зарегистрироваться через /start",
+                f"🔗 Ссылка для регистрации:\n"
+                f"<code>https://t.me/maincomapp_bot?startapp=event_{event.id}</code>",
                 parse_mode="HTML"
             )
 
@@ -270,7 +271,7 @@ async def cmd_list_events(message: Message):
             response += f"Зарегистрировано: {registered_count}"
             if event.max_participants:
                 response += f"/{event.max_participants}"
-            response += "\n\n"
+            response += f"\n🔗 <code>https://t.me/maincomapp_bot?startapp=event_{event.id}</code>\n\n"
 
         await message.answer(response, parse_mode="HTML")
 
@@ -325,7 +326,8 @@ async def cmd_event_stats(message: Message):
             response = f"<b>📊 Статистика мероприятия:</b>\n\n"
             response += f"<b>{event.title}</b>\n"
             response += f"🏙 Город: {event.city}\n"
-            response += f"📅 Дата: {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n\n"
+            response += f"📅 Дата: {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n"
+            response += f"🔗 <code>https://t.me/maincomapp_bot?startapp=event_{event.id}</code>\n\n"
 
             response += f"<b>📈 Общая статистика:</b>\n"
             response += f"✅ Зарегистрировано: {len(registered_list)}\n"
@@ -469,6 +471,39 @@ async def cmd_toggle_event(message: Message):
 
         status = "активировано" if event.is_active else "деактивировано"
         await message.answer(f"Мероприятие '{event.title}' {status}.")
+
+
+@router.message(Command("event_link"))
+async def cmd_event_link(message: Message):
+    """Получает ссылку на мероприятие для Mini App."""
+    if not await is_admin(message.from_user.id):
+        await message.reply("Только администраторы могут получать ссылки.")
+        return
+
+    args = message.text.split()[1:] if message.text else []
+
+    if not args or not args[0].isdigit():
+        await message.answer("Использование: /event_link <ID>")
+        return
+
+    event_id = int(args[0])
+
+    async with get_session() as session:
+        result = await session.execute(
+            select(Event).where(Event.id == event_id)
+        )
+        event = result.scalar_one_or_none()
+
+        if not event:
+            await message.answer(f"Мероприятие с ID {event_id} не найдено.")
+            return
+
+        await message.answer(
+            f"🔗 <b>{event.title}</b>\n\n"
+            f"Ссылка для регистрации (нажмите чтобы скопировать):\n"
+            f"<code>https://t.me/maincomapp_bot?startapp=event_{event.id}</code>",
+            parse_mode="HTML"
+        )
 
 
 @router.message(Command("export_leads"))
