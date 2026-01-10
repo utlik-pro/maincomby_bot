@@ -23,6 +23,7 @@ import {
   Star,
   MessageSquare,
   Send,
+  Share2,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton } from '@/lib/telegram'
@@ -403,7 +404,23 @@ const EventDetail: React.FC<{
           )}
         </div>
 
-        <h1 className="text-2xl font-bold mb-4">{event.title}</h1>
+        <div className="flex items-start justify-between gap-2 mb-4">
+          <h1 className="text-2xl font-bold">{event.title}</h1>
+          <button
+            onClick={() => {
+              const shareUrl = `https://t.me/maincomapp_bot?startapp=event_${event.id}`
+              navigator.clipboard.writeText(shareUrl).then(() => {
+                hapticFeedback.success()
+                addToast('Ссылка скопирована', 'success')
+              }).catch(() => {
+                addToast('Не удалось скопировать', 'error')
+              })
+            }}
+            className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <Share2 size={20} className="text-accent" />
+          </button>
+        </div>
 
         <div className="space-y-3 mb-6">
           <div className="flex items-center gap-3">

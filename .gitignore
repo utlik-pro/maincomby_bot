@@ -44,3 +44,4 @@ deploy_to_vps.sh
 
 # Auto Claude data directory
 .auto-claude/
+.vercel
