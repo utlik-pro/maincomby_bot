@@ -5,6 +5,52 @@
   "repository": "https://github.com/maincomby/maincomby_bot",
   "releases": [
     {
+      "version": "1.1.0",
+      "date": "2026-01-10",
+      "tag": "v1.1.0",
+      "type": "minor",
+      "summary": "Отзывы о событиях и улучшенный интерфейс",
+      "highlights": [
+        "Система отзывов о событиях с XP наградой",
+        "Единый стиль модальных окон (Bottom Sheet)",
+        "Push-уведомления для отзывов в 22:30"
+      ],
+      "features": [
+        {
+          "description": "Отзывы о событиях (1-5 звёзд + текст)",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Автоматический запрос отзыва при открытии",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Push-уведомления для сбора отзывов",
+          "scope": "bot"
+        },
+        {
+          "description": "SubscriptionBottomSheet - подписка как модалка",
+          "scope": "miniapp"
+        },
+        {
+          "description": "Deep links для отзывов из бота",
+          "scope": "all"
+        },
+        {
+          "description": "XP бонус за заполнение профиля",
+          "scope": "miniapp"
+        }
+      ],
+      "fixes": [],
+      "improvements": [
+        {
+          "description": "Билеты в стиле тикетов на вкладке 'Мои билеты'",
+          "scope": "miniapp"
+        }
+      ],
+      "breaking": []
+    },
+    {
       "version": "1.0.0",
       "date": "2026-01-10",
       "tag": "v1.0.0",
