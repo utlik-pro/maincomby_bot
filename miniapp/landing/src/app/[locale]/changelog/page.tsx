@@ -68,13 +68,20 @@ function ChangeItem({ change, icon: Icon }: { change: Change; icon: React.Elemen
     )
 }
 
-function ReleaseCard({ release }: { release: Release }) {
+function ReleaseCard({ release, isFirst }: { release: Release; isFirst: boolean }) {
     const isLatest = release.version === APP_VERSION
 
     return (
         <article className="relative">
-            {/* Timeline dot */}
-            <div className="absolute left-0 top-0 w-3 h-3 rounded-full bg-[var(--accent)] ring-4 ring-[var(--accent)]/20" />
+            {/* Timeline dot - pulsing for the first/latest release */}
+            {isFirst ? (
+                <div className="absolute left-0 top-0">
+                    <span className="absolute inline-flex h-3 w-3 rounded-full bg-[var(--accent)] opacity-75 animate-ping" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--accent)] ring-4 ring-[var(--accent)]/20" />
+                </div>
+            ) : (
+                <div className="absolute left-0 top-0 w-3 h-3 rounded-full bg-white/30 ring-4 ring-white/10" />
+            )}
 
             <div className={`ml-8 p-6 rounded-2xl border ${isLatest ? 'bg-[var(--accent)]/5 border-[var(--accent)]/30' : 'bg-white/5 border-white/10'}`}>
                 {/* Header */}
@@ -225,8 +232,8 @@ export default async function ChangelogPage({
 
                     {/* Releases */}
                     <div className="space-y-8">
-                        {releases.map((release) => (
-                            <ReleaseCard key={release.version} release={release} />
+                        {releases.map((release, index) => (
+                            <ReleaseCard key={release.version} release={release} isFirst={index === 0} />
                         ))}
                     </div>
                 </div>
