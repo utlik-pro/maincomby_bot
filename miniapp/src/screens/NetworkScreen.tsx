@@ -193,11 +193,6 @@ const NetworkScreen: React.FC = () => {
   if (showMatches) {
     return (
       <div className="p-4">
-        <button onClick={() => setShowMatches(false)} className="text-gray-400 mb-4 flex items-center gap-2">
-          <ArrowLeft size={20} />
-          Назад к свайпам
-        </button>
-
         <h1 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Heart size={24} className="text-success fill-success" />
           Ваши матчи

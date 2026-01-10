@@ -670,12 +670,7 @@ const ProfileScreen: React.FC = () => {
 
     return (
       <div className="pb-6">
-        <button onClick={() => setShowSettings(false)} className="p-4 text-gray-400 flex items-center gap-2">
-          <ArrowLeft size={16} />
-          Назад
-        </button>
-
-        <div className="px-4">
+        <div className="px-4 pt-4">
           {/* Themed Avatar and Name in Settings */}
           <div className="text-center mb-8">
             <div className="relative inline-block">
@@ -970,12 +965,7 @@ const ProfileScreen: React.FC = () => {
 
     return (
       <div className="pb-6">
-        <button onClick={() => setShowSkinSelector(false)} className="p-4 text-gray-400 flex items-center gap-2">
-          <ArrowLeft size={16} />
-          Назад
-        </button>
-
-        <div className="px-4">
+        <div className="px-4 pt-4">
           <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
             <Palette size={24} className="text-accent" />
             Мой скин

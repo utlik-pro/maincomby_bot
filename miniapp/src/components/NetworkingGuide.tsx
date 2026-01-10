@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, Users, Heart, Sparkles, Target, HandshakeIcon, Check, MessageCircle } from 'lucide-react'
+import { Users, Heart, Sparkles, Target, HandshakeIcon, Check, MessageCircle } from 'lucide-react'
 import { Card } from '@/components/ui'
 
 interface NetworkingGuideProps {
@@ -9,12 +9,7 @@ interface NetworkingGuideProps {
 export const NetworkingGuide: React.FC<NetworkingGuideProps> = ({ onClose }) => {
   return (
     <div className="pb-6">
-      <button onClick={onClose} className="p-4 text-gray-400 flex items-center gap-2">
-        <ArrowLeft size={16} />
-        Назад
-      </button>
-
-      <div className="px-4">
+      <div className="px-4 pt-4">
         <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
           <Users size={24} className="text-accent" />
           Как работает нетворкинг
