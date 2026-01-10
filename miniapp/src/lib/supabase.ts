@@ -660,26 +660,42 @@ function getRankFromPoints(points: number): string {
 export async function addXP(userId: number, amount: number, reason: string) {
   const supabase = getSupabase()
 
+  console.log(`[XP] Adding ${amount} XP to user ${userId} for ${reason}`)
+
   // Get current points before update
-  const { data: userBefore } = await supabase
+  const { data: userBefore, error: getUserError } = await supabase
     .from('bot_users')
     .select('points')
     .eq('id', userId)
     .single()
 
+  if (getUserError) {
+    console.error('[XP] Failed to get user:', getUserError)
+  }
+
   const oldPoints = userBefore?.points || 0
   const oldRank = getRankFromPoints(oldPoints)
 
   // Add transaction
-  await supabase
+  const { error: txError } = await supabase
     .from('xp_transactions')
     .insert({ user_id: userId, amount, reason })
+
+  if (txError) {
+    console.error('[XP] Failed to insert xp_transaction:', txError)
+    throw txError
+  }
 
   // Update user points (use correct param names from migration)
   const { data, error } = await supabase
     .rpc('increment_user_points', { p_user_id: userId, p_points_to_add: amount })
 
-  if (error) throw error
+  if (error) {
+    console.error('[XP] Failed to call increment_user_points RPC:', error)
+    throw error
+  }
+
+  console.log(`[XP] Success! User ${userId} now has ${data} points`)
 
   const newPoints = data || oldPoints + amount
   const newRank = getRankFromPoints(newPoints)
