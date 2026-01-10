@@ -44,7 +44,7 @@ import {
 import { useAppStore, useToastStore } from '@/lib/store'
 import { APP_VERSION } from '@/lib/version'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported, backButton } from '@/lib/telegram'
-import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto } from '@/lib/supabase'
+import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto, addXP, hasReceivedXPBonus } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
 import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
@@ -59,7 +59,7 @@ import SkinAdminPanel from '@/components/SkinAdminPanel'
 import { TagInput } from '@/components/TagInput'
 import { PhotoUploader } from '@/components/PhotoUploader'
 import type { ProfilePhoto } from '@/types'
-import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin } from '@/types'
+import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin, XP_REWARDS } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
 import { ChangelogSheet } from '@/components/ChangelogSheet'
@@ -167,7 +167,7 @@ function getProfileTheme(
 }
 
 const ProfileScreen: React.FC = () => {
-  const { user, profile, getRank, getSubscriptionTier, setActiveTab, setProfile, setShowInvites, setUser } = useAppStore()
+  const { user, profile, getRank, getSubscriptionTier, setActiveTab, setProfile, setShowInvites, setUser, addPoints } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -392,6 +392,23 @@ const ProfileScreen: React.FC = () => {
       setProfile(updatedProfile)
       setIsEditing(false)
       hapticFeedback.success()
+
+      // Check and award profile completion XP (bio + occupation filled)
+      const isProfileComplete = editForm.bio.trim().length > 0 && editForm.occupation.trim().length > 0
+      if (isProfileComplete) {
+        try {
+          const hadProfileBonus = await hasReceivedXPBonus(user.id, 'PROFILE_COMPLETE')
+          if (!hadProfileBonus) {
+            await addXP(user.id, XP_REWARDS.PROFILE_COMPLETE, 'PROFILE_COMPLETE')
+            addPoints(XP_REWARDS.PROFILE_COMPLETE)
+            addToast(`Профиль заполнен! +${XP_REWARDS.PROFILE_COMPLETE} XP`, 'xp', XP_REWARDS.PROFILE_COMPLETE)
+            return // Don't show regular success toast
+          }
+        } catch (e) {
+          console.warn('Failed to check/award profile completion XP:', e)
+        }
+      }
+
       addToast('Профиль сохранён!', 'success')
     } catch (error: any) {
       console.error('Profile save error:', error)

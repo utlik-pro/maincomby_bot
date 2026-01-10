@@ -720,10 +720,25 @@ function getReasonText(reason: string): string {
     EVENT_REGISTER: 'регистрацию на событие',
     EVENT_CHECKIN: 'посещение события',
     PROFILE_COMPLETE: 'заполнение профиля',
-    MATCH: 'новый контакт',
-    INVITE_FRIEND: 'приглашение друга',
+    MATCH_RECEIVED: 'новый контакт',
+    FRIEND_INVITE: 'приглашение друга',
+    FIRST_SWIPE: 'первый свайп',
+    FEEDBACK_SUBMIT: 'отзыв о событии',
   }
   return reasons[reason] || reason
+}
+
+// Check if user has received a specific XP bonus
+export async function hasReceivedXPBonus(userId: number, reason: string): Promise<boolean> {
+  const supabase = getSupabase()
+  const { data } = await supabase
+    .from('xp_transactions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('reason', reason)
+    .limit(1)
+
+  return (data && data.length > 0) || false
 }
 
 export async function getUserAchievements(userId: number) {

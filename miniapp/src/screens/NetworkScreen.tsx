@@ -28,14 +28,17 @@ import {
   getUserMatches,
   createNotification,
   incrementDailySwipes,
+  addXP,
+  hasReceivedXPBonus,
 } from '@/lib/supabase'
+import { XP_REWARDS } from '@/types'
 import { AvatarWithSkin, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { SwipeCard } from '@/components/SwipeCard'
 import { PhotoGallery } from '@/components/PhotoGallery'
 import type { SwipeCardProfile } from '@/types'
 
 const NetworkScreen: React.FC = () => {
-  const { user, setUser, getSubscriptionTier, getDailySwipesRemaining, profile, deepLinkTarget, setDeepLinkTarget } = useAppStore()
+  const { user, setUser, addPoints, getSubscriptionTier, getDailySwipesRemaining, profile, deepLinkTarget, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -105,6 +108,18 @@ const NetworkScreen: React.FC = () => {
       // Save swipe
       await createSwipe(user.id, currentProfile.profile.user_id, action)
 
+      // Check and award first swipe bonus
+      try {
+        const hadFirstSwipe = await hasReceivedXPBonus(user.id, 'FIRST_SWIPE')
+        if (!hadFirstSwipe) {
+          await addXP(user.id, XP_REWARDS.FIRST_SWIPE, 'FIRST_SWIPE')
+          addPoints(XP_REWARDS.FIRST_SWIPE)
+          addToast(`Первый свайп! +${XP_REWARDS.FIRST_SWIPE} XP`, 'xp', XP_REWARDS.FIRST_SWIPE)
+        }
+      } catch (e) {
+        console.warn('Failed to check/award first swipe XP:', e)
+      }
+
       // Increment daily swipes counter (for non-PRO users)
       if (tier !== 'pro') {
         try {
@@ -129,6 +144,15 @@ const NetworkScreen: React.FC = () => {
           const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Участник'
           const theirName = `${currentProfile.user?.first_name || ''} ${currentProfile.user?.last_name || ''}`.trim() || 'Участник'
 
+          // Award XP for match to both users
+          try {
+            await addXP(user.id, XP_REWARDS.MATCH_RECEIVED, 'MATCH_RECEIVED')
+            await addXP(currentProfile.profile.user_id, XP_REWARDS.MATCH_RECEIVED, 'MATCH_RECEIVED')
+            addPoints(XP_REWARDS.MATCH_RECEIVED)
+          } catch (e) {
+            console.warn('Failed to award match XP:', e)
+          }
+
           // Notifications
           createNotification(user.id, 'match', 'Новый контакт!', `${theirName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: currentProfile.profile.user_id }).catch(console.error)
           createNotification(currentProfile.profile.user_id, 'match', 'Новый контакт!', `${myName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: user.id }).catch(console.error)
@@ -150,7 +174,7 @@ const NetworkScreen: React.FC = () => {
           }
 
           hapticFeedback.success()
-          addToast(`Новый контакт: ${theirName}!`, 'success')
+          addToast(`Новый контакт: ${theirName}! +${XP_REWARDS.MATCH_RECEIVED} XP`, 'success')
           queryClient.invalidateQueries({ queryKey: ['matches'] })
         }
       }
