@@ -31,6 +31,7 @@ import { PhoneDialog } from '@/components/PhoneDialog'
 import { StarRating } from '@/components/StarRating'
 import {
   getActiveEvents,
+  getEventById,
   getUserRegistrations,
   createEventRegistration,
   cancelEventRegistration,
@@ -596,7 +597,7 @@ const EventDetail: React.FC<{
 }
 
 const EventsScreen: React.FC = () => {
-  const { user, setUser, addPoints, canAccessScanner } = useAppStore()
+  const { user, setUser, addPoints, canAccessScanner, deepLinkTarget, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -633,6 +634,23 @@ const EventsScreen: React.FC = () => {
       backButton.hide()
     }
   }, [showScanner, showTicket, selectedEvent])
+
+  // Handle deep link to specific event
+  useEffect(() => {
+    if (deepLinkTarget?.startsWith('event_')) {
+      const eventId = parseInt(deepLinkTarget.replace('event_', ''), 10)
+      if (!isNaN(eventId)) {
+        // Fetch the event by ID
+        getEventById(eventId).then((event) => {
+          if (event) {
+            setSelectedEvent(event)
+          }
+        }).catch(console.warn)
+        // Clear deep link target
+        setDeepLinkTarget(null)
+      }
+    }
+  }, [deepLinkTarget, setDeepLinkTarget])
 
   // Fetch events
   const { data: events, isLoading } = useQuery({

@@ -643,6 +643,16 @@ const App: React.FC = () => {
         }
       }
 
+      // Handle event deep link: event_{eventId}
+      if (deepLinkValue.startsWith('event_')) {
+        const eventId = parseInt(deepLinkValue.replace('event_', ''), 10)
+        if (!isNaN(eventId)) {
+          setActiveTab('events')
+          setDeepLinkTarget(`event_${eventId}`)
+          return
+        }
+      }
+
       // Map parameter to tab
       const screenMap: Record<string, typeof activeTab> = {
         'home': 'home',
