@@ -1,16 +1,11 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, type MotionProps } from 'framer-motion'
 
-interface GlassCardProps {
+interface GlassCardProps extends Pick<MotionProps, 'initial' | 'whileInView' | 'viewport' | 'transition' | 'animate'> {
     children: React.ReactNode
     className?: string
-    initial?: object
-    whileInView?: object
-    viewport?: object
-    transition?: object
-    animate?: object
 }
 
 export function GlassCard({
