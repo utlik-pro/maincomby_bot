@@ -1331,41 +1331,35 @@ const EventsScreen: React.FC = () => {
 
             return (
               <>
-                {/* Upcoming tickets */}
-                <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
-                  <Ticket size={14} />
-                  Мои билеты ({activeRegistrations.length})
-                </h3>
-                {activeRegistrations.length > 0 ? (
-                  activeRegistrations.map((reg: any) => (
-                    <Card
-                      key={reg.id}
-                      onClick={() => setShowTicket({ registration: reg, event: reg.event })}
-                      className="mb-3"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-semibold">{reg.event?.title || `Событие #${reg.event_id}`}</div>
-                          <div className="text-sm text-gray-400">
-                            {reg.event?.event_date
-                              ? format(new Date(reg.event.event_date), 'd MMM, HH:mm', { locale: ru })
-                              : 'Дата не указана'}
+                {/* Active upcoming tickets - FIRST */}
+                {activeRegistrations.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+                      <Ticket size={14} />
+                      Активные билеты ({activeRegistrations.length})
+                    </h3>
+                    {activeRegistrations.map((reg: any) => (
+                      <Card
+                        key={reg.id}
+                        onClick={() => setShowTicket({ registration: reg, event: reg.event })}
+                        className="mb-3"
+                        highlighted
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-semibold">{reg.event?.title || `Событие #${reg.event_id}`}</div>
+                            <div className="text-sm text-gray-400">
+                              {reg.event?.event_date
+                                ? format(new Date(reg.event.event_date), 'd MMM, HH:mm', { locale: ru })
+                                : 'Дата не указана'}
+                            </div>
                           </div>
+                          <Badge variant="accent">Активен</Badge>
                         </div>
-                        <Badge variant={reg.status === 'attended' ? 'success' : 'accent'}>
-                          {reg.status === 'attended' ? <Check size={12} /> : 'Активен'}
-                        </Badge>
-                      </div>
-                    </Card>
-                  ))
-                ) : !registrationsError ? (
-                  <Card className="mb-3">
-                    <div className="text-center text-gray-400 py-4">
-                      <Ticket size={24} className="mx-auto mb-2 opacity-50" />
-                      <div className="text-sm">Нет активных билетов</div>
-                    </div>
-                  </Card>
-                ) : null}
+                      </Card>
+                    ))}
+                  </>
+                )}
 
                 {/* Past attended - for reviews */}
                 {pastAttendedRegistrations.length > 0 && (
@@ -1399,6 +1393,16 @@ const EventsScreen: React.FC = () => {
                       </Card>
                     ))}
                   </>
+                )}
+
+                {/* Empty state */}
+                {activeRegistrations.length === 0 && pastAttendedRegistrations.length === 0 && !registrationsError && (
+                  <Card className="mb-3">
+                    <div className="text-center text-gray-400 py-4">
+                      <Ticket size={24} className="mx-auto mb-2 opacity-50" />
+                      <div className="text-sm">Нет билетов</div>
+                    </div>
+                  </Card>
                 )}
               </>
             )
