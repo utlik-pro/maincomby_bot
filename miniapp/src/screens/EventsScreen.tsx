@@ -1309,13 +1309,6 @@ const EventsScreen: React.FC = () => {
       {/* My Tickets */}
       {filter === 'registered' && (
         <div className="px-4 mb-6 pb-20">
-          <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
-            <Ticket size={14} />
-            Мои билеты ({registrations?.filter((r: any) =>
-              r.status !== 'cancelled' &&
-              (!r.event?.event_date || new Date(r.event.event_date) >= new Date())
-            ).length || 0})
-          </h3>
           {registrationsError && (
             <Card className="mb-3 border-red-500/20">
               <div className="text-red-400 text-sm">
@@ -1326,41 +1319,89 @@ const EventsScreen: React.FC = () => {
           {(() => {
             const activeRegistrations = registrations?.filter((r: any) => {
               if (r.status === 'cancelled') return false
-              // Hide past events
               if (r.event?.event_date && new Date(r.event.event_date) < new Date()) return false
               return true
             }) || []
 
-            return activeRegistrations.length > 0 ? (
-              activeRegistrations.map((reg: any) => (
-                <Card
-                  key={reg.id}
-                  onClick={() => setShowTicket({ registration: reg, event: reg.event })}
-                  className="mb-3"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="font-semibold">{reg.event?.title || `Событие #${reg.event_id}`}</div>
-                      <div className="text-sm text-gray-400">
-                        {reg.event?.event_date
-                          ? format(new Date(reg.event.event_date), 'd MMM, HH:mm', { locale: ru })
-                          : 'Дата не указана'}
+            const pastAttendedRegistrations = registrations?.filter((r: any) => {
+              if (r.status !== 'attended') return false
+              if (!r.event?.event_date) return false
+              return new Date(r.event.event_date) < new Date()
+            }) || []
+
+            return (
+              <>
+                {/* Upcoming tickets */}
+                <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+                  <Ticket size={14} />
+                  Мои билеты ({activeRegistrations.length})
+                </h3>
+                {activeRegistrations.length > 0 ? (
+                  activeRegistrations.map((reg: any) => (
+                    <Card
+                      key={reg.id}
+                      onClick={() => setShowTicket({ registration: reg, event: reg.event })}
+                      className="mb-3"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="font-semibold">{reg.event?.title || `Событие #${reg.event_id}`}</div>
+                          <div className="text-sm text-gray-400">
+                            {reg.event?.event_date
+                              ? format(new Date(reg.event.event_date), 'd MMM, HH:mm', { locale: ru })
+                              : 'Дата не указана'}
+                          </div>
+                        </div>
+                        <Badge variant={reg.status === 'attended' ? 'success' : 'accent'}>
+                          {reg.status === 'attended' ? <Check size={12} /> : 'Активен'}
+                        </Badge>
                       </div>
+                    </Card>
+                  ))
+                ) : !registrationsError ? (
+                  <Card className="mb-3">
+                    <div className="text-center text-gray-400 py-4">
+                      <Ticket size={24} className="mx-auto mb-2 opacity-50" />
+                      <div className="text-sm">Нет активных билетов</div>
                     </div>
-                    <Badge variant={reg.status === 'attended' ? 'success' : 'accent'}>
-                      {reg.status === 'attended' ? <Check size={12} /> : 'Активен'}
-                    </Badge>
-                  </div>
-                </Card>
-              ))
-            ) : !registrationsError ? (
-              <Card className="mb-3">
-                <div className="text-center text-gray-400 py-4">
-                  <Ticket size={24} className="mx-auto mb-2 opacity-50" />
-                  <div className="text-sm">Нет активных билетов</div>
-                </div>
-              </Card>
-            ) : null
+                  </Card>
+                ) : null}
+
+                {/* Past attended - for reviews */}
+                {pastAttendedRegistrations.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-3 mt-6 flex items-center gap-2">
+                      <Star size={14} />
+                      Посещённые ({pastAttendedRegistrations.length})
+                    </h3>
+                    {pastAttendedRegistrations.map((reg: any) => (
+                      <Card
+                        key={reg.id}
+                        onClick={() => setSelectedEvent(reg.event)}
+                        className="mb-3"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-semibold">{reg.event?.title || `Событие #${reg.event_id}`}</div>
+                            <div className="text-sm text-gray-400">
+                              {reg.event?.event_date
+                                ? format(new Date(reg.event.event_date), 'd MMM, HH:mm', { locale: ru })
+                                : 'Дата не указана'}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-accent">Оставить отзыв</span>
+                            <Badge variant="success">
+                              <Check size={12} />
+                            </Badge>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </>
+                )}
+              </>
+            )
           })()}
         </div>
       )}
