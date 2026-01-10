@@ -38,17 +38,33 @@ def get_session() -> AsyncSession:
 
 # Subscription prices in Telegram Stars
 SUBSCRIPTION_PRICES = {
+    'light_week': {
+        'stars': 15,
+        'days': 7,
+        'tier': 'light',
+        'title': 'Light на неделю',
+        'description': '20 свайпов в день, возможность писать матчам (7 дней)',
+    },
     'light': {
         'stars': 50,
         'days': 30,
-        'title': 'Light подписка',
-        'description': '20 свайпов в день, возможность писать матчам',
+        'tier': 'light',
+        'title': 'Light на месяц',
+        'description': '20 свайпов в день, возможность писать матчам (30 дней)',
+    },
+    'pro_week': {
+        'stars': 60,
+        'days': 7,
+        'tier': 'pro',
+        'title': 'PRO на неделю',
+        'description': 'Безлимитные свайпы, все премиум функции (7 дней)',
     },
     'pro': {
         'stars': 200,
         'days': 30,
-        'title': 'PRO подписка',
-        'description': 'Безлимитные свайпы, все премиум функции',
+        'tier': 'pro',
+        'title': 'PRO на месяц',
+        'description': 'Безлимитные свайпы, все премиум функции (30 дней)',
     },
 }
 
@@ -66,17 +82,27 @@ def get_subscription_keyboard() -> InlineKeyboardMarkup:
     """Create subscription selection keyboard."""
     return InlineKeyboardMarkup(
         inline_keyboard=[
+            # Light options
             [
                 InlineKeyboardButton(
-                    text=f"Light — {SUBSCRIPTION_PRICES['light']['stars']} Stars",
+                    text=f"💚 Light неделя — {SUBSCRIPTION_PRICES['light_week']['stars']}⭐",
+                    callback_data="buy_light_week"
+                ),
+                InlineKeyboardButton(
+                    text=f"💚 Light месяц — {SUBSCRIPTION_PRICES['light']['stars']}⭐",
                     callback_data="buy_light"
-                )
+                ),
             ],
+            # PRO options
             [
                 InlineKeyboardButton(
-                    text=f"PRO — {SUBSCRIPTION_PRICES['pro']['stars']} Stars",
+                    text=f"👑 PRO неделя — {SUBSCRIPTION_PRICES['pro_week']['stars']}⭐",
+                    callback_data="buy_pro_week"
+                ),
+                InlineKeyboardButton(
+                    text=f"👑 PRO месяц — {SUBSCRIPTION_PRICES['pro']['stars']}⭐",
                     callback_data="buy_pro"
-                )
+                ),
             ],
             [
                 InlineKeyboardButton(
@@ -88,40 +114,34 @@ def get_subscription_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-@router.message(Command("subscribe"))
-async def cmd_subscribe(message: Message):
-    """Show subscription options."""
-    text = (
+def get_subscription_text() -> str:
+    """Get subscription info text."""
+    return (
         "💎 <b>Выберите подписку</b>\n\n"
-        f"<b>Light</b> — {SUBSCRIPTION_PRICES['light']['stars']} Stars/мес\n"
+        "<b>💚 Light</b>\n"
         "• 20 свайпов в день\n"
         "• Возможность писать матчам\n"
-        "• Продвинутые фильтры\n\n"
-        f"<b>PRO</b> — {SUBSCRIPTION_PRICES['pro']['stars']} Stars/мес\n"
+        f"  ├ Неделя: {SUBSCRIPTION_PRICES['light_week']['stars']}⭐\n"
+        f"  └ Месяц: {SUBSCRIPTION_PRICES['light']['stars']}⭐\n\n"
+        "<b>👑 PRO</b>\n"
         "• Безлимитные свайпы\n"
         "• Все функции Light\n"
         "• Приоритет в ленте\n"
-        "• Суперлайки\n"
+        f"  ├ Неделя: {SUBSCRIPTION_PRICES['pro_week']['stars']}⭐\n"
+        f"  └ Месяц: {SUBSCRIPTION_PRICES['pro']['stars']}⭐"
     )
-    await message.answer(text, reply_markup=get_subscription_keyboard(), parse_mode="HTML")
+
+
+@router.message(Command("subscribe"))
+async def cmd_subscribe(message: Message):
+    """Show subscription options."""
+    await message.answer(get_subscription_text(), reply_markup=get_subscription_keyboard(), parse_mode="HTML")
 
 
 @router.callback_query(F.data == "show_subscriptions")
 async def callback_show_subscriptions(callback: CallbackQuery):
     """Show subscription options from callback."""
-    text = (
-        "💎 <b>Выберите подписку</b>\n\n"
-        f"<b>Light</b> — {SUBSCRIPTION_PRICES['light']['stars']} Stars/мес\n"
-        "• 20 свайпов в день\n"
-        "• Возможность писать матчам\n"
-        "• Продвинутые фильтры\n\n"
-        f"<b>PRO</b> — {SUBSCRIPTION_PRICES['pro']['stars']} Stars/мес\n"
-        "• Безлимитные свайпы\n"
-        "• Все функции Light\n"
-        "• Приоритет в ленте\n"
-        "• Суперлайки\n"
-    )
-    await callback.message.edit_text(text, reply_markup=get_subscription_keyboard(), parse_mode="HTML")
+    await callback.message.edit_text(get_subscription_text(), reply_markup=get_subscription_keyboard(), parse_mode="HTML")
     await callback.answer()
 
 
@@ -209,14 +229,16 @@ async def successful_payment_handler(message: Message, bot: Bot):
                 new_expires = now + timedelta(days=sub_info['days'])
 
             # Update user subscription
-            user.subscription_tier = subscription_type
+            # Use tier from config (light_week -> light, pro_week -> pro)
+            actual_tier = sub_info.get('tier', subscription_type)
+            user.subscription_tier = actual_tier
             user.subscription_expires_at = new_expires
 
             # Record payment
             payment_record = Payment(
                 user_id=user.id,
                 amount_stars=payment.total_amount,
-                subscription_type=subscription_type,
+                subscription_type=actual_tier,
                 telegram_payment_charge_id=payment.telegram_payment_charge_id,
                 provider_payment_charge_id=payment.provider_payment_charge_id,
             )
