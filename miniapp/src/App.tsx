@@ -85,8 +85,8 @@ const App: React.FC = () => {
   // Check if should show What's New after loading
   useEffect(() => {
     if (!isLoading && isAuthenticated && !shouldShowOnboarding() && shouldShowWhatsNew()) {
-      // Show banner first, user can open modal from it
-      setShowUpdateBanner(true)
+      // Show modal directly when there's an update
+      setShowWhatsNewModal(true)
     }
   }, [isLoading, isAuthenticated])
 
