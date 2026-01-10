@@ -75,9 +75,10 @@ function ReleaseCard({ release, isFirst }: { release: Release; isFirst: boolean 
         <article className="relative">
             {/* Timeline dot - pulsing for the first/latest release */}
             {isFirst ? (
-                <div className="absolute left-0 top-0">
-                    <span className="absolute inline-flex h-3 w-3 rounded-full bg-[var(--accent)] opacity-75 animate-ping" />
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--accent)] ring-4 ring-[var(--accent)]/20" />
+                <div className="absolute left-0 top-0 flex items-center justify-center w-3 h-3">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75 animate-ping" />
+                    <span className="absolute inline-flex h-3 w-3 rounded-full bg-[var(--accent)]" />
+                    <span className="absolute inline-flex h-5 w-5 rounded-full ring-4 ring-[var(--accent)]/20" />
                 </div>
             ) : (
                 <div className="absolute left-0 top-0 w-3 h-3 rounded-full bg-white/30 ring-4 ring-white/10" />
