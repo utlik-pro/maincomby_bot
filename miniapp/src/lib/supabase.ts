@@ -2479,3 +2479,157 @@ export async function getApprovedProfilesWithPhotos(
       }
     })
 }
+
+// ============================================
+// Event Reviews System
+// ============================================
+
+import type { EventReview } from '@/types'
+
+/**
+ * Get all reviews for an event with user info
+ */
+export async function getEventReviews(eventId: number): Promise<EventReview[]> {
+  const supabase = getSupabase()
+
+  const { data: reviews, error } = await supabase
+    .from('bot_event_reviews')
+    .select('*')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[getEventReviews] Error:', error)
+    return []
+  }
+
+  if (!reviews || reviews.length === 0) return []
+
+  // Get user info for each review
+  const userIds = reviews.map(r => r.user_id)
+  const { data: users } = await supabase
+    .from('bot_users')
+    .select('id, first_name, last_name, username')
+    .in('id', userIds)
+
+  // Combine data
+  return reviews.map(review => ({
+    ...review,
+    user: users?.find(u => u.id === review.user_id) || null
+  })) as EventReview[]
+}
+
+/**
+ * Get average rating for an event
+ */
+export async function getEventAverageRating(eventId: number): Promise<{ average: number; count: number }> {
+  const { data, error } = await getSupabase()
+    .from('bot_event_reviews')
+    .select('rating')
+    .eq('event_id', eventId)
+
+  if (error || !data || data.length === 0) {
+    return { average: 0, count: 0 }
+  }
+
+  const sum = data.reduce((acc, r) => acc + r.rating, 0)
+  return {
+    average: Math.round((sum / data.length) * 10) / 10,
+    count: data.length
+  }
+}
+
+/**
+ * Check if user can leave a review (attended event + hasn't reviewed yet)
+ */
+export async function canUserReviewEvent(eventId: number, userId: number): Promise<boolean> {
+  const supabase = getSupabase()
+
+  // Check if user attended the event
+  const { data: registration } = await supabase
+    .from('bot_registrations')
+    .select('status')
+    .eq('event_id', eventId)
+    .eq('user_id', userId)
+    .single()
+
+  if (!registration || registration.status !== 'attended') {
+    return false
+  }
+
+  // Check if user already reviewed
+  const { data: existingReview } = await supabase
+    .from('bot_event_reviews')
+    .select('id')
+    .eq('event_id', eventId)
+    .eq('user_id', userId)
+    .single()
+
+  return !existingReview
+}
+
+/**
+ * Get user's review for an event (if exists)
+ */
+export async function getUserEventReview(eventId: number, userId: number): Promise<EventReview | null> {
+  const { data, error } = await getSupabase()
+    .from('bot_event_reviews')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('user_id', userId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('[getUserEventReview] Error:', error)
+  }
+
+  return data as EventReview | null
+}
+
+/**
+ * Create a new event review
+ */
+export async function createEventReview(
+  eventId: number,
+  userId: number,
+  rating: number,
+  text?: string
+): Promise<EventReview | null> {
+  const supabase = getSupabase()
+
+  // Validate rating
+  if (rating < 1 || rating > 5) {
+    throw new Error('Rating must be between 1 and 5')
+  }
+
+  // Check if user can review
+  const canReview = await canUserReviewEvent(eventId, userId)
+  if (!canReview) {
+    throw new Error('User cannot review this event')
+  }
+
+  const { data, error } = await supabase
+    .from('bot_event_reviews')
+    .insert({
+      event_id: eventId,
+      user_id: userId,
+      rating,
+      text: text?.trim() || null
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[createEventReview] Error:', error)
+    throw error
+  }
+
+  // Award XP for leaving a review (+20 XP)
+  try {
+    await addXP(userId, 20, 'FEEDBACK_SUBMIT')
+  } catch (e) {
+    console.warn('Failed to add XP for review:', e)
+  }
+
+  return data as EventReview
+}

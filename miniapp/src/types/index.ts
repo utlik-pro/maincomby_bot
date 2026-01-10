@@ -295,6 +295,21 @@ export interface EventRegistration {
   checked_in_by: number | null // volunteer user_id
 }
 
+export interface EventReview {
+  id: number
+  event_id: number
+  user_id: number
+  rating: number  // 1-5
+  text: string | null
+  created_at: string
+  // Joined user data
+  user?: {
+    first_name: string | null
+    last_name: string | null
+    username: string | null
+  }
+}
+
 export interface Match {
   id: number
   user1_id: number

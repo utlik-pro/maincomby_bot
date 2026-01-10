@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
-import { format, isToday, isTomorrow, addHours, isBefore, isAfter } from 'date-fns'
+import { format, isToday, isTomorrow, addHours, isBefore, isAfter, isPast } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
   Calendar,
@@ -20,11 +20,15 @@ import {
   Lightbulb,
   Loader2,
   UserCheck,
+  Star,
+  MessageSquare,
+  Send,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton } from '@/lib/telegram'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PhoneDialog } from '@/components/PhoneDialog'
+import { StarRating } from '@/components/StarRating'
 import {
   getActiveEvents,
   getUserRegistrations,
@@ -37,11 +41,16 @@ import {
   checkAndUnlockAchievements,
   getEventCheckins,
   getEventRegistrations,
+  getEventReviews,
+  getEventAverageRating,
+  canUserReviewEvent,
+  getUserEventReview,
+  createEventReview,
 } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { EventCalendar } from '@/components/EventCalendar'
-import { Event, EventRegistration, XP_REWARDS } from '@/types'
+import { Event, EventRegistration, EventReview, XP_REWARDS } from '@/types'
 
 // Event type icons
 const eventTypeIcons: Record<string, React.ReactNode> = {
@@ -290,15 +299,75 @@ const TicketView: React.FC<{
 const EventDetail: React.FC<{
   event: Event
   registration?: EventRegistration
+  userId?: number
   onClose: () => void
   onRegister: () => void
   onShowTicket: () => void
   onCancelRegistration: () => void
-}> = ({ event, registration, onClose, onRegister, onShowTicket, onCancelRegistration }) => {
+}> = ({ event, registration, userId, onClose, onRegister, onShowTicket, onCancelRegistration }) => {
   const [showMapConfirm, setShowMapConfirm] = useState(false)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewText, setReviewText] = useState('')
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+  const { addToast } = useToastStore()
+  const queryClient = useQueryClient()
+
   const eventDate = new Date(event.event_date)
+  const eventPassed = isPast(eventDate)
   const IconComponent = eventTypeIcons[event.event_type || 'default'] || eventTypeIcons.default
   const mapUrl = getMapUrl(event)
+
+  // Fetch reviews for this event (only if event passed)
+  const { data: reviews = [], isLoading: reviewsLoading, refetch: refetchReviews } = useQuery({
+    queryKey: ['eventReviews', event.id],
+    queryFn: () => getEventReviews(event.id),
+    enabled: eventPassed,
+  })
+
+  // Fetch average rating
+  const { data: ratingData } = useQuery({
+    queryKey: ['eventRating', event.id],
+    queryFn: () => getEventAverageRating(event.id),
+    enabled: eventPassed,
+  })
+
+  // Check if user can review
+  const { data: canReview = false } = useQuery({
+    queryKey: ['canReview', event.id, userId],
+    queryFn: () => userId ? canUserReviewEvent(event.id, userId) : false,
+    enabled: eventPassed && !!userId,
+  })
+
+  // Get user's existing review
+  const { data: userReview } = useQuery({
+    queryKey: ['userReview', event.id, userId],
+    queryFn: () => userId ? getUserEventReview(event.id, userId) : null,
+    enabled: eventPassed && !!userId,
+  })
+
+  // Submit review handler
+  const handleSubmitReview = async () => {
+    if (!userId || reviewRating === 0) return
+
+    setIsSubmittingReview(true)
+    try {
+      await createEventReview(event.id, userId, reviewRating, reviewText)
+      hapticFeedback.success()
+      addToast('Спасибо за отзыв! +20 XP', 'success')
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['eventReviews', event.id] })
+      queryClient.invalidateQueries({ queryKey: ['eventRating', event.id] })
+      queryClient.invalidateQueries({ queryKey: ['canReview', event.id, userId] })
+      queryClient.invalidateQueries({ queryKey: ['userReview', event.id, userId] })
+      setReviewRating(0)
+      setReviewText('')
+    } catch (error: any) {
+      hapticFeedback.error()
+      addToast(error?.message || 'Ошибка отправки отзыва', 'error')
+    } finally {
+      setIsSubmittingReview(false)
+    }
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -393,6 +462,110 @@ const EventDetail: React.FC<{
           <Card className="mb-6">
             <h3 className="font-semibold mb-2">Что вас ждёт</h3>
             <p className="text-gray-400 text-sm leading-relaxed">{event.speakers}</p>
+          </Card>
+        )}
+
+        {/* Reviews Section - only show for past events */}
+        {eventPassed && (
+          <Card className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Star size={18} className="text-yellow-400" />
+                Отзывы
+              </h3>
+              {ratingData && ratingData.count > 0 && (
+                <div className="flex items-center gap-1 text-sm">
+                  <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                  <span className="font-medium">{ratingData.average}</span>
+                  <span className="text-muted">({ratingData.count})</span>
+                </div>
+              )}
+            </div>
+
+            {/* User's existing review */}
+            {userReview && (
+              <div className="bg-accent/10 rounded-xl p-3 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium text-accent">Ваш отзыв</span>
+                  <StarRating rating={userReview.rating} size="sm" />
+                </div>
+                {userReview.text && (
+                  <p className="text-sm text-gray-300">{userReview.text}</p>
+                )}
+              </div>
+            )}
+
+            {/* Review form - only if user attended and hasn't reviewed yet */}
+            {canReview && !userReview && (
+              <div className="border border-gray-700 rounded-xl p-4 mb-4">
+                <div className="text-sm text-gray-400 mb-3">Вы были на этом мероприятии! Оставьте отзыв:</div>
+                <div className="flex justify-center mb-4">
+                  <StarRating
+                    rating={reviewRating}
+                    size="lg"
+                    interactive
+                    onChange={(r) => {
+                      setReviewRating(r)
+                      hapticFeedback.light()
+                    }}
+                  />
+                </div>
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="Расскажите о вашем опыте (необязательно)"
+                  className="w-full bg-bg rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent resize-none"
+                  rows={3}
+                />
+                <Button
+                  fullWidth
+                  onClick={handleSubmitReview}
+                  disabled={reviewRating === 0 || isSubmittingReview}
+                  isLoading={isSubmittingReview}
+                  className="mt-3"
+                >
+                  <Send size={16} />
+                  Отправить отзыв (+20 XP)
+                </Button>
+              </div>
+            )}
+
+            {/* Reviews list */}
+            {reviewsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16" />
+                <Skeleton className="h-16" />
+              </div>
+            ) : reviews.length > 0 ? (
+              <div className="space-y-3">
+                {reviews.slice(0, 5).map((review: EventReview) => (
+                  <div key={review.id} className="border-b border-gray-800 pb-3 last:border-0 last:pb-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">
+                        {review.user?.first_name || 'Пользователь'} {review.user?.last_name?.charAt(0) ? `${review.user.last_name.charAt(0)}.` : ''}
+                      </span>
+                      <StarRating rating={review.rating} size="sm" />
+                    </div>
+                    {review.text && (
+                      <p className="text-sm text-gray-400">{review.text}</p>
+                    )}
+                    <span className="text-xs text-gray-500">
+                      {format(new Date(review.created_at), 'd MMM yyyy', { locale: ru })}
+                    </span>
+                  </div>
+                ))}
+                {reviews.length > 5 && (
+                  <div className="text-center text-sm text-accent py-2">
+                    Ещё {reviews.length - 5} отзывов
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />
+                <div className="text-sm">Пока нет отзывов</div>
+              </div>
+            )}
           </Card>
         )}
 
@@ -813,6 +986,7 @@ const EventsScreen: React.FC = () => {
         <EventDetail
           event={selectedEvent}
           registration={registration}
+          userId={user?.id}
           onClose={() => setSelectedEvent(null)}
           onRegister={() => handleRegister(selectedEvent.id)}
           onShowTicket={() => setShowTicket({ registration: registration!, event: selectedEvent })}
