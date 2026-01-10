@@ -187,3 +187,12 @@ async def cmd_broadcast_release(message: Message):
         await message.reply(f"Ошибка при рассылке: {e}")
 
 
+@router.callback_query(F.data == "dismiss_review")
+async def callback_dismiss_review(callback: CallbackQuery):
+    """Dismiss review request notification."""
+    await callback.answer("Хорошо, напомним позже!")
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass  # Message may already be deleted
+

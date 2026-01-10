@@ -48,6 +48,7 @@ import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotific
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
 import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
+import { SubscriptionBottomSheet } from '@/components/SubscriptionBottomSheet'
 import { BadgeGrid, BadgeDetail } from '@/components/BadgeGrid'
 import { CompanyCard, CompanyInline } from '@/components/CompanyCard'
 import { CompanySelector } from '@/components/CompanySelector'
@@ -189,8 +190,7 @@ const ProfileScreen: React.FC = () => {
   const [uploadingPosition, setUploadingPosition] = useState<number | null>(null)
 
   // Determine which sub-screen is active for back button
-  const activeSubScreen = showSubscription ? 'subscription' :
-    showNotifications ? 'notifications' :
+  const activeSubScreen = showNotifications ? 'notifications' :
     showTeamSection ? 'team' :
     showSettings ? 'settings' :
     showSkinSelector ? 'skin' :
@@ -202,8 +202,7 @@ const ProfileScreen: React.FC = () => {
 
   // Handle Telegram BackButton
   const handleBack = useCallback(() => {
-    if (showSubscription) setShowSubscription(false)
-    else if (showNotifications) setShowNotifications(false)
+    if (showNotifications) setShowNotifications(false)
     else if (showTeamSection) setShowTeamSection(false)
     else if (showSettings) setShowSettings(false)
     else if (showSkinSelector) setShowSkinSelector(false)
@@ -212,7 +211,7 @@ const ProfileScreen: React.FC = () => {
     else if (showNetworkingGuide) setShowNetworkingGuide(false)
     else if (showDebug) setShowDebug(false)
     else if (isEditing) setIsEditing(false)
-  }, [showSubscription, showNotifications, showTeamSection, showSettings, showSkinSelector, showSkinAdmin, showAdminPanel, showNetworkingGuide, showDebug, isEditing])
+  }, [showNotifications, showTeamSection, showSettings, showSkinSelector, showSkinAdmin, showAdminPanel, showNetworkingGuide, showDebug, isEditing])
 
   useEffect(() => {
     if (activeSubScreen) {
@@ -474,35 +473,6 @@ const ProfileScreen: React.FC = () => {
   // Get profile theme based on role/tier/badges
   const theme = getProfileTheme(user?.team_role, tier, userBadges)
 
-  // Subscription plans
-  const plans: { tier: SubscriptionTier; name: string; price: string; features: string[] }[] = [
-    {
-      tier: 'free',
-      name: 'Free',
-      price: 'Бесплатно',
-      features: ['5 свайпов в день', 'Базовый профиль', 'Доступ к событиям'],
-    },
-    {
-      tier: 'light',
-      name: 'Light',
-      price: '$5/мес',
-      features: ['20 свайпов в день', 'Видеть кто лайкнул', '1 суперлайк в день', 'Расширенные фильтры'],
-    },
-    {
-      tier: 'pro',
-      name: 'Pro',
-      price: '$15/мес',
-      features: [
-        'Безлимит свайпов',
-        'Видеть кто лайкнул',
-        '5 суперлайков в день',
-        'Приоритет в ленте',
-        'VIP бейдж',
-        'Расширенные фильтры',
-      ],
-    },
-  ]
-
   // Edit Profile Screen
   if (isEditing) {
     return (
@@ -655,59 +625,6 @@ const ProfileScreen: React.FC = () => {
           >
             {isSaving ? 'Сохранение...' : 'Сохранить'}
           </Button>
-        </div>
-      </div>
-    )
-  }
-
-  if (showSubscription) {
-    return (
-      <div className="pb-6">
-        <button onClick={() => setShowSubscription(false)} className="p-4 text-gray-400 flex items-center gap-2">
-          <ArrowLeft size={16} />
-          Назад
-        </button>
-
-        <div className="px-4">
-          <h1 className="text-2xl font-bold mb-2">Подписка</h1>
-          <p className="text-gray-400 text-sm mb-6">Выберите план для расширения возможностей</p>
-
-          <div className="space-y-4">
-            {plans.map((plan) => (
-              <Card
-                key={plan.tier}
-                highlighted={tier === plan.tier}
-                className={plan.tier === 'pro' ? 'bg-gradient-to-br from-accent/20 to-bg-card' : ''}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-lg">{plan.name}</span>
-                      {plan.tier === 'pro' && <Crown size={18} className="text-accent" />}
-                      {plan.tier === 'light' && <Star size={18} className="text-yellow-400" />}
-                    </div>
-                    <div className="text-accent font-semibold">{plan.price}</div>
-                  </div>
-                  {tier === plan.tier && <Badge variant="accent">Текущий</Badge>}
-                </div>
-
-                <ul className="space-y-2 mb-4">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      <Check size={14} className="text-accent" />
-                      <span className="text-gray-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {tier !== plan.tier && plan.tier !== 'free' && (
-                  <Button fullWidth variant={plan.tier === 'pro' ? 'primary' : 'secondary'}>
-                    Выбрать {plan.name}
-                  </Button>
-                )}
-              </Card>
-            ))}
-          </div>
         </div>
       </div>
     )
@@ -1509,6 +1426,12 @@ const ProfileScreen: React.FC = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* Subscription Bottom Sheet */}
+      <SubscriptionBottomSheet
+        isOpen={showSubscription}
+        onClose={() => setShowSubscription(false)}
+      />
     </div>
   )
 }

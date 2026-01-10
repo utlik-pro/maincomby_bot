@@ -39,6 +39,19 @@ async def send_event_starting_soon_job():
         logger.error(f"Event starting soon job failed: {e}")
 
 
+async def send_review_requests_job():
+    """Job to send review requests at 22:30 for events that ended today"""
+    try:
+        from app.services.notifications import get_notification_service
+        service = get_notification_service()
+        if service:
+            async with async_session_maker() as session:
+                count = await service.send_review_requests_batch(session)
+                logger.info(f"Review requests job completed: {count} sent")
+    except Exception as e:
+        logger.error(f"Review requests job failed: {e}")
+
+
 def setup_scheduled_jobs(scheduler: AsyncIOScheduler):
     """Setup all scheduled jobs"""
     # Send event reminders every hour (checks for events in 24h window)
@@ -60,6 +73,16 @@ def setup_scheduled_jobs(scheduler: AsyncIOScheduler):
         replace_existing=True
     )
 
-    logger.info("Scheduled jobs configured: event_reminders (hourly), event_starting_soon (every 15 min)")
+    # Send review requests at 22:30 for events that ended today
+    scheduler.add_job(
+        send_review_requests_job,
+        'cron',
+        hour=22,
+        minute=30,
+        id='review_requests',
+        replace_existing=True
+    )
+
+    logger.info("Scheduled jobs configured: event_reminders (hourly), event_starting_soon (every 15 min), review_requests (22:30 daily)")
 
 

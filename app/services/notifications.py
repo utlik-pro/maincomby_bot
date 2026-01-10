@@ -476,6 +476,109 @@ class NotificationService:
             logger.error(f"Failed to send 'starting soon' reminders batch: {e}")
             return 0
 
+    async def send_review_request(self, user_id: int, event: Event) -> bool:
+        """Send request to leave a review after attending an event"""
+        try:
+            text = (
+                f"🎉 <b>Как прошло мероприятие?</b>\n\n"
+                f"Вы посетили <b>{event.title}</b>!\n\n"
+                f"Поделитесь впечатлениями — это поможет нам стать лучше "
+                f"и поможет другим участникам выбрать интересные события.\n\n"
+                f"За отзыв вы получите <b>+20 XP</b> ⭐"
+            )
+
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="⭐ Оставить отзыв",
+                    url=f"https://t.me/maincomapp_bot/app?startapp=review_{event.id}"
+                )],
+                [InlineKeyboardButton(
+                    text="Позже",
+                    callback_data="dismiss_review"
+                )]
+            ])
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode="HTML",
+                reply_markup=keyboard
+            )
+            logger.info(f"Sent review request to user {user_id} for event {event.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send review request to {user_id}: {e}")
+            return False
+
+    async def send_review_requests_batch(self, session: AsyncSession) -> int:
+        """Send review requests to users who attended events today"""
+        try:
+            # Find events that ended today (event_date was today)
+            now = datetime.now()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+            # Get events that happened today
+            events_query = select(Event).where(
+                and_(
+                    Event.event_date >= today_start,
+                    Event.event_date <= today_end
+                )
+            )
+            events_result = await session.execute(events_query)
+            events = events_result.scalars().all()
+
+            if not events:
+                logger.info("No events today for review requests")
+                return 0
+
+            # Get Supabase client for checking reviews
+            supabase = self._get_supabase()
+
+            sent_count = 0
+            for event in events:
+                # Get users who attended this event
+                regs_query = select(EventRegistration).where(
+                    and_(
+                        EventRegistration.event_id == event.id,
+                        EventRegistration.status == 'attended'
+                    )
+                )
+                regs_result = await session.execute(regs_query)
+                registrations = regs_result.scalars().all()
+
+                for reg in registrations:
+                    # Get user's telegram ID
+                    user_query = select(User).where(User.id == reg.user_id)
+                    user_result = await session.execute(user_query)
+                    user = user_result.scalar_one_or_none()
+
+                    if not user or not user.tg_user_id:
+                        continue
+
+                    # Check if user already left a review (via Supabase)
+                    if supabase:
+                        try:
+                            existing_review = supabase.table("bot_event_reviews").select("id").eq(
+                                "event_id", event.id
+                            ).eq("user_id", user.id).execute()
+
+                            if existing_review.data and len(existing_review.data) > 0:
+                                # User already reviewed, skip
+                                continue
+                        except Exception as e:
+                            logger.warning(f"Failed to check existing review: {e}")
+
+                    success = await self.send_review_request(user.tg_user_id, event)
+                    if success:
+                        sent_count += 1
+
+            logger.info(f"Sent {sent_count} review requests")
+            return sent_count
+        except Exception as e:
+            logger.error(f"Failed to send review requests batch: {e}")
+            return 0
+
 
 # Helper function to check and notify rank up
 async def check_and_notify_rank_up(

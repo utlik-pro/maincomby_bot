@@ -364,6 +364,17 @@ export async function getActiveEvents() {
   return data
 }
 
+export async function getEventById(eventId: number): Promise<Event | null> {
+  const { data, error } = await getSupabase()
+    .from('bot_events')
+    .select('*')
+    .eq('id', eventId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
 export async function getEventRegistration(eventId: number, userId: number) {
   const { data, error } = await getSupabase()
     .from('bot_registrations')
@@ -2584,6 +2595,57 @@ export async function getUserEventReview(eventId: number, userId: number): Promi
   }
 
   return data as EventReview | null
+}
+
+/**
+ * Get events that user attended but hasn't reviewed yet
+ */
+export async function getPendingReviewEvents(userId: number): Promise<Event[]> {
+  const supabase = getSupabase()
+
+  // Get attended registrations
+  const { data: registrations, error: regError } = await supabase
+    .from('bot_registrations')
+    .select('event_id')
+    .eq('user_id', userId)
+    .eq('status', 'attended')
+
+  if (regError || !registrations || registrations.length === 0) {
+    return []
+  }
+
+  const eventIds = registrations.map(r => r.event_id)
+
+  // Get existing reviews
+  const { data: reviews } = await supabase
+    .from('bot_event_reviews')
+    .select('event_id')
+    .eq('user_id', userId)
+    .in('event_id', eventIds)
+
+  const reviewedEventIds = reviews?.map(r => r.event_id) || []
+
+  // Filter to events without reviews
+  const pendingEventIds = eventIds.filter(id => !reviewedEventIds.includes(id))
+
+  if (pendingEventIds.length === 0) {
+    return []
+  }
+
+  // Get event details
+  const { data: events, error: eventsError } = await supabase
+    .from('bot_events')
+    .select('*')
+    .in('id', pendingEventIds)
+    .lt('event_date', new Date().toISOString()) // Only past events
+    .order('event_date', { ascending: false })
+
+  if (eventsError) {
+    console.error('[getPendingReviewEvents] Error:', eventsError)
+    return []
+  }
+
+  return (events || []) as Event[]
 }
 
 /**

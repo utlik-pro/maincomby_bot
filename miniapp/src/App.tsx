@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp } from '@/lib/telegram'
-import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess } from '@/lib/supabase'
+import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -23,6 +23,7 @@ const OnboardingScreen = React.lazy(() => import('@/screens/OnboardingScreen'))
 const AccessGateScreen = React.lazy(() => import('@/screens/AccessGateScreen'))
 const InviteBottomSheet = React.lazy(() => import('@/components/InviteBottomSheet').then(m => ({ default: m.InviteBottomSheet })))
 const ChangelogSheet = React.lazy(() => import('@/components/ChangelogSheet'))
+const ReviewBottomSheet = React.lazy(() => import('@/components/ReviewBottomSheet').then(m => ({ default: m.ReviewBottomSheet })))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -80,6 +81,10 @@ const App: React.FC = () => {
   // What's New changelog sheet state
   const [showChangelog, setShowChangelog] = useState(false)
 
+  // Review prompt state
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false)
+  const [pendingReviewEvent, setPendingReviewEvent] = useState<any>(null)
+
   // Check if should show What's New after loading
   useEffect(() => {
     if (!isLoading && isAuthenticated && !shouldShowOnboarding() && shouldShowWhatsNew()) {
@@ -87,6 +92,28 @@ const App: React.FC = () => {
       setShowChangelog(true)
     }
   }, [isLoading, isAuthenticated])
+
+  // Check for pending event reviews
+  const { user } = useAppStore()
+  useEffect(() => {
+    const checkPendingReviews = async () => {
+      if (!user?.id || isLoading || showChangelog) return
+
+      try {
+        const pendingEvents = await getPendingReviewEvents(user.id)
+        if (pendingEvents.length > 0) {
+          // Show review prompt for the most recent event
+          setPendingReviewEvent(pendingEvents[0])
+          // Delay to not conflict with other modals
+          setTimeout(() => setShowReviewPrompt(true), 1000)
+        }
+      } catch (e) {
+        console.warn('Failed to check pending reviews:', e)
+      }
+    }
+
+    checkPendingReviews()
+  }, [user?.id, isLoading, showChangelog])
 
   // Easter eggs - speed runner (visit all tabs quickly)
   const { recordTabVisit } = useSpeedRunner(['home', 'events', 'network', 'achievements', 'profile'], 10000)
@@ -586,7 +613,7 @@ const App: React.FC = () => {
 
   // Handle deep links (startapp parameter or URL query params)
   useEffect(() => {
-    if (isLoading) return
+    if (isLoading || !user?.id) return
 
     const webApp = getTelegramWebApp()
     // @ts-ignore - start_param might not be in types
@@ -599,6 +626,23 @@ const App: React.FC = () => {
     const deepLinkValue = startParam || screenParam
 
     if (deepLinkValue) {
+      // Handle review deep link: review_{eventId}
+      if (deepLinkValue.startsWith('review_')) {
+        const eventId = parseInt(deepLinkValue.replace('review_', ''), 10)
+        if (!isNaN(eventId)) {
+          // Fetch event and show review modal
+          getEventById(eventId).then((event) => {
+            if (event) {
+              setPendingReviewEvent(event)
+              setShowReviewPrompt(true)
+              // Navigate to events tab
+              setActiveTab('events')
+            }
+          }).catch(console.warn)
+          return
+        }
+      }
+
       // Map parameter to tab
       const screenMap: Record<string, typeof activeTab> = {
         'home': 'home',
@@ -619,7 +663,7 @@ const App: React.FC = () => {
         }
       }
     }
-  }, [isLoading, setActiveTab, setDeepLinkTarget])
+  }, [isLoading, user?.id, setActiveTab, setDeepLinkTarget])
 
   // Show loading screen
   if (isLoading) {
@@ -704,6 +748,24 @@ const App: React.FC = () => {
             setLastSeenAppVersion(CURRENT_APP_VERSION)
           }}
         />
+      </React.Suspense>
+
+      {/* Event Review Prompt */}
+      <React.Suspense fallback={null}>
+        {pendingReviewEvent && user && (
+          <ReviewBottomSheet
+            isOpen={showReviewPrompt}
+            onClose={() => {
+              setShowReviewPrompt(false)
+              setPendingReviewEvent(null)
+            }}
+            event={pendingReviewEvent}
+            userId={user.id}
+            onSuccess={() => {
+              // Could refresh data or show next pending review
+            }}
+          />
+        )}
       </React.Suspense>
     </div>
   )
