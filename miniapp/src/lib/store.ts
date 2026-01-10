@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { User, UserProfile, SubscriptionTier, UserRank, RANK_THRESHOLDS } from '@/types'
+import { CURRENT_APP_VERSION } from '@/lib/version'
 
 // Onboarding version - increment this to show onboarding to all users again
 export const CURRENT_ONBOARDING_VERSION = 3
@@ -136,8 +137,6 @@ export const useAppStore = create<AppState>()(
       },
       // Computed - check if "What's New" modal should be shown
       shouldShowWhatsNew: () => {
-        // Import dynamically to avoid circular deps
-        const { CURRENT_APP_VERSION } = require('@/lib/version')
         const { lastSeenAppVersion, onboardingVersion } = get()
         // Only show if user has completed onboarding and hasn't seen this version
         return onboardingVersion >= CURRENT_ONBOARDING_VERSION && lastSeenAppVersion < CURRENT_APP_VERSION
