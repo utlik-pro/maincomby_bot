@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-01-10
+
+### Added
+
+#### Mini App
+- Event feedback system (1-5 stars + text review)
+- Automatic review prompt after attending events
+- "What's New" changelog modal on app updates
+- XP rewards for matches (+15 to both users)
+- XP reward for first swipe (+5)
+- XP reward for profile completion (+25)
+- Daily swipes counter with limit screen
+- Subscription required to message matches
+
+#### Telegram Bot
+- Push notifications for event reviews at 22:30 after event
+- Improved notification system
+
+### Fixed
+- Friend invite XP reward corrected to 50 points
+- Profile photos handling for undefined cases
+- Subscribe link for swipes exhausted screen
+
+### Technical
+- Added debug logging for XP system
+- Fixed RPC function permissions for XP transactions
+- SECURITY DEFINER on increment_user_points function
+
 ## [1.0.0] - 2026-01-10
 
 ### Added
