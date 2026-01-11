@@ -8,7 +8,7 @@ import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
 import { Skeleton } from '@/components/ui'
-import { useSpeedRunner } from '@/lib/easterEggs'
+import { useSpeedRunner, useShakeDetector } from '@/lib/easterEggs'
 import { Smartphone } from 'lucide-react'
 
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -117,6 +117,11 @@ const App: React.FC = () => {
 
   // Easter eggs - speed runner (visit all tabs quickly)
   const { recordTabVisit } = useSpeedRunner(['home', 'events', 'network', 'achievements', 'profile'], 10000)
+
+  // Easter eggs - shake detector (shake phone for bonus)
+  useShakeDetector(() => {
+    console.log('[EasterEgg] Phone shake detected!')
+  }, 3)
 
   // Record tab visits for speed runner
   useEffect(() => {
