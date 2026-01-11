@@ -1,0 +1,127 @@
+name: Scheduled Release Check
+
+on:
+  # Run every Monday at 10:00 UTC
+  schedule:
+    - cron: '0 10 * * 1'
+
+  # Manual trigger with options
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      force:
+        description: 'Force release even if no changes'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      - name: Check for unreleased changes
+        id: check
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "last_tag=$LAST_TAG" >> $GITHUB_OUTPUT
+
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tag found, will create initial release"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "change_count=initial" >> $GITHUB_OUTPUT
+          else
+            CHANGES=$(git log $LAST_TAG..HEAD --oneline | wc -l | tr -d ' ')
+            FEAT_COUNT=$(git log $LAST_TAG..HEAD --grep="^feat" --oneline | wc -l | tr -d ' ')
+            FIX_COUNT=$(git log $LAST_TAG..HEAD --grep="^fix" --oneline | wc -l | tr -d ' ')
+
+            echo "change_count=$CHANGES" >> $GITHUB_OUTPUT
+            echo "feat_count=$FEAT_COUNT" >> $GITHUB_OUTPUT
+            echo "fix_count=$FIX_COUNT" >> $GITHUB_OUTPUT
+
+            if [ "$CHANGES" -gt 0 ]; then
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+              echo "Found $CHANGES commits since $LAST_TAG ($FEAT_COUNT feat, $FIX_COUNT fix)"
+            else
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+              echo "No changes since $LAST_TAG"
+            fi
+          fi
+
+      - name: Determine bump type
+        id: bump
+        if: steps.check.outputs.has_changes == 'true' || github.event.inputs.force == 'true'
+        run: |
+          if [ -n "${{ github.event.inputs.bump_type }}" ]; then
+            echo "type=${{ github.event.inputs.bump_type }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-determine: minor if any feat commits, otherwise patch
+            if [ "${{ steps.check.outputs.feat_count }}" -gt 0 ]; then
+              echo "type=minor" >> $GITHUB_OUTPUT
+            else
+              echo "type=patch" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Run release script
+        if: steps.check.outputs.has_changes == 'true' || github.event.inputs.force == 'true'
+        run: |
+          chmod +x ./scripts/release.sh
+          # Run in non-interactive mode
+          echo "y" | ./scripts/release.sh ${{ steps.bump.outputs.type }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push release
+        if: steps.check.outputs.has_changes == 'true' || github.event.inputs.force == 'true'
+        run: |
+          git push origin main
+          git push origin --tags
+
+      - name: Create GitHub Release
+        if: steps.check.outputs.has_changes == 'true' || github.event.inputs.force == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.bump.outputs.new_version }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.has_changes }}" == "true" ] || [ "${{ github.event.inputs.force }}" == "true" ]; then
+            echo "✅ Release created successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Bump type**: ${{ steps.bump.outputs.type }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Changes since last release**: ${{ steps.check.outputs.change_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Features**: ${{ steps.check.outputs.feat_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Fixes**: ${{ steps.check.outputs.fix_count }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ No changes detected since last release." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Use 'workflow_dispatch' with 'force: true' to create a release anyway." >> $GITHUB_STEP_SUMMARY
+          fi
