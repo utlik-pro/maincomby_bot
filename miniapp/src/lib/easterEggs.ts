@@ -33,8 +33,8 @@ const EASTER_EGGS: Record<string, EasterEgg> = {
   },
   secret_code: {
     id: 'secret_code',
-    xpReward: 75,
-    message: 'Код принят! +75 XP за "MAIN"!',
+    xpReward: 1000,
+    message: 'MAIN в сердце! +1000 XP за преданность!',
   },
   speed_runner: {
     id: 'speed_runner',

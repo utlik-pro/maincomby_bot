@@ -749,6 +749,7 @@ function getReasonText(reason: string): string {
     FRIEND_INVITE: 'приглашение друга',
     FIRST_SWIPE: 'первый свайп',
     FEEDBACK_SUBMIT: 'отзыв о событии',
+    TEAM_ROLE_ASSIGNED: 'назначение роли в команде',
   }
   return reasons[reason] || reason
 }
@@ -1960,13 +1961,23 @@ export async function updateUserRole(
     if (newRole && newRole !== oldRole) {
       const roleLabel = TEAM_BADGES[newRole]?.label || newRole
 
+      // Award XP for receiving a team role (+100 XP)
+      if (!oldRole) {
+        try {
+          await addXP(userId, 100, 'TEAM_ROLE_ASSIGNED')
+          console.log(`[Role] Awarded 100 XP to user ${userId} for team role: ${newRole}`)
+        } catch (e) {
+          console.warn('Failed to award role XP:', e)
+        }
+      }
+
       // Create in-app notification
       try {
         await createNotification(
           userId,
           'achievement',
           'Добро пожаловать в команду!',
-          `Поздравляем! Вам назначена роль "${roleLabel}" в сообществе MAIN.`,
+          `Поздравляем! Вам назначена роль "${roleLabel}" в сообществе MAIN. +100 XP`,
           { role: newRole }
         )
       } catch (e) {
