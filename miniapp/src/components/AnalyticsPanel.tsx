@@ -21,17 +21,19 @@ import {
   Handshake,
   Gift,
   Hand,
-  Mic
+  Mic,
+  Share2,
+  ArrowRight
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getAllAnalytics, AllAnalytics, TopUser, getUsersByRole } from '@/lib/analytics'
+import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole } from '@/lib/analytics'
 import { Card } from '@/components/ui'
 
 interface AnalyticsPanelProps {
   onClose: () => void
 }
 
-type TabType = 'overview' | 'events' | 'subscriptions' | 'top' | 'matching' | 'team'
+type TabType = 'overview' | 'events' | 'subscriptions' | 'top' | 'matching' | 'team' | 'referrals'
 
 const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Обзор', icon: <BarChart3 size={16} /> },
@@ -39,6 +41,7 @@ const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: 'subscriptions', label: 'Подписки', icon: <CreditCard size={16} /> },
   { id: 'top', label: 'Топ', icon: <Trophy size={16} /> },
   { id: 'matching', label: 'Matching', icon: <Heart size={16} /> },
+  { id: 'referrals', label: 'Рефералы', icon: <Share2 size={16} /> },
   { id: 'team', label: 'Команда', icon: <Users size={16} /> },
 ]
 
@@ -275,6 +278,63 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     </div>
   )
 
+  const renderReferralsTab = (data: AllAnalytics) => (
+    <div className="space-y-4">
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {renderStatCard(data.referrals.totalReferrals, 'Всего приглашено', <UserPlus size={20} />, 'text-green-500')}
+        {renderStatCard(data.referrals.totalXPEarned, 'XP заработано', <Zap size={20} />, 'text-yellow-500')}
+      </div>
+
+      {/* Top referrers */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Trophy size={18} className="text-accent" />
+          <span className="font-semibold">Топ рефералов</span>
+        </div>
+        {data.topReferrers.length > 0 ? (
+          <div className="space-y-1">
+            {data.topReferrers.map((referrer: TopReferrer, index: number) => (
+              <div key={referrer.user_id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                <div className="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">
+                  {index + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">
+                    {referrer.first_name} {referrer.last_name}
+                  </div>
+                  <div className="text-xs text-gray-400">@{referrer.username || 'no_username'}</div>
+                </div>
+                <div className="flex items-center gap-1 text-green-500 font-semibold">
+                  <UserPlus size={14} />
+                  {referrer.referral_count}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-gray-400 text-sm text-center py-4">
+            Пока нет приглашённых пользователей
+          </div>
+        )}
+      </Card>
+
+      {/* Info card */}
+      <Card className="p-4 bg-accent/5 border-accent/20">
+        <div className="flex items-start gap-3">
+          <Share2 size={20} className="text-accent flex-shrink-0 mt-0.5" />
+          <div>
+            <div className="font-semibold text-sm mb-1">Как это работает</div>
+            <div className="text-xs text-gray-400">
+              Когда пользователь переходит по инвайт-ссылке и регистрируется, его пригласивший получает +50 XP.
+              Здесь отображаются все успешные приглашения.
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+
   const renderTeamTab = (data: AllAnalytics) => {
     const roleConfig = [
       { key: 'core', label: 'Core Team', icon: <Shield size={18} />, color: 'text-accent' },
@@ -394,6 +454,8 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
         return renderTopTab(analytics)
       case 'matching':
         return renderMatchingTab(analytics)
+      case 'referrals':
+        return renderReferralsTab(analytics)
       case 'team':
         return renderTeamTab(analytics)
       default:

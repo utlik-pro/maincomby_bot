@@ -442,6 +442,175 @@ export async function getRoleDistribution(): Promise<RoleDistribution> {
   return roles
 }
 
+// ============ REFERRAL STATS ============
+
+export interface ReferralStats {
+  totalReferrals: number
+  totalXPEarned: number
+}
+
+export interface ReferralEntry {
+  inviter_id: number
+  inviter_username: string | null
+  inviter_first_name: string | null
+  invitee_id: number
+  invitee_username: string | null
+  invitee_first_name: string | null
+  invited_at: string
+}
+
+export interface TopReferrer {
+  user_id: number
+  username: string | null
+  first_name: string | null
+  last_name: string | null
+  referral_count: number
+}
+
+export async function getReferralStats(): Promise<ReferralStats> {
+  const supabase = getSupabase()
+
+  // Count users who have invited_by set
+  const { count: totalReferrals } = await supabase
+    .from('bot_users')
+    .select('*', { count: 'exact', head: true })
+    .not('invited_by', 'is', null)
+
+  return {
+    totalReferrals: totalReferrals || 0,
+    totalXPEarned: (totalReferrals || 0) * 50 // 50 XP per referral
+  }
+}
+
+interface InviteeRecord {
+  id: number
+  username: string | null
+  first_name: string | null
+  invited_by: number
+  first_seen_at: string
+}
+
+interface InviterRecord {
+  id: number
+  username: string | null
+  first_name: string | null
+}
+
+export async function getReferralTree(limit: number = 50): Promise<ReferralEntry[]> {
+  const supabase = getSupabase()
+
+  try {
+    const { data, error } = await supabase.rpc('get_referral_tree')
+
+    if (error) {
+      console.warn('RPC get_referral_tree not available, using fallback')
+      // Fallback: manual query
+      const { data: inviteesData } = await supabase
+        .from('bot_users')
+        .select(`
+          id,
+          username,
+          first_name,
+          invited_by,
+          first_seen_at
+        `)
+        .not('invited_by', 'is', null)
+        .order('first_seen_at', { ascending: false })
+        .limit(limit)
+
+      const invitees = (inviteesData || []) as InviteeRecord[]
+      if (invitees.length === 0) return []
+
+      // Get inviter info
+      const inviterIds = [...new Set(invitees.map(u => u.invited_by))]
+      const { data: invitersData } = await supabase
+        .from('bot_users')
+        .select('id, username, first_name')
+        .in('id', inviterIds)
+
+      const inviters = (invitersData || []) as InviterRecord[]
+      const inviterMap = new Map(inviters.map(i => [i.id, i]))
+
+      return invitees.map(inv => {
+        const inviter = inviterMap.get(inv.invited_by)
+        return {
+          inviter_id: inv.invited_by,
+          inviter_username: inviter?.username || null,
+          inviter_first_name: inviter?.first_name || null,
+          invitee_id: inv.id,
+          invitee_username: inv.username,
+          invitee_first_name: inv.first_name,
+          invited_at: inv.first_seen_at
+        }
+      })
+    }
+
+    return ((data || []) as ReferralEntry[]).slice(0, limit)
+  } catch (e) {
+    console.error('Error fetching referral tree:', e)
+    return []
+  }
+}
+
+interface ReferralCountRecord {
+  invited_by: number
+}
+
+interface TopUserRecord {
+  id: number
+  username: string | null
+  first_name: string | null
+  last_name: string | null
+}
+
+export async function getTopReferrers(limit: number = 10): Promise<TopReferrer[]> {
+  const supabase = getSupabase()
+
+  try {
+    // Always use fallback since RPC might not exist yet
+    // Fallback: count invited_by manually
+    const { data: usersData } = await supabase
+      .from('bot_users')
+      .select('invited_by')
+      .not('invited_by', 'is', null)
+
+    const users = (usersData || []) as ReferralCountRecord[]
+    if (users.length === 0) return []
+
+    // Count referrals per user
+    const counts: Record<number, number> = {}
+    users.forEach(u => {
+      counts[u.invited_by] = (counts[u.invited_by] || 0) + 1
+    })
+
+    // Get top users
+    const topIds = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([id]) => parseInt(id))
+
+    if (topIds.length === 0) return []
+
+    const { data: topUsersData } = await supabase
+      .from('bot_users')
+      .select('id, username, first_name, last_name')
+      .in('id', topIds)
+
+    const topUsers = (topUsersData || []) as TopUserRecord[]
+
+    return topUsers.map(u => ({
+      user_id: u.id,
+      username: u.username,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      referral_count: counts[u.id] || 0
+    })).sort((a, b) => b.referral_count - a.referral_count)
+  } catch (e) {
+    console.error('Error fetching top referrers:', e)
+    return []
+  }
+}
+
 // ============ ALL ANALYTICS ============
 
 export interface AllAnalytics {
@@ -450,8 +619,10 @@ export interface AllAnalytics {
   events: EventStats
   matching: MatchingStats
   roles: RoleDistribution
+  referrals: ReferralStats
   topByXP: TopUser[]
   topByEvents: TopUser[]
+  topReferrers: TopReferrer[]
   proUsers: TopUser[]
 }
 
@@ -460,6 +631,7 @@ const defaultSubscriptions: SubscriptionStats = { free: 0, light: 0, pro: 0, tot
 const defaultEvents: EventStats = { total: 0, active: 0, totalRegistrations: 0, totalCheckins: 0, totalCancelled: 0, checkinRate: 0, avgRating: 0, totalReviews: 0 }
 const defaultMatching: MatchingStats = { totalSwipes: 0, totalLikes: 0, totalMatches: 0, matchRate: 0, pendingProfiles: 0, approvedProfiles: 0 }
 const defaultRoles: RoleDistribution = { core: 0, partner: 0, sponsor: 0, volunteer: 0, speaker: 0, none: 0 }
+const defaultReferrals: ReferralStats = { totalReferrals: 0, totalXPEarned: 0 }
 
 async function safeCall<T>(fn: () => Promise<T>, defaultValue: T, name: string): Promise<T> {
   try {
@@ -471,14 +643,16 @@ async function safeCall<T>(fn: () => Promise<T>, defaultValue: T, name: string):
 }
 
 export async function getAllAnalytics(): Promise<AllAnalytics> {
-  const [overview, subscriptions, events, matching, roles, topByXP, topByEvents, proUsers] = await Promise.all([
+  const [overview, subscriptions, events, matching, roles, referrals, topByXP, topByEvents, topReferrers, proUsers] = await Promise.all([
     safeCall(getOverviewStats, defaultOverview, 'getOverviewStats'),
     safeCall(getSubscriptionStats, defaultSubscriptions, 'getSubscriptionStats'),
     safeCall(getEventStats, defaultEvents, 'getEventStats'),
     safeCall(getMatchingStats, defaultMatching, 'getMatchingStats'),
     safeCall(getRoleDistribution, defaultRoles, 'getRoleDistribution'),
+    safeCall(getReferralStats, defaultReferrals, 'getReferralStats'),
     safeCall(() => getTopUsersByXP(10), [], 'getTopUsersByXP'),
     safeCall(() => getTopUsersByEvents(10), [], 'getTopUsersByEvents'),
+    safeCall(() => getTopReferrers(10), [], 'getTopReferrers'),
     safeCall(() => getProSubscribers(10), [], 'getProSubscribers')
   ])
 
@@ -488,8 +662,10 @@ export async function getAllAnalytics(): Promise<AllAnalytics> {
     events,
     matching,
     roles,
+    referrals,
     topByXP,
     topByEvents,
+    topReferrers,
     proUsers
   }
 }

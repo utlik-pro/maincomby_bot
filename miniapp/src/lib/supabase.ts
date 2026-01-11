@@ -1020,6 +1020,9 @@ export async function useInviteAndCreateUser(
     })
     .eq('id', invite.id)
 
+  // 3.5. Decrement inviter's remaining invites
+  await supabase.rpc('decrement_invites', { p_user_id: invite.inviter_id })
+
   // 4. Create 5 invites for new user
   await supabase.rpc('create_user_invites', { p_user_id: newUser.id, p_count: 5 })
 
