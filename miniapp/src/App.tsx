@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp } from '@/lib/telegram'
-import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById } from '@/lib/supabase'
+import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -574,6 +574,18 @@ const App: React.FC = () => {
         }
 
         setUser(user)
+
+        // Check and update daily streak
+        try {
+          const streakResult = await checkAndUpdateDailyStreak(user.id)
+          if (streakResult.reward) {
+            addToast(`🔥 ${streakResult.streak} дней подряд! Pro на ${streakResult.reward.proAwarded} дн.`, 'success')
+          } else if (!streakResult.alreadyCheckedToday && streakResult.streak > 1) {
+            addToast(`🔥 Streak: ${streakResult.streak} дней подряд!`, 'success')
+          }
+        } catch (e) {
+          console.warn('Failed to update daily streak:', e)
+        }
 
         // Get profile if exists
         const profile = await getProfile(user.id)

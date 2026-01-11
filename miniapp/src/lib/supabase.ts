@@ -777,6 +777,22 @@ export function getXPReasonText(reason: string): string {
     EASTER_EGG_SWIPE_PATTERN: 'паттерн свайпов',
     EASTER_EGG_SECRET_CODE: 'секретный код MAIN',
     EASTER_EGG_SPEED_RUNNER: 'спидраннер',
+    EASTER_EGG_KONAMI_CODE: 'код Konami',
+    EASTER_EGG_TRIPLE_TAP: 'тройной тап',
+    EASTER_EGG_PULL_REFRESH: 'обновлятор',
+    EASTER_EGG_IDLE_MASTER: 'мастер ожидания',
+    EASTER_EGG_COLLECTOR: 'коллекционер',
+    // Profile completion rewards
+    PROFILE_PHOTO_ADDED: 'добавление фото',
+    PROFILE_BIO_ADDED: 'добавление био',
+    PROFILE_OCCUPATION_ADDED: 'добавление профессии',
+    PROFILE_CITY_ADDED: 'указание города',
+    PROFILE_LINKEDIN_ADDED: 'добавление LinkedIn',
+    PROFILE_SKILLS_ADDED: 'добавление навыков',
+    PROFILE_INTERESTS_ADDED: 'добавление интересов',
+    PROFILE_COMPLETE_BONUS: 'полный профиль',
+    // Invite rewards
+    INVITE_ACCEPTED: 'присоединение по инвайту',
   }
   return reasons[reason] || reason
 }

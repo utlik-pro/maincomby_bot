@@ -44,7 +44,7 @@ import {
 import { useAppStore, useToastStore } from '@/lib/store'
 import { APP_VERSION } from '@/lib/version'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported, backButton } from '@/lib/telegram'
-import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto, addXP, hasReceivedXPBonus } from '@/lib/supabase'
+import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto, addXP, hasReceivedXPBonus, checkProfileCompletionRewards } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
 import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
@@ -394,20 +394,34 @@ const ProfileScreen: React.FC = () => {
       setIsEditing(false)
       hapticFeedback.success()
 
-      // Check and award profile completion XP (bio + occupation filled)
-      const isProfileComplete = editForm.bio.trim().length > 0 && editForm.occupation.trim().length > 0
-      if (isProfileComplete) {
-        try {
-          const hadProfileBonus = await hasReceivedXPBonus(user.id, 'PROFILE_COMPLETE')
-          if (!hadProfileBonus) {
-            await addXP(user.id, XP_REWARDS.PROFILE_COMPLETE, 'PROFILE_COMPLETE')
-            addPoints(XP_REWARDS.PROFILE_COMPLETE)
-            addToast(`Профиль заполнен! +${XP_REWARDS.PROFILE_COMPLETE} XP`, 'xp', XP_REWARDS.PROFILE_COMPLETE)
-            return // Don't show regular success toast
+      // Check and award profile field completion XP (first time for each field)
+      try {
+        const { awarded } = await checkProfileCompletionRewards(user.id, editForm, profile)
+        if (awarded.length > 0) {
+          const totalXP = awarded.reduce((sum, a) => sum + a.xp, 0)
+          addPoints(totalXP)
+
+          // Show appropriate toast
+          if (awarded.some(a => a.field === 'complete_bonus')) {
+            addToast(`Полный профиль! +${totalXP} XP`, 'xp', totalXP)
+          } else if (awarded.length === 1) {
+            const fieldNames: Record<string, string> = {
+              photo: 'Фото',
+              bio: 'Био',
+              occupation: 'Профессия',
+              city: 'Город',
+              linkedin: 'LinkedIn',
+              skills: 'Навыки',
+              interests: 'Интересы',
+            }
+            addToast(`${fieldNames[awarded[0].field] || 'Поле'} добавлено! +${awarded[0].xp} XP`, 'xp', awarded[0].xp)
+          } else {
+            addToast(`Профиль обновлён! +${totalXP} XP`, 'xp', totalXP)
           }
-        } catch (e) {
-          console.warn('Failed to check/award profile completion XP:', e)
+          return // Don't show regular success toast
         }
+      } catch (e) {
+        console.warn('Failed to check/award profile completion XP:', e)
       }
 
       addToast('Профиль сохранён!', 'success')

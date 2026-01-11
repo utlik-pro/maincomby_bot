@@ -28,6 +28,7 @@ import {
   getUserMatches,
   createNotification,
   incrementDailySwipes,
+  checkAndUpdateSwipeStreak,
   addXP,
   hasReceivedXPBonus,
 } from '@/lib/supabase'
@@ -130,6 +131,16 @@ const NetworkScreen: React.FC = () => {
             daily_swipes_used,
             daily_swipes_reset_at
           })
+
+          // Check if all daily swipes used (5 for free, 20 for light)
+          const dailyLimit = tier === 'light' ? 20 : 5
+          if (daily_swipes_used >= dailyLimit) {
+            // Check swipe streak
+            const streakResult = await checkAndUpdateSwipeStreak(user.id)
+            if (streakResult.reward) {
+              addToast(`🎯 ${streakResult.streak} дней активности! Pro на ${streakResult.reward.proAwarded} дн.`, 'success')
+            }
+          }
         } catch (e) {
           console.warn('Failed to increment swipes:', e)
         }

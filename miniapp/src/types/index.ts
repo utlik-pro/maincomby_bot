@@ -233,6 +233,11 @@ export interface User {
   subscription_expires_at: string | null
   daily_swipes_used: number
   daily_swipes_reset_at: string | null
+  // Streak system
+  daily_streak?: number
+  last_streak_check_at?: string | null
+  swipe_streak?: number
+  last_swipe_streak_at?: string | null
   // Team role (legacy)
   team_role: TeamRole
   // Avatar skin
