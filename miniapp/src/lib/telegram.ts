@@ -154,6 +154,12 @@ export const openTelegramLink = (url: string) => {
   }
 }
 
+// Share URL via Telegram native share dialog
+export const shareUrl = (url: string, text?: string) => {
+  const shareLink = `https://t.me/share/url?url=${encodeURIComponent(url)}${text ? `&text=${encodeURIComponent(text)}` : ''}`
+  openTelegramLink(shareLink)
+}
+
 // Expand app to full height
 export const expandApp = () => {
   const webApp = getTelegramWebApp()

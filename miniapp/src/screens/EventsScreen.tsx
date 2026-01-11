@@ -26,7 +26,7 @@ import {
   Share2,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton } from '@/lib/telegram'
+import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton, shareUrl } from '@/lib/telegram'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PhoneDialog } from '@/components/PhoneDialog'
 import { StarRating } from '@/components/StarRating'
@@ -408,13 +408,9 @@ const EventDetail: React.FC<{
           <h1 className="text-2xl font-bold">{event.title}</h1>
           <button
             onClick={() => {
-              const shareUrl = `https://t.me/maincomapp_bot?startapp=event_${event.id}`
-              navigator.clipboard.writeText(shareUrl).then(() => {
-                hapticFeedback.success()
-                addToast('Ссылка скопирована', 'success')
-              }).catch(() => {
-                addToast('Не удалось скопировать', 'error')
-              })
+              hapticFeedback.light()
+              const eventLink = `https://t.me/maincomapp_bot?startapp=event_${event.id}`
+              shareUrl(eventLink, `${event.title} — присоединяйся!`)
             }}
             className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center active:scale-95 transition-transform"
           >

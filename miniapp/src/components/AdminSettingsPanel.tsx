@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { isInviteRequired, updateAppSetting, getActiveEvents } from '@/lib/supabase'
-import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft } from 'lucide-react'
+import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2 } from 'lucide-react'
 import { UserRoleManager } from './UserRoleManager'
 import { Event } from '@/types'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, shareUrl } from '@/lib/telegram'
 
 interface AdminSettingsPanelProps {
     onClose: () => void
@@ -79,10 +79,16 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
         const link = `https://t.me/maincomapp_bot?startapp=event_${eventId}`
         navigator.clipboard.writeText(link).then(() => {
             hapticFeedback.success()
-            addToast(`Ссылка скопирована: ${eventTitle}`, 'success')
+            addToast(`Ссылка скопирована`, 'success')
         }).catch(() => {
             addToast('Ошибка копирования', 'error')
         })
+    }
+
+    const shareEventLink = (eventId: number, eventTitle: string) => {
+        hapticFeedback.light()
+        const link = `https://t.me/maincomapp_bot?startapp=event_${eventId}`
+        shareUrl(link, `${eventTitle} — присоединяйся!`)
     }
 
     if (!isSuperAdmin) {
@@ -233,12 +239,22 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                                                     })}
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => copyEventLink(event.id, event.title)}
-                                                className="flex-shrink-0 w-10 h-10 rounded-lg bg-accent/20 text-accent flex items-center justify-center active:scale-95 transition-transform"
-                                            >
-                                                <Copy size={18} />
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => copyEventLink(event.id, event.title)}
+                                                    className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-700/50 text-gray-300 flex items-center justify-center active:scale-95 transition-transform"
+                                                    title="Скопировать"
+                                                >
+                                                    <Copy size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => shareEventLink(event.id, event.title)}
+                                                    className="flex-shrink-0 w-10 h-10 rounded-lg bg-accent/20 text-accent flex items-center justify-center active:scale-95 transition-transform"
+                                                    title="Поделиться"
+                                                >
+                                                    <Share2 size={18} />
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="mt-2 text-xs text-gray-500 font-mono break-all">
                                             t.me/maincomapp_bot?startapp=event_{event.id}
