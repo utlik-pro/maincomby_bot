@@ -157,7 +157,6 @@ export function useLongPressEasterEgg(
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const progressRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number>(0)
-  const { user, addPoints } = useAppStore()
   const { addToast } = useToastStore()
 
   const handlePressStart = useCallback(() => {
@@ -183,24 +182,37 @@ export function useLongPressEasterEgg(
 
     // Unlock after duration
     timerRef.current = setTimeout(async () => {
+      // Get fresh user from store at call time (avoid stale closure)
+      const { user, addPoints } = useAppStore.getState()
+      const egg = EASTER_EGGS.long_press
+
+      if (!user) {
+        console.warn('[EasterEgg] Long press: No user found, skipping XP')
+        setIsPressed(false)
+        setProgress(0)
+        return
+      }
+
       setIsUnlocked(true)
       saveUnlockedEgg('long_press')
       hapticFeedback.success()
 
-      const egg = EASTER_EGGS.long_press
-      if (user && egg.xpReward > 0) {
+      if (egg.xpReward > 0) {
         try {
+          console.log(`[EasterEgg] Awarding ${egg.xpReward} XP to user ${user.id} for long_press`)
           await addXP(user.id, egg.xpReward, 'EASTER_EGG_LONG_PRESS')
           addPoints(egg.xpReward)
+          addToast(egg.message, 'xp', egg.xpReward)
+          console.log('[EasterEgg] Long press XP awarded successfully')
         } catch (e) {
-          console.warn('Failed to award easter egg XP:', e)
+          console.error('[EasterEgg] Failed to award long press XP:', e)
+          addToast('Ошибка начисления XP', 'error')
         }
       }
 
-      addToast(egg.message, 'xp', egg.xpReward)
       onUnlock?.()
     }, duration)
-  }, [isUnlocked, duration, user, addToast, onUnlock, addPoints])
+  }, [isUnlocked, duration, addToast, onUnlock])
 
   const handlePressEnd = useCallback(() => {
     setIsPressed(false)
@@ -246,7 +258,6 @@ export function useDoubleTapEasterEgg(
 ) {
   const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked('double_tap'))
   const lastTapRef = useRef<number>(0)
-  const { user, addPoints } = useAppStore()
   const { addToast } = useToastStore()
 
   const handleTap = useCallback(async () => {
@@ -257,28 +268,39 @@ export function useDoubleTapEasterEgg(
 
     if (timeSinceLastTap < maxInterval && timeSinceLastTap > 50) {
       // Double tap detected!
+      // Get fresh user from store at call time (avoid stale closure)
+      const { user, addPoints } = useAppStore.getState()
+      const egg = EASTER_EGGS.double_tap
+
+      if (!user) {
+        console.warn('[EasterEgg] Double tap: No user found, skipping XP')
+        return
+      }
+
       setIsUnlocked(true)
       saveUnlockedEgg('double_tap')
       hapticFeedback.success()
 
-      const egg = EASTER_EGGS.double_tap
-      if (user && egg.xpReward > 0) {
+      if (egg.xpReward > 0) {
         try {
+          console.log(`[EasterEgg] Awarding ${egg.xpReward} XP to user ${user.id} for double_tap`)
           await addXP(user.id, egg.xpReward, 'EASTER_EGG_DOUBLE_TAP')
           addPoints(egg.xpReward)
+          addToast(egg.message, 'xp', egg.xpReward)
+          console.log('[EasterEgg] Double tap XP awarded successfully')
         } catch (e) {
-          console.warn('Failed to award easter egg XP:', e)
+          console.error('[EasterEgg] Failed to award double tap XP:', e)
+          addToast('Ошибка начисления XP', 'error')
         }
       }
 
-      addToast(egg.message, 'xp', egg.xpReward)
       onUnlock?.()
     } else {
       hapticFeedback.light()
     }
 
     lastTapRef.current = now
-  }, [isUnlocked, maxInterval, user, addToast, onUnlock, addPoints])
+  }, [isUnlocked, maxInterval, addToast, onUnlock])
 
   return { handleTap, isUnlocked }
 }
@@ -292,7 +314,6 @@ export function useSwipePatternEasterEgg(
   const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked('swipe_pattern'))
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const { user, addPoints } = useAppStore()
   const { addToast } = useToastStore()
 
   const detectSwipeDirection = useCallback((startX: number, startY: number, endX: number, endY: number): 'left' | 'right' | 'up' | 'down' | null => {
@@ -328,22 +349,33 @@ export function useSwipePatternEasterEgg(
       const nextIndex = currentIndex + 1
 
       if (nextIndex >= pattern.length) {
-        // Pattern complete!
+        // Pattern complete! Get fresh user from store
+        const { user, addPoints } = useAppStore.getState()
+        const egg = EASTER_EGGS.swipe_pattern
+
+        if (!user) {
+          console.warn('[EasterEgg] Swipe pattern: No user found, skipping XP')
+          setCurrentIndex(0)
+          return
+        }
+
         setIsUnlocked(true)
         saveUnlockedEgg('swipe_pattern')
         hapticFeedback.success()
 
-        const egg = EASTER_EGGS.swipe_pattern
-        if (user && egg.xpReward > 0) {
+        if (egg.xpReward > 0) {
           try {
+            console.log(`[EasterEgg] Awarding ${egg.xpReward} XP to user ${user.id} for swipe_pattern`)
             await addXP(user.id, egg.xpReward, 'EASTER_EGG_SWIPE_PATTERN')
             addPoints(egg.xpReward)
+            addToast(egg.message, 'xp', egg.xpReward)
+            console.log('[EasterEgg] Swipe pattern XP awarded successfully')
           } catch (e) {
-            console.warn('Failed to award easter egg XP:', e)
+            console.error('[EasterEgg] Failed to award swipe pattern XP:', e)
+            addToast('Ошибка начисления XP', 'error')
           }
         }
 
-        addToast(egg.message, 'xp', egg.xpReward)
         onUnlock?.()
         setCurrentIndex(0)
       } else {
@@ -355,7 +387,7 @@ export function useSwipePatternEasterEgg(
       // Wrong direction, reset
       setCurrentIndex(0)
     }
-  }, [isUnlocked, currentIndex, pattern, user, addToast, onUnlock, addPoints])
+  }, [isUnlocked, currentIndex, pattern, addToast, onUnlock])
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (isUnlocked) return
