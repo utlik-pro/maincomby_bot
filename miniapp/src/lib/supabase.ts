@@ -685,28 +685,45 @@ export async function addXP(userId: number, amount: number, reason: string) {
   const oldPoints = userBefore?.points || 0
   const oldRank = getRankFromPoints(oldPoints)
 
-  // Add transaction
+  // Try to add transaction (don't fail if table doesn't exist or RLS blocks)
   const { error: txError } = await supabase
     .from('xp_transactions')
     .insert({ user_id: userId, amount, reason })
 
   if (txError) {
-    console.error('[XP] Failed to insert xp_transaction:', txError)
-    throw txError
+    console.warn('[XP] Failed to insert xp_transaction (continuing anyway):', txError.message)
+    // Don't throw - continue with points update
   }
 
-  // Update user points (use correct param names from migration)
-  const { data, error } = await supabase
+  // Try RPC first, fallback to direct update
+  let newPoints = oldPoints + amount
+
+  const { data: rpcData, error: rpcError } = await supabase
     .rpc('increment_user_points', { p_user_id: userId, p_points_to_add: amount })
 
-  if (error) {
-    console.error('[XP] Failed to call increment_user_points RPC:', error)
-    throw error
+  if (rpcError) {
+    console.warn('[XP] RPC failed, trying direct update:', rpcError.message)
+
+    // Fallback: direct update
+    const { data: updateData, error: updateError } = await supabase
+      .from('bot_users')
+      .update({ points: Math.max(0, oldPoints + amount) })
+      .eq('id', userId)
+      .select('points')
+      .single()
+
+    if (updateError) {
+      console.error('[XP] Direct update also failed:', updateError)
+      throw updateError
+    }
+
+    newPoints = updateData?.points || newPoints
+    console.log(`[XP] Success via direct update! User ${userId} now has ${newPoints} points`)
+  } else {
+    newPoints = rpcData || newPoints
+    console.log(`[XP] Success via RPC! User ${userId} now has ${newPoints} points`)
   }
 
-  console.log(`[XP] Success! User ${userId} now has ${data} points`)
-
-  const newPoints = data || oldPoints + amount
   const newRank = getRankFromPoints(newPoints)
 
   // Check for rank up and create notification
@@ -737,7 +754,7 @@ export async function addXP(userId: number, amount: number, reason: string) {
     console.warn('Failed to create XP notification:', e)
   }
 
-  return data
+  return newPoints
 }
 
 export function getXPReasonText(reason: string): string {
