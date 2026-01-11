@@ -1,27 +1,12 @@
-name: Scheduled Release Check
+name: Daily Release
 
 on:
-  # Run every Monday at 10:00 UTC
+  # Run every day at 23:59 UTC (02:59 Minsk time)
   schedule:
-    - cron: '0 10 * * 1'
+    - cron: '59 23 * * *'
 
-  # Manual trigger with options
+  # Manual trigger (backup)
   workflow_dispatch:
-    inputs:
-      bump_type:
-        description: 'Version bump type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-      force:
-        description: 'Force release even if no changes'
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: write
@@ -70,58 +55,44 @@ jobs:
             fi
           fi
 
-      - name: Determine bump type
-        id: bump
-        if: steps.check.outputs.has_changes == 'true' || github.event.inputs.force == 'true'
-        run: |
-          if [ -n "${{ github.event.inputs.bump_type }}" ]; then
-            echo "type=${{ github.event.inputs.bump_type }}" >> $GITHUB_OUTPUT
-          else
-            # Auto-determine: minor if any feat commits, otherwise patch
-            if [ "${{ steps.check.outputs.feat_count }}" -gt 0 ]; then
-              echo "type=minor" >> $GITHUB_OUTPUT
-            else
-              echo "type=patch" >> $GITHUB_OUTPUT
-            fi
-          fi
-
-      - name: Run release script
-        if: steps.check.outputs.has_changes == 'true' || github.event.inputs.force == 'true'
+      - name: Run release script (always patch)
+        if: steps.check.outputs.has_changes == 'true'
+        id: release
         run: |
           chmod +x ./scripts/release.sh
-          # Run in non-interactive mode
-          echo "y" | ./scripts/release.sh ${{ steps.bump.outputs.type }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Always use patch version: 1.1.0 → 1.1.1 → 1.1.2
+          echo "y" | ./scripts/release.sh patch
+
+          # Get new version
+          NEW_VERSION=$(cat VERSION)
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Push release
-        if: steps.check.outputs.has_changes == 'true' || github.event.inputs.force == 'true'
+        if: steps.check.outputs.has_changes == 'true'
         run: |
           git push origin main
           git push origin --tags
 
       - name: Create GitHub Release
-        if: steps.check.outputs.has_changes == 'true' || github.event.inputs.force == 'true'
+        if: steps.check.outputs.has_changes == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.bump.outputs.new_version }}
+          tag_name: v${{ steps.release.outputs.new_version }}
+          name: v${{ steps.release.outputs.new_version }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         run: |
-          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Daily Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.check.outputs.has_changes }}" == "true" ] || [ "${{ github.event.inputs.force }}" == "true" ]; then
-            echo "✅ Release created successfully!" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.has_changes }}" == "true" ]; then
+            echo "✅ Release v${{ steps.release.outputs.new_version }} created!" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **Bump type**: ${{ steps.bump.outputs.type }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Changes since last release**: ${{ steps.check.outputs.change_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Changes**: ${{ steps.check.outputs.change_count }} commits" >> $GITHUB_STEP_SUMMARY
             echo "- **Features**: ${{ steps.check.outputs.feat_count }}" >> $GITHUB_STEP_SUMMARY
             echo "- **Fixes**: ${{ steps.check.outputs.fix_count }}" >> $GITHUB_STEP_SUMMARY
           else
-            echo "ℹ️ No changes detected since last release." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Use 'workflow_dispatch' with 'force: true' to create a release anyway." >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ No changes today. Skipped release." >> $GITHUB_STEP_SUMMARY
           fi
