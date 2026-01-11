@@ -616,6 +616,15 @@ export async function checkInByTicketCode(ticketCode: string, volunteerId: numbe
     .single()
 
   if (error) throw error
+
+  // Award XP to the user who is checking in (not the volunteer)
+  try {
+    await addXP(registration.user_id, 50, 'EVENT_CHECKIN')
+    console.log(`[CheckIn] Awarded 50 XP to user ${registration.user_id} for check-in`)
+  } catch (e) {
+    console.warn('[CheckIn] XP award failed:', e)
+  }
+
   return { registration: data, event: registration.event }
 }
 
