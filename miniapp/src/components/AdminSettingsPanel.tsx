@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { isInviteRequired, updateAppSetting, getActiveEvents } from '@/lib/supabase'
-import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3 } from 'lucide-react'
+import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw } from 'lucide-react'
 import { UserRoleManager } from './UserRoleManager'
 import { AnalyticsPanel } from './AnalyticsPanel'
 import { Event } from '@/types'
@@ -200,6 +200,28 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                                 </div>
                             </div>
                             <div className="text-purple-500">→</div>
+                        </div>
+                    </button>
+
+                    {/* Reset Easter Eggs */}
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('unlocked_easter_eggs')
+                            hapticFeedback.success()
+                            addToast('Пасхалки сброшены! Перезагрузи приложение', 'success')
+                        }}
+                        className="w-full p-4 rounded-xl bg-bg border border-border hover:border-orange-500/50 transition-colors"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center">
+                                    <RotateCcw size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Сбросить пасхалки</div>
+                                    <div className="text-xs text-gray-400">Для тестирования XP</div>
+                                </div>
+                            </div>
                         </div>
                     </button>
                 </div>
