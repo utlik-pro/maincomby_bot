@@ -177,6 +177,92 @@ sync_versions() {
     fi
 }
 
+# Update LATEST_RELEASE in version.ts
+update_latest_release() {
+    local new_version=$1
+    local today=$2
+    local bump_type=$3
+
+    echo -e "${YELLOW}Updating LATEST_RELEASE in version.ts...${NC}"
+
+    # Get commit messages since last tag
+    local last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+    local range=""
+    if [ -n "$last_tag" ]; then
+        range="$last_tag..HEAD"
+    fi
+
+    # Parse features and fixes from commits
+    local features=$(git log $range --pretty=format:"%s" --grep="^feat" 2>/dev/null | sed 's/^feat[:(][^)]*[)]: *//' | sed 's/^feat: *//' | head -5)
+    local fixes=$(git log $range --pretty=format:"%s" --grep="^fix" 2>/dev/null | sed 's/^fix[:(][^)]*[)]: *//' | sed 's/^fix: *//' | head -5)
+
+    # Generate summary based on bump type
+    local summary=""
+    case $bump_type in
+        major) summary="Мажорное обновление v$new_version" ;;
+        minor) summary="Новые возможности в v$new_version" ;;
+        patch) summary="Исправления и улучшения v$new_version" ;;
+    esac
+
+    # Use Python to update the LATEST_RELEASE object
+    python3 << PYEOF
+import re
+
+version = "$new_version"
+date = "$today"
+summary = "$summary"
+features_raw = """$features"""
+fixes_raw = """$fixes"""
+
+# Parse features and fixes
+features = [f.strip() for f in features_raw.strip().split('\n') if f.strip()]
+fixes = [f.strip() for f in fixes_raw.strip().split('\n') if f.strip()]
+
+# Generate highlights (first 3 features or generic)
+if features:
+    highlights = features[:3]
+else:
+    highlights = ["Обновление системы", "Улучшения производительности", "Исправление ошибок"]
+
+# Build the new LATEST_RELEASE content
+highlights_str = ",\n    ".join([
+    f"{{ title: '{h[:30]}', description: 'Подробнее в changelog' }}"
+    for h in highlights
+])
+
+features_str = ",\n    ".join([f"'{f}'" for f in features]) if features else "'Мелкие улучшения и оптимизации'"
+fixes_str = ",\n    ".join([f"'{f}'" for f in fixes]) if fixes else ""
+
+new_release = f'''// Latest release information for "What's New" modal
+// NOTE: This is updated automatically by release.sh
+export const LATEST_RELEASE: ReleaseNote = {{
+  version: '{version}',
+  date: '{date}',
+  summary: '{summary}',
+  highlights: [
+    {highlights_str},
+  ],
+  features: [
+    {features_str},
+  ],
+  fixes: [{fixes_str}],
+}}'''
+
+# Read and update the file
+with open("$MINIAPP_VERSION_TS", "r") as f:
+    content = f.read()
+
+# Replace LATEST_RELEASE block
+pattern = r"// Latest release information.*?export const LATEST_RELEASE: ReleaseNote = \{[^}]+\}[^}]*\}"
+content = re.sub(pattern, new_release, content, flags=re.DOTALL)
+
+with open("$MINIAPP_VERSION_TS", "w") as f:
+    f.write(content)
+
+print("  \033[32m✓\033[0m LATEST_RELEASE updated")
+PYEOF
+}
+
 # Update CHANGELOG.md
 update_changelog() {
     local new_version=$1
@@ -333,7 +419,10 @@ update_changelog "$NEW_VERSION" "$TODAY" "$CHANGELOG_SECTION"
 # 3. Update releases.json
 update_releases_json "$NEW_VERSION" "$TODAY" "$BUMP_TYPE"
 
-# 4. Git operations
+# 4. Update LATEST_RELEASE in version.ts
+update_latest_release "$NEW_VERSION" "$TODAY" "$BUMP_TYPE"
+
+# 5. Git operations
 if [ "$NO_COMMIT" = false ]; then
     echo ""
     echo -e "${YELLOW}Creating git commit...${NC}"
