@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-01-11
+
+[0;34mGenerating changelog from v1.1.1 to HEAD[0m
+### Added
+- auto-update LATEST_RELEASE in version.ts on release
+
+### Fixed
+- update LATEST_RELEASE to 1.1.1 with proper date and content
+- add RLS migration for xp_transactions insert
 ## [1.1.1] - 2026-01-11
 
 [1;33mNo previous tag found, including all commits[0m
