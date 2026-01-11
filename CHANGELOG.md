@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-01-11
+
+[1;33mNo previous tag found, including all commits[0m
+### Added
+- add release automation with Claude Code skills
+- add reset easter eggs button for testing XP
+- replace phone shake with 3 new easter eggs + XP history
+- boost secret code reward and add team role bonus
+- enable phone shake detector for +150 XP bonus
+- fix invite decrement and add referral analytics
+- redesign profile page with Tinder-style card preview
+- increase header spacer and add expandable team roles
+- add analytics panel for superadmins
+- add native Telegram share for event links
+- add event links generator to admin panel
+- add event deep links to admin commands
+- add share button for events with correct deep link format
+- add deep link support for opening specific events
+- premium glass modal + fix changelog dot alignment
+- redesign UpdateBanner to modal + pulsing dot in changelog
+- add bottom sheet modals for reviews and subscriptions
+- redesign ticket cards with ticket-style UI
+- add event reviews system
+- major UI/UX improvements and animations
+
+### Fixed
+- prevent crash on rapid profile tab taps
+- add fallback to direct update when RPC fails
+- fix XP not being awarded - use getState() for fresh user
+- award XP for event check-in via volunteer scan
+- fix type imports in ProfilePreviewCard
+- increase header spacer to h-28 for better visibility
+- add top spacer for Telegram header
+- add error handling and fix z-index
+- increment CURRENT_APP_VERSION to trigger What's New modal
+- auto-sync releases.json to landing on release
+- sync landing releases.json with v1.1.0
+- grant execute permissions on XP RPC functions
+- complete XP reward system implementation
+- move releases.json to landing and fix imports for Vercel
+- persist lastSeenAppVersion to localStorage
+- hide events list on 'My tickets' tab
+- add top padding to WhatsNewModal for Telegram header
+- show active tickets first, then past attended
+- show What's New modal directly instead of banner
+- show past attended events in 'My tickets' for reviews
+
+### Changed
+- simplify to daily auto-release at 23:59
+- sync landing version to 1.1.0
+- release v1.1.0 with event reviews and bottom sheets
+- simplify UpdateBanner to match app style
+- remove hardcoded back buttons, use Telegram BackButton
+- add Node.js version specification for Vercel
+- use ChangelogSheet instead of WhatsNewModal for unified design
+- add Vercel deployment configuration
+- use Telegram BackButton instead of custom back buttons
+- use networking-friendly messaging for connections
 ## [1.1.0] - 2026-01-10
 
 ### Added
