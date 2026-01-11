@@ -2,8 +2,15 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User, TeamRole, ProfilePhoto, PhotoUploadResult, SwipeCardProfile, UserProfile } from '@/types'
 
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndpkxustvcijykzxqxrn.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl) {
+  console.error('[Supabase] VITE_SUPABASE_URL is required')
+}
+if (!supabaseAnonKey) {
+  console.error('[Supabase] VITE_SUPABASE_ANON_KEY is required')
+}
 
 // Lazy initialization - only create client when needed and key is available
 let _supabase: SupabaseClient | null = null
@@ -1536,52 +1543,27 @@ export async function getExtendedProfile(userId: number) {
 }
 
 // ============ NOTIFICATIONS ============
+// Notifications are now handled via Edge Functions - see src/lib/telegram.ts
+// Import notification functions from telegram.ts for use in this module
 
-const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8302587804:AAH2ZIjWA9QQLzXlOiDUpYQiM8bw6NuO8nw'
+import { sendPushNotification, callEdgeFunction, type NotificationType } from './telegram'
 
-// Send push notification to user via Telegram Bot
+// Re-export for backwards compatibility
 export async function sendNotification(
   userTgId: number,
-  type: 'match' | 'event' | 'achievement' | 'reminder' | 'system',
+  type: NotificationType,
   title: string,
   message: string
 ): Promise<boolean> {
-  try {
-    const emoji = {
-      match: '',
-      event: '',
-      achievement: '',
-      reminder: '',
-      system: '',
-    }[type] || ''
-
-    const text = `${emoji} *${title}*\n\n${message}`
-
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: userTgId,
-        text,
-        parse_mode: 'Markdown',
-      }),
-    })
-
-    const result = await response.json()
-    return result.ok === true
-  } catch (error) {
-    console.error('[sendNotification] Failed:', error)
-    return false
-  }
+  return sendPushNotification(userTgId, { type, title, message })
 }
 
 // Notify user about new connection
 export async function notifyNewMatch(userTgId: number, matchName: string): Promise<boolean> {
-  return sendNotification(
+  return sendPushNotification(
     userTgId,
-    'match',
-    'Новый контакт!',
-    `${matchName} тоже хочет познакомиться. Начните общение! 👋`
+    { type: 'match', title: 'Новый контакт!', message: `${matchName} тоже хочет познакомиться. Начните общение!` },
+    { screen: 'matches', buttonText: 'Открыть контакты' }
   )
 }
 
@@ -1589,15 +1571,14 @@ export async function notifyNewMatch(userTgId: number, matchName: string): Promi
 export async function notifyUpcomingEvent(
   userTgId: number,
   eventTitle: string,
-  eventDate: string,
+  _eventDate: string,
   hoursUntil: number
 ): Promise<boolean> {
   const timeText = hoursUntil === 1 ? 'через 1 час' : hoursUntil === 24 ? 'завтра' : `через ${hoursUntil} часов`
-  return sendNotification(
+  return sendPushNotification(
     userTgId,
-    'event',
-    `Напоминание: ${eventTitle}`,
-    `Мероприятие начнётся ${timeText}!\n📍 Не забудь прийти и показать QR-код на входе.`
+    { type: 'event', title: `Напоминание: ${eventTitle}`, message: `Мероприятие начнётся ${timeText}!\nНе забудь прийти и показать QR-код на входе.` },
+    { screen: 'events', buttonText: 'Открыть события' }
   )
 }
 
@@ -1607,21 +1588,19 @@ export async function notifyAchievement(
   achievementTitle: string,
   xpReward: number
 ): Promise<boolean> {
-  return sendNotification(
+  return sendPushNotification(
     userTgId,
-    'achievement',
-    'Новое достижение!',
-    `Ты получил награду "${achievementTitle}"!\n+${xpReward} XP добавлено к твоему профилю.`
+    { type: 'achievement', title: 'Новое достижение!', message: `Ты получил награду "${achievementTitle}"!\n+${xpReward} XP добавлено к твоему профилю.` },
+    { screen: 'achievements', buttonText: 'Открыть достижения' }
   )
 }
 
 // Notify user about event reminder (1 hour before)
 export async function notifyEventReminder(userTgId: number, eventTitle: string, location: string): Promise<boolean> {
-  return sendNotification(
+  return sendPushNotification(
     userTgId,
-    'reminder',
-    'Скоро начало!',
-    `${eventTitle} начнётся через 1 час.\n📍 ${location}\n\nНе забудь открыть билет в приложении!`
+    { type: 'reminder', title: 'Скоро начало!', message: `${eventTitle} начнётся через 1 час.\n${location}\n\nНе забудь открыть билет в приложении!` },
+    { screen: 'events', buttonText: 'Открыть билет' }
   )
 }
 
@@ -1648,23 +1627,16 @@ export async function requestConsultation(userId: number, userName: string, user
     console.warn('[requestConsultation] DB error:', error)
   }
 
-  // Send notification to Dmitry via Telegram Bot API
-  try {
-    const userLink = userUsername ? `@${userUsername}` : `ID: ${userId}`
-    const message = `🎯 *Новая заявка на консультацию!*\n\n👤 От: ${userName} (${userLink})\n📅 Время: ${new Date().toLocaleString('ru-RU')}\n\n_Пользователь перешёл в чат с вами через mini app_`
+  // Send notification via Edge Function (no BOT_TOKEN on client)
+  const userLink = userUsername ? `@${userUsername}` : `ID: ${userId}`
+  const message = `Новая заявка на консультацию!\n\nОт: ${userName} (${userLink})\nВремя: ${new Date().toLocaleString('ru-RU')}\n\nПользователь перешёл в чат с вами через mini app`
 
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: DMITRY_UTLIK_TG_ID,
-        text: message,
-        parse_mode: 'Markdown',
-      }),
-    })
-  } catch (err) {
-    console.error('[requestConsultation] Failed to send notification:', err)
-  }
+  await callEdgeFunction('send-notification', {
+    userTgId: DMITRY_UTLIK_TG_ID,
+    type: 'system',
+    title: 'Новая заявка на консультацию',
+    message
+  })
 
   return data
 }
