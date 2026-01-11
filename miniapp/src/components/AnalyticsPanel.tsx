@@ -23,20 +23,24 @@ import {
   Hand,
   Mic,
   Share2,
-  ArrowRight
+  ArrowRight,
+  Clock,
+  Activity,
+  Wifi
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole } from '@/lib/analytics'
+import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser } from '@/lib/analytics'
 import { Card } from '@/components/ui'
 
 interface AnalyticsPanelProps {
   onClose: () => void
 }
 
-type TabType = 'overview' | 'events' | 'subscriptions' | 'top' | 'matching' | 'team' | 'referrals'
+type TabType = 'overview' | 'sessions' | 'events' | 'subscriptions' | 'top' | 'matching' | 'team' | 'referrals'
 
 const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Обзор', icon: <BarChart3 size={16} /> },
+  { id: 'sessions', label: 'Сессии', icon: <Activity size={16} /> },
   { id: 'events', label: 'События', icon: <Calendar size={16} /> },
   { id: 'subscriptions', label: 'Подписки', icon: <CreditCard size={16} /> },
   { id: 'top', label: 'Топ', icon: <Trophy size={16} /> },
@@ -60,6 +64,30 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     queryFn: getAllAnalytics,
     enabled: isSuperAdmin,
     staleTime: 60000, // 1 minute
+  })
+
+  // Session analytics queries
+  const { data: sessionStats } = useQuery({
+    queryKey: ['sessionStats'],
+    queryFn: getSessionStats,
+    enabled: isSuperAdmin && activeTab === 'sessions',
+    staleTime: 30000, // 30 seconds for more real-time data
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+  })
+
+  const { data: onlineUsers } = useQuery({
+    queryKey: ['onlineUsers'],
+    queryFn: () => getOnlineUsers(20),
+    enabled: isSuperAdmin && activeTab === 'sessions',
+    staleTime: 30000,
+    refetchInterval: 30000,
+  })
+
+  const { data: topTimeUsers } = useQuery({
+    queryKey: ['topTimeUsers'],
+    queryFn: () => getTopUsersByTime(10),
+    enabled: isSuperAdmin && activeTab === 'sessions',
+    staleTime: 60000,
   })
 
   if (!isSuperAdmin) return null
@@ -426,6 +454,139 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     )
   }
 
+  // Format seconds to human readable
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    if (hours > 0) {
+      return `${hours}ч ${minutes}м`
+    }
+    return `${minutes}м`
+  }
+
+  const renderSessionsTab = () => {
+    const stats = sessionStats || { onlineNow: 0, uniqueToday: 0, averageSessionMinutes: 0, totalSessionsToday: 0 }
+    const online = onlineUsers || []
+    const topTime = topTimeUsers || []
+
+    return (
+      <div className="space-y-4">
+        {/* Real-time stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="p-4 bg-green-500/10 border-green-500/30">
+            <div className="flex items-center gap-2 mb-1">
+              <Wifi size={16} className="text-green-500" />
+              <span className="text-xs text-gray-400">Онлайн</span>
+            </div>
+            <div className="text-3xl font-bold text-green-500">{stats.onlineNow}</div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Users size={16} className="text-blue-500" />
+              <span className="text-xs text-gray-400">Сегодня</span>
+            </div>
+            <div className="text-3xl font-bold text-blue-500">{stats.uniqueToday}</div>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock size={16} className="text-purple-500" />
+              <span className="text-xs text-gray-400">Сред. сессия</span>
+            </div>
+            <div className="text-2xl font-bold text-purple-500">{stats.averageSessionMinutes}м</div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Activity size={16} className="text-accent" />
+              <span className="text-xs text-gray-400">Сессий сегодня</span>
+            </div>
+            <div className="text-2xl font-bold text-accent">{stats.totalSessionsToday}</div>
+          </Card>
+        </div>
+
+        {/* Online users */}
+        {online.length > 0 && (
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Wifi size={18} className="text-green-500" />
+              <span className="font-semibold">Сейчас в приложении</span>
+            </div>
+            <div className="space-y-2">
+              {online.map((u) => (
+                <div key={u.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center overflow-hidden">
+                    {u.photo_url ? (
+                      <img src={u.photo_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Users size={14} className="text-green-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate text-sm">{u.first_name} {u.last_name}</div>
+                    <div className="text-xs text-gray-500">@{u.username || 'no_username'}</div>
+                  </div>
+                  <div className="text-xs text-green-500">
+                    {u.minutes_ago === 0 ? 'сейчас' : `${u.minutes_ago}м назад`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Top by time */}
+        {topTime.length > 0 && (
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock size={18} className="text-purple-500" />
+              <span className="font-semibold">Топ по времени</span>
+            </div>
+            <div className="space-y-2">
+              {topTime.map((u, index) => (
+                <div key={u.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                  <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-500 text-xs font-bold flex items-center justify-center">
+                    {index + 1}
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-bg-card flex items-center justify-center overflow-hidden">
+                    {u.photo_url ? (
+                      <img src={u.photo_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Users size={14} className="text-gray-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate text-sm">{u.first_name} {u.last_name}</div>
+                    <div className="text-xs text-gray-500">@{u.username || 'no_username'}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-purple-500">{formatTime(u.total_time_seconds)}</div>
+                    <div className="text-xs text-gray-500">{u.session_count} сессий</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Info */}
+        <Card className="p-4 bg-purple-500/5 border-purple-500/20">
+          <div className="flex items-start gap-3">
+            <Activity size={20} className="text-purple-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="font-semibold text-sm mb-1">Как это работает</div>
+              <div className="text-xs text-gray-400">
+                Сессия начинается при открытии приложения. Heartbeat отправляется каждые 30 сек.
+                Данные обновляются автоматически каждые 30 секунд.
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -446,6 +607,8 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     switch (activeTab) {
       case 'overview':
         return renderOverviewTab(analytics)
+      case 'sessions':
+        return renderSessionsTab()
       case 'events':
         return renderEventsTab(analytics)
       case 'subscriptions':

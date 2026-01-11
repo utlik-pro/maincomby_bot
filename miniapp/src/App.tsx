@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
-import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp } from '@/lib/telegram'
-import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak } from '@/lib/supabase'
+import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp, validateInitData, getInitData } from '@/lib/telegram'
+import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -85,6 +85,9 @@ const App: React.FC = () => {
   const [showReviewPrompt, setShowReviewPrompt] = useState(false)
   const [pendingReviewEvent, setPendingReviewEvent] = useState<any>(null)
 
+  // Session tracking state
+  const [sessionId, setSessionId] = useState<number | null>(null)
+
   // Check if should show What's New after loading
   useEffect(() => {
     if (!isLoading && isAuthenticated && !shouldShowOnboarding() && shouldShowWhatsNew()) {
@@ -143,6 +146,20 @@ const App: React.FC = () => {
         if (!isDev && !isTelegramWebApp()) {
           setLoading(false)
           return
+        }
+
+        // Validate initData on server (security: verify Telegram signature)
+        const initData = getInitData()
+        if (initData && !isDev) {
+          try {
+            const validation = await validateInitData()
+            if (!validation.valid) {
+              console.error('[Security] Invalid Telegram initData:', validation.error)
+              // Continue with degraded mode but log the security event
+            }
+          } catch (e) {
+            console.warn('[Security] initData validation failed, continuing with client data:', e)
+          }
         }
 
         // Get Telegram user
@@ -588,6 +605,16 @@ const App: React.FC = () => {
           console.warn('Failed to update daily streak:', e)
         }
 
+        // Start session tracking
+        try {
+          const newSessionId = await startSession(user.id)
+          if (newSessionId) {
+            setSessionId(newSessionId)
+          }
+        } catch (e) {
+          console.warn('Failed to start session:', e)
+        }
+
         // Get profile if exists
         const profile = await getProfile(user.id)
         const tgPhotoUrl = tgUser?.photo_url
@@ -629,6 +656,54 @@ const App: React.FC = () => {
 
     init()
   }, [setLoading, setUser, setProfile, addToast])
+
+  // Session heartbeat - ping every 30 seconds
+  useEffect(() => {
+    if (!sessionId) return
+
+    const interval = setInterval(() => {
+      sessionHeartbeat(sessionId).catch(console.warn)
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [sessionId])
+
+  // Session visibility tracking - end session when app goes to background
+  useEffect(() => {
+    if (!sessionId || !user?.id) return
+
+    const handleVisibilityChange = async () => {
+      if (document.hidden) {
+        // App went to background - end session
+        await endSession(sessionId, user.id).catch(console.warn)
+        setSessionId(null)
+      } else {
+        // App came back - start new session
+        const newSessionId = await startSession(user.id).catch(() => null)
+        if (newSessionId) {
+          setSessionId(newSessionId)
+        }
+      }
+    }
+
+    const handleBeforeUnload = () => {
+      // Try to end session on page close (unreliable on mobile)
+      if (sessionId && user?.id) {
+        // Use sendBeacon for more reliable delivery
+        navigator.sendBeacon?.('/api/end-session', JSON.stringify({ sessionId, userId: user.id }))
+        // Also try normal end (may not complete)
+        endSession(sessionId, user.id).catch(() => {})
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [sessionId, user?.id])
 
   // Handle deep links (startapp parameter or URL query params)
   useEffect(() => {

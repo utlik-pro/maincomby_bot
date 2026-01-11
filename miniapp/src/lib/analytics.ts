@@ -17,6 +17,25 @@ function getSupabase() {
 
 // ============ TYPES ============
 
+// Session types for user_sessions table
+interface UserSession {
+  id: number
+  user_id: number
+  started_at: string
+  ended_at: string | null
+  last_heartbeat_at: string
+  duration_seconds: number | null
+}
+
+interface UserWithProfile {
+  id: number
+  username: string | null
+  first_name: string | null
+  last_name: string | null
+  total_time_seconds?: number
+  profile: { photo_url: string | null } | { photo_url: string | null }[] | null
+}
+
 export interface OverviewStats {
   totalUsers: number
   newThisWeek: number
@@ -667,5 +686,199 @@ export async function getAllAnalytics(): Promise<AllAnalytics> {
     topByEvents,
     topReferrers,
     proUsers
+  }
+}
+
+// ============ SESSION ANALYTICS ============
+
+export interface SessionStats {
+  onlineNow: number
+  uniqueToday: number
+  averageSessionMinutes: number
+  totalSessionsToday: number
+}
+
+export interface OnlineUser {
+  id: number
+  username: string | null
+  first_name: string | null
+  last_name: string | null
+  photo_url: string | null
+  last_heartbeat_at: string
+  minutes_ago: number
+}
+
+export interface TopTimeUser {
+  id: number
+  username: string | null
+  first_name: string | null
+  last_name: string | null
+  photo_url: string | null
+  total_time_seconds: number
+  session_count: number
+}
+
+// Get count of users online now (heartbeat within last 5 minutes)
+export async function getOnlineUsersCount(): Promise<number> {
+  const supabase = getSupabase()
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+
+  const { count } = await supabase
+    .from('user_sessions')
+    .select('user_id', { count: 'exact', head: true })
+    .is('ended_at', null)
+    .gte('last_heartbeat_at', fiveMinutesAgo)
+
+  return count || 0
+}
+
+// Get list of online users
+export async function getOnlineUsers(limit: number = 20): Promise<OnlineUser[]> {
+  const supabase = getSupabase()
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+
+  const { data: sessions } = await supabase
+    .from('user_sessions')
+    .select('user_id, last_heartbeat_at')
+    .is('ended_at', null)
+    .gte('last_heartbeat_at', fiveMinutesAgo)
+    .order('last_heartbeat_at', { ascending: false })
+    .limit(limit) as { data: Pick<UserSession, 'user_id' | 'last_heartbeat_at'>[] | null }
+
+  if (!sessions || sessions.length === 0) return []
+
+  const userIds = [...new Set(sessions.map(s => s.user_id))]
+
+  const { data: users } = await supabase
+    .from('bot_users')
+    .select(`
+      id, username, first_name, last_name,
+      profile:bot_profiles(photo_url)
+    `)
+    .in('id', userIds) as { data: UserWithProfile[] | null }
+
+  if (!users) return []
+
+  const sessionMap = new Map(sessions.map(s => [s.user_id, s.last_heartbeat_at]))
+
+  return users.map(u => {
+    const lastHeartbeat = sessionMap.get(u.id) || ''
+    const minutesAgo = lastHeartbeat
+      ? Math.floor((Date.now() - new Date(lastHeartbeat).getTime()) / 60000)
+      : 0
+
+    const profile = Array.isArray(u.profile) ? u.profile[0] : u.profile
+
+    return {
+      id: u.id,
+      username: u.username,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      photo_url: profile?.photo_url || null,
+      last_heartbeat_at: lastHeartbeat,
+      minutes_ago: minutesAgo
+    }
+  }).sort((a, b) => a.minutes_ago - b.minutes_ago)
+}
+
+// Get unique users today
+export async function getUniqueUsersToday(): Promise<number> {
+  const supabase = getSupabase()
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  const { data: sessions } = await supabase
+    .from('user_sessions')
+    .select('user_id')
+    .gte('started_at', todayStart.toISOString()) as { data: Pick<UserSession, 'user_id'>[] | null }
+
+  if (!sessions) return 0
+
+  const uniqueUsers = new Set(sessions.map(s => s.user_id))
+  return uniqueUsers.size
+}
+
+// Get top users by total time
+export async function getTopUsersByTime(limit: number = 10): Promise<TopTimeUser[]> {
+  const supabase = getSupabase()
+
+  const { data: users } = await supabase
+    .from('bot_users')
+    .select(`
+      id, username, first_name, last_name, total_time_seconds,
+      profile:bot_profiles(photo_url)
+    `)
+    .gt('total_time_seconds', 0)
+    .order('total_time_seconds', { ascending: false })
+    .limit(limit) as { data: UserWithProfile[] | null }
+
+  if (!users) return []
+
+  // Get session counts
+  const userIds = users.map(u => u.id)
+
+  const { data: sessionCounts } = await supabase
+    .from('user_sessions')
+    .select('user_id')
+    .in('user_id', userIds) as { data: Pick<UserSession, 'user_id'>[] | null }
+
+  const countMap: Record<number, number> = {}
+  if (sessionCounts) {
+    sessionCounts.forEach(s => {
+      countMap[s.user_id] = (countMap[s.user_id] || 0) + 1
+    })
+  }
+
+  return users.map(u => {
+    const profile = Array.isArray(u.profile) ? u.profile[0] : u.profile
+
+    return {
+      id: u.id,
+      username: u.username,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      photo_url: profile?.photo_url || null,
+      total_time_seconds: u.total_time_seconds || 0,
+      session_count: countMap[u.id] || 0
+    }
+  })
+}
+
+// Get session stats for today
+export async function getSessionStats(): Promise<SessionStats> {
+  const supabase = getSupabase()
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+
+  // Online now
+  const { count: onlineNow } = await supabase
+    .from('user_sessions')
+    .select('user_id', { count: 'exact', head: true })
+    .is('ended_at', null)
+    .gte('last_heartbeat_at', fiveMinutesAgo)
+
+  // Unique users today
+  const { data: todaySessions } = await supabase
+    .from('user_sessions')
+    .select('user_id, duration_seconds')
+    .gte('started_at', todayStart.toISOString()) as { data: Pick<UserSession, 'user_id' | 'duration_seconds'>[] | null }
+
+  const uniqueUsers = new Set(todaySessions?.map(s => s.user_id) || [])
+  const uniqueToday = uniqueUsers.size
+  const totalSessionsToday = todaySessions?.length || 0
+
+  // Average session duration
+  const completedSessions = todaySessions?.filter(s => s.duration_seconds && s.duration_seconds > 0) || []
+  const totalDuration = completedSessions.reduce((sum, s) => sum + (s.duration_seconds || 0), 0)
+  const averageSessionMinutes = completedSessions.length
+    ? Math.round(totalDuration / completedSessions.length / 60)
+    : 0
+
+  return {
+    onlineNow: onlineNow || 0,
+    uniqueToday,
+    averageSessionMinutes,
+    totalSessionsToday
   }
 }

@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User, TeamRole, ProfilePhoto, PhotoUploadResult, SwipeCardProfile, UserProfile } from '@/types'
+import { sendPushNotification, callEdgeFunction, type NotificationType as TelegramNotificationType } from './telegram'
 
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -1544,14 +1545,11 @@ export async function getExtendedProfile(userId: number) {
 
 // ============ NOTIFICATIONS ============
 // Notifications are now handled via Edge Functions - see src/lib/telegram.ts
-// Import notification functions from telegram.ts for use in this module
-
-import { sendPushNotification, callEdgeFunction, type NotificationType } from './telegram'
 
 // Re-export for backwards compatibility
 export async function sendNotification(
   userTgId: number,
-  type: NotificationType,
+  type: TelegramNotificationType,
   title: string,
   message: string
 ): Promise<boolean> {
@@ -2032,17 +2030,15 @@ export async function updateUserRole(
         console.warn('Failed to create role notification:', e)
       }
 
-      // Send Telegram notification via server-side API (bypasses CORS)
+      // Send Telegram notification via Edge Function (secure)
       if (userData?.tg_user_id) {
         try {
-          await fetch('https://iishnica.vercel.app/api/send-role-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userTgId: userData.tg_user_id,
-              userId,
-              role: newRole
-            })
+          await callEdgeFunction('send-notification', {
+            userTgId: userData.tg_user_id,
+            type: 'achievement',
+            title: 'Добро пожаловать в команду!',
+            message: `Поздравляем! Вам назначена роль "${roleLabel}" в сообществе MAIN.\n+100 XP`,
+            deepLink: { screen: 'profile', buttonText: 'Открыть профиль' }
           })
         } catch (e) {
           console.warn('Failed to send Telegram role notification:', e)
@@ -3181,4 +3177,126 @@ export async function getUserStreakStatus(userId: number): Promise<{
     nextDailyMilestone,
     nextSwipeMilestone
   }
+}
+
+// ==========================================
+// SESSION TRACKING
+// ==========================================
+
+// Start a new session for user
+export async function startSession(userId: number): Promise<number | null> {
+  const supabase = getSupabase()
+
+  // First, close any unclosed sessions for this user
+  const now = new Date().toISOString()
+
+  // Find unclosed sessions and close them
+  const { data: openSessions } = await supabase
+    .from('user_sessions')
+    .select('id, started_at')
+    .eq('user_id', userId)
+    .is('ended_at', null)
+
+  if (openSessions && openSessions.length > 0) {
+    for (const session of openSessions) {
+      const startedAt = new Date(session.started_at)
+      const duration = Math.floor((Date.now() - startedAt.getTime()) / 1000)
+
+      await supabase
+        .from('user_sessions')
+        .update({
+          ended_at: now,
+          duration_seconds: Math.min(duration, 7200) // Max 2 hours per session
+        })
+        .eq('id', session.id)
+
+      // Update total time
+      const rpcResult = await supabase.rpc('increment_total_time', {
+        p_user_id: userId,
+        p_seconds: Math.min(duration, 7200)
+      })
+      if (rpcResult.error) {
+        // Fallback if RPC doesn't exist
+        const { data } = await supabase
+          .from('bot_users')
+          .select('total_time_seconds')
+          .eq('id', userId)
+          .single()
+        const currentTotal = data?.total_time_seconds || 0
+        await supabase
+          .from('bot_users')
+          .update({ total_time_seconds: currentTotal + Math.min(duration, 7200) })
+          .eq('id', userId)
+      }
+    }
+  }
+
+  // Create new session
+  const { data: newSession, error } = await supabase
+    .from('user_sessions')
+    .insert({
+      user_id: userId,
+      started_at: now,
+      last_heartbeat_at: now
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    console.error('Failed to start session:', error)
+    return null
+  }
+
+  return newSession?.id || null
+}
+
+// Update session heartbeat
+export async function sessionHeartbeat(sessionId: number): Promise<void> {
+  const supabase = getSupabase()
+
+  await supabase
+    .from('user_sessions')
+    .update({ last_heartbeat_at: new Date().toISOString() })
+    .eq('id', sessionId)
+}
+
+// End session
+export async function endSession(sessionId: number, userId: number): Promise<void> {
+  const supabase = getSupabase()
+
+  // Get session start time
+  const { data: session } = await supabase
+    .from('user_sessions')
+    .select('started_at, ended_at')
+    .eq('id', sessionId)
+    .single()
+
+  if (!session || session.ended_at) return // Already ended
+
+  const startedAt = new Date(session.started_at)
+  const duration = Math.floor((Date.now() - startedAt.getTime()) / 1000)
+  const cappedDuration = Math.min(duration, 7200) // Max 2 hours
+
+  // Update session
+  await supabase
+    .from('user_sessions')
+    .update({
+      ended_at: new Date().toISOString(),
+      duration_seconds: cappedDuration
+    })
+    .eq('id', sessionId)
+
+  // Update user's total time
+  const { data: user } = await supabase
+    .from('bot_users')
+    .select('total_time_seconds')
+    .eq('id', userId)
+    .single()
+
+  const currentTotal = user?.total_time_seconds || 0
+
+  await supabase
+    .from('bot_users')
+    .update({ total_time_seconds: currentTotal + cappedDuration })
+    .eq('id', userId)
 }
