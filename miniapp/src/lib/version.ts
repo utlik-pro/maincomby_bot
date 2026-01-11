@@ -33,23 +33,16 @@ export const LATEST_RELEASE: ReleaseNote = {
   date: '2026-01-11',
   summary: 'Исправления и улучшения v1.1.2',
   highlights: [
-    { title: 'auto-update LATEST_RELEASE in ', description: 'Подробнее в changelog' },
+    { title: 'Автоматические релизы', description: 'Новые версии выходят каждый день' },
+    { title: 'Система уведомлений', description: 'Улучшена система changelog' },
+    { title: 'Синхронизация версий', description: 'Все компоненты обновляются вместе' },
   ],
   features: [
-    'auto-update LATEST_RELEASE in version.ts on release',
-  ],
-  fixes: ['update LATEST_RELEASE to 1.1.1 with proper date and content',
-    'add RLS migration for xp_transactions insert'],
-},
-    { title: 'История версий', description: 'Полный changelog на сайте' },
-  ],
-  features: [
-    'Автоматические ежедневные релизы через GitHub Actions',
-    'Исправлена система начисления XP',
-    'Синхронизация версий во всех компонентах',
+    'Автоматические ежедневные релизы',
+    'Улучшенная система версионирования',
   ],
   fixes: [
-    'Исправлены права на RPC функции для XP',
+    'Исправлено обновление LATEST_RELEASE',
   ],
 }
 

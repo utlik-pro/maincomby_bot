@@ -2807,3 +2807,388 @@ export async function createEventReview(
 
   return data as EventReview
 }
+
+// ============================================
+// STREAK SYSTEM & REWARDS
+// ============================================
+
+// Streak reward milestones
+export const DAILY_STREAK_REWARDS = [
+  { days: 5, proAwarded: 1, id: 'daily_streak_5' },
+  { days: 10, proAwarded: 3, id: 'daily_streak_10' },
+  { days: 30, proAwarded: 7, id: 'daily_streak_30' },
+]
+
+export const SWIPE_STREAK_REWARDS = [
+  { days: 5, proAwarded: 1, id: 'swipe_streak_5' },
+]
+
+// Check if dates are consecutive days
+function isConsecutiveDay(lastDate: string | null, now: Date): boolean {
+  if (!lastDate) return false
+
+  const last = new Date(lastDate)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  const lastDayStart = new Date(last.getFullYear(), last.getMonth(), last.getDate())
+
+  return lastDayStart.getTime() === yesterday.getTime()
+}
+
+// Check if date is today
+function isSameDay(date1: Date, date2: Date): boolean {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate()
+}
+
+// Grant Pro subscription for X days
+export async function grantProSubscription(userId: number, days: number, reason: string): Promise<boolean> {
+  const supabase = getSupabase()
+
+  // Get current subscription
+  const { data: user } = await supabase
+    .from('bot_users')
+    .select('subscription_tier, subscription_expires_at')
+    .eq('id', userId)
+    .single()
+
+  if (!user) return false
+
+  // Calculate new expiry
+  let expiresAt = new Date()
+  if (user.subscription_tier === 'pro' && user.subscription_expires_at) {
+    // Extend existing Pro
+    expiresAt = new Date(user.subscription_expires_at)
+  }
+  expiresAt.setDate(expiresAt.getDate() + days)
+
+  // Update subscription
+  const { error } = await supabase
+    .from('bot_users')
+    .update({
+      subscription_tier: 'pro',
+      subscription_expires_at: expiresAt.toISOString()
+    })
+    .eq('id', userId)
+
+  if (error) {
+    console.error('[grantProSubscription] Error:', error)
+    return false
+  }
+
+  console.log(`[Streak] Granted ${days} days Pro to user ${userId} for ${reason}`)
+  return true
+}
+
+// Check if streak reward was already claimed
+async function hasClaimedStreakReward(userId: number, rewardType: string): Promise<boolean> {
+  const supabase = getSupabase()
+
+  const { data } = await supabase
+    .from('streak_rewards')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('reward_type', rewardType)
+    .limit(1)
+
+  return (data && data.length > 0) || false
+}
+
+// Record streak reward claim
+async function recordStreakReward(userId: number, rewardType: string, daysAwarded: number): Promise<void> {
+  const supabase = getSupabase()
+
+  await supabase
+    .from('streak_rewards')
+    .insert({
+      user_id: userId,
+      reward_type: rewardType,
+      days_awarded: daysAwarded
+    })
+}
+
+// Check and update daily login streak
+export async function checkAndUpdateDailyStreak(userId: number): Promise<{
+  streak: number
+  reward?: { days: number; proAwarded: number }
+  alreadyCheckedToday: boolean
+}> {
+  const supabase = getSupabase()
+  const now = new Date()
+
+  // Get current streak info
+  const { data: user } = await supabase
+    .from('bot_users')
+    .select('daily_streak, last_streak_check_at')
+    .eq('id', userId)
+    .single()
+
+  if (!user) {
+    return { streak: 0, alreadyCheckedToday: false }
+  }
+
+  const lastCheck = user.last_streak_check_at
+
+  // Already checked today?
+  if (lastCheck && isSameDay(new Date(lastCheck), now)) {
+    return { streak: user.daily_streak || 0, alreadyCheckedToday: true }
+  }
+
+  let newStreak = 1
+
+  // Check if consecutive day
+  if (isConsecutiveDay(lastCheck, now)) {
+    newStreak = (user.daily_streak || 0) + 1
+  }
+  // If more than 1 day gap, reset to 1
+
+  // Update streak in DB
+  await supabase
+    .from('bot_users')
+    .update({
+      daily_streak: newStreak,
+      last_streak_check_at: now.toISOString()
+    })
+    .eq('id', userId)
+
+  // Check for rewards
+  for (const milestone of DAILY_STREAK_REWARDS) {
+    if (newStreak >= milestone.days) {
+      const alreadyClaimed = await hasClaimedStreakReward(userId, milestone.id)
+      if (!alreadyClaimed) {
+        // Award Pro!
+        const success = await grantProSubscription(userId, milestone.proAwarded, milestone.id)
+        if (success) {
+          await recordStreakReward(userId, milestone.id, milestone.proAwarded)
+          return {
+            streak: newStreak,
+            reward: { days: milestone.days, proAwarded: milestone.proAwarded },
+            alreadyCheckedToday: false
+          }
+        }
+      }
+    }
+  }
+
+  return { streak: newStreak, alreadyCheckedToday: false }
+}
+
+// Check and update swipe streak (called when all daily swipes are used)
+export async function checkAndUpdateSwipeStreak(userId: number): Promise<{
+  streak: number
+  reward?: { days: number; proAwarded: number }
+}> {
+  const supabase = getSupabase()
+  const now = new Date()
+
+  // Get current streak info
+  const { data: user } = await supabase
+    .from('bot_users')
+    .select('swipe_streak, last_swipe_streak_at')
+    .eq('id', userId)
+    .single()
+
+  if (!user) {
+    return { streak: 0 }
+  }
+
+  const lastSwipeStreak = user.last_swipe_streak_at
+
+  // Already recorded today?
+  if (lastSwipeStreak && isSameDay(new Date(lastSwipeStreak), now)) {
+    return { streak: user.swipe_streak || 0 }
+  }
+
+  let newStreak = 1
+
+  // Check if consecutive day
+  if (isConsecutiveDay(lastSwipeStreak, now)) {
+    newStreak = (user.swipe_streak || 0) + 1
+  }
+
+  // Update streak in DB
+  await supabase
+    .from('bot_users')
+    .update({
+      swipe_streak: newStreak,
+      last_swipe_streak_at: now.toISOString()
+    })
+    .eq('id', userId)
+
+  // Check for rewards
+  for (const milestone of SWIPE_STREAK_REWARDS) {
+    if (newStreak >= milestone.days) {
+      const alreadyClaimed = await hasClaimedStreakReward(userId, milestone.id)
+      if (!alreadyClaimed) {
+        const success = await grantProSubscription(userId, milestone.proAwarded, milestone.id)
+        if (success) {
+          await recordStreakReward(userId, milestone.id, milestone.proAwarded)
+          return {
+            streak: newStreak,
+            reward: { days: milestone.days, proAwarded: milestone.proAwarded }
+          }
+        }
+      }
+    }
+  }
+
+  return { streak: newStreak }
+}
+
+// Profile completion reward reasons and amounts
+export const PROFILE_COMPLETION_REWARDS: Record<string, { xp: number; reason: string }> = {
+  photo: { xp: 25, reason: 'PROFILE_PHOTO_ADDED' },
+  bio: { xp: 25, reason: 'PROFILE_BIO_ADDED' },
+  occupation: { xp: 25, reason: 'PROFILE_OCCUPATION_ADDED' },
+  city: { xp: 15, reason: 'PROFILE_CITY_ADDED' },
+  linkedin: { xp: 50, reason: 'PROFILE_LINKEDIN_ADDED' },
+  skills: { xp: 25, reason: 'PROFILE_SKILLS_ADDED' },
+  interests: { xp: 25, reason: 'PROFILE_INTERESTS_ADDED' },
+}
+
+// Check which profile fields were filled and award XP (first time only)
+export async function checkProfileCompletionRewards(
+  userId: number,
+  newProfile: Partial<UserProfile>,
+  oldProfile: UserProfile | null
+): Promise<{ awarded: { field: string; xp: number }[] }> {
+  const awarded: { field: string; xp: number }[] = []
+
+  // Check photo
+  if (newProfile.photo_url && (!oldProfile || !oldProfile.photo_url)) {
+    const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.photo.reason)
+    if (!already) {
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.photo.xp, PROFILE_COMPLETION_REWARDS.photo.reason)
+      awarded.push({ field: 'photo', xp: PROFILE_COMPLETION_REWARDS.photo.xp })
+    }
+  }
+
+  // Check bio
+  if (newProfile.bio && (!oldProfile || !oldProfile.bio)) {
+    const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.bio.reason)
+    if (!already) {
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.bio.xp, PROFILE_COMPLETION_REWARDS.bio.reason)
+      awarded.push({ field: 'bio', xp: PROFILE_COMPLETION_REWARDS.bio.xp })
+    }
+  }
+
+  // Check occupation
+  if (newProfile.occupation && (!oldProfile || !oldProfile.occupation)) {
+    const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.occupation.reason)
+    if (!already) {
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.occupation.xp, PROFILE_COMPLETION_REWARDS.occupation.reason)
+      awarded.push({ field: 'occupation', xp: PROFILE_COMPLETION_REWARDS.occupation.xp })
+    }
+  }
+
+  // Check city (only award if changed from default)
+  if (newProfile.city && newProfile.city !== 'Минск' && (!oldProfile || oldProfile.city === 'Минск' || !oldProfile.city)) {
+    const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.city.reason)
+    if (!already) {
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.city.xp, PROFILE_COMPLETION_REWARDS.city.reason)
+      awarded.push({ field: 'city', xp: PROFILE_COMPLETION_REWARDS.city.xp })
+    }
+  }
+
+  // Check LinkedIn
+  if (newProfile.linkedin_url && (!oldProfile || !oldProfile.linkedin_url)) {
+    const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.linkedin.reason)
+    if (!already) {
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.linkedin.xp, PROFILE_COMPLETION_REWARDS.linkedin.reason)
+      awarded.push({ field: 'linkedin', xp: PROFILE_COMPLETION_REWARDS.linkedin.xp })
+    }
+  }
+
+  // Check skills
+  if (newProfile.skills && newProfile.skills.length > 0 && (!oldProfile || !oldProfile.skills || oldProfile.skills.length === 0)) {
+    const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.skills.reason)
+    if (!already) {
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.skills.xp, PROFILE_COMPLETION_REWARDS.skills.reason)
+      awarded.push({ field: 'skills', xp: PROFILE_COMPLETION_REWARDS.skills.xp })
+    }
+  }
+
+  // Check interests
+  if (newProfile.interests && newProfile.interests.length > 0 && (!oldProfile || !oldProfile.interests || oldProfile.interests.length === 0)) {
+    const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.interests.reason)
+    if (!already) {
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.interests.xp, PROFILE_COMPLETION_REWARDS.interests.reason)
+      awarded.push({ field: 'interests', xp: PROFILE_COMPLETION_REWARDS.interests.xp })
+    }
+  }
+
+  // Check for complete profile bonus (all fields filled)
+  if (awarded.length > 0) {
+    const isComplete = !!(
+      (newProfile.photo_url || oldProfile?.photo_url) &&
+      (newProfile.bio || oldProfile?.bio) &&
+      (newProfile.occupation || oldProfile?.occupation) &&
+      (newProfile.linkedin_url || oldProfile?.linkedin_url) &&
+      ((newProfile.skills && newProfile.skills.length > 0) || (oldProfile?.skills && oldProfile.skills.length > 0)) &&
+      ((newProfile.interests && newProfile.interests.length > 0) || (oldProfile?.interests && oldProfile.interests.length > 0))
+    )
+
+    if (isComplete) {
+      const already = await hasReceivedXPBonus(userId, 'PROFILE_COMPLETE_BONUS')
+      if (!already) {
+        await addXP(userId, 100, 'PROFILE_COMPLETE_BONUS')
+        awarded.push({ field: 'complete_bonus', xp: 100 })
+      }
+    }
+  }
+
+  return { awarded }
+}
+
+// Get user's current streak status
+export async function getUserStreakStatus(userId: number): Promise<{
+  dailyStreak: number
+  swipeStreak: number
+  nextDailyMilestone: number | null
+  nextSwipeMilestone: number | null
+}> {
+  const supabase = getSupabase()
+
+  const { data: user } = await supabase
+    .from('bot_users')
+    .select('daily_streak, swipe_streak')
+    .eq('id', userId)
+    .single()
+
+  const dailyStreak = user?.daily_streak || 0
+  const swipeStreak = user?.swipe_streak || 0
+
+  // Find next unclaimed daily milestone
+  let nextDailyMilestone: number | null = null
+  for (const milestone of DAILY_STREAK_REWARDS) {
+    if (dailyStreak < milestone.days) {
+      const claimed = await hasClaimedStreakReward(userId, milestone.id)
+      if (!claimed) {
+        nextDailyMilestone = milestone.days
+        break
+      }
+    }
+  }
+
+  // Find next unclaimed swipe milestone
+  let nextSwipeMilestone: number | null = null
+  for (const milestone of SWIPE_STREAK_REWARDS) {
+    if (swipeStreak < milestone.days) {
+      const claimed = await hasClaimedStreakReward(userId, milestone.id)
+      if (!claimed) {
+        nextSwipeMilestone = milestone.days
+        break
+      }
+    }
+  }
+
+  return {
+    dailyStreak,
+    swipeStreak,
+    nextDailyMilestone,
+    nextSwipeMilestone
+  }
+}

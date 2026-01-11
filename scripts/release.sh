@@ -193,8 +193,8 @@ update_latest_release() {
     fi
 
     # Parse features and fixes from commits
-    local features=$(git log $range --pretty=format:"%s" --grep="^feat" 2>/dev/null | sed 's/^feat[:(][^)]*[)]: *//' | sed 's/^feat: *//' | head -5)
-    local fixes=$(git log $range --pretty=format:"%s" --grep="^fix" 2>/dev/null | sed 's/^fix[:(][^)]*[)]: *//' | sed 's/^fix: *//' | head -5)
+    local features=$(git log $range --pretty=format:"%s" --grep="^feat" 2>/dev/null | sed 's/^feat[:(][^)]*[)]: *//' | sed 's/^feat: *//' | head -3)
+    local fixes=$(git log $range --pretty=format:"%s" --grep="^fix" 2>/dev/null | sed 's/^fix[:(][^)]*[)]: *//' | sed 's/^fix: *//' | head -3)
 
     # Generate summary based on bump type
     local summary=""
@@ -214,24 +214,31 @@ summary = "$summary"
 features_raw = """$features"""
 fixes_raw = """$fixes"""
 
-# Parse features and fixes
-features = [f.strip() for f in features_raw.strip().split('\n') if f.strip()]
-fixes = [f.strip() for f in fixes_raw.strip().split('\n') if f.strip()]
+# Parse features and fixes - clean up quotes
+features = [f.strip().replace("'", "\\'") for f in features_raw.strip().split('\n') if f.strip()]
+fixes = [f.strip().replace("'", "\\'") for f in fixes_raw.strip().split('\n') if f.strip()]
 
 # Generate highlights (first 3 features or generic)
 if features:
-    highlights = features[:3]
+    highlights = [(f[:25] + '...' if len(f) > 25 else f) for f in features[:3]]
 else:
-    highlights = ["Обновление системы", "Улучшения производительности", "Исправление ошибок"]
+    highlights = ["Обновление системы", "Улучшения", "Исправления"]
 
 # Build the new LATEST_RELEASE content
-highlights_str = ",\n    ".join([
-    f"{{ title: '{h[:30]}', description: 'Подробнее в changelog' }}"
-    for h in highlights
-])
+highlights_lines = []
+for h in highlights:
+    highlights_lines.append(f"    {{ title: '{h}', description: 'Подробнее в changelog' }},")
+highlights_str = "\n".join(highlights_lines)
 
-features_str = ",\n    ".join([f"'{f}'" for f in features]) if features else "'Мелкие улучшения и оптимизации'"
-fixes_str = ",\n    ".join([f"'{f}'" for f in fixes]) if fixes else ""
+features_lines = []
+for f in (features if features else ["Мелкие улучшения"]):
+    features_lines.append(f"    '{f}',")
+features_str = "\n".join(features_lines)
+
+fixes_lines = []
+for f in fixes:
+    fixes_lines.append(f"    '{f}',")
+fixes_str = "\n".join(fixes_lines) if fixes_lines else ""
 
 new_release = f'''// Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
@@ -240,26 +247,36 @@ export const LATEST_RELEASE: ReleaseNote = {{
   date: '{date}',
   summary: '{summary}',
   highlights: [
-    {highlights_str},
+{highlights_str}
   ],
   features: [
-    {features_str},
+{features_str}
   ],
-  fixes: [{fixes_str}],
+  fixes: [
+{fixes_str}
+  ],
 }}'''
 
-# Read and update the file
+# Read the file
 with open("$MINIAPP_VERSION_TS", "r") as f:
     content = f.read()
 
-# Replace LATEST_RELEASE block
-pattern = r"// Latest release information.*?export const LATEST_RELEASE: ReleaseNote = \{[^}]+\}[^}]*\}"
-content = re.sub(pattern, new_release, content, flags=re.DOTALL)
+# Find start and end of LATEST_RELEASE block
+start_marker = "// Latest release information for"
+end_marker = "// Release history for changelog"
 
-with open("$MINIAPP_VERSION_TS", "w") as f:
-    f.write(content)
+start_idx = content.find(start_marker)
+end_idx = content.find(end_marker)
 
-print("  \033[32m✓\033[0m LATEST_RELEASE updated")
+if start_idx != -1 and end_idx != -1:
+    # Replace the block between markers
+    new_content = content[:start_idx] + new_release + "\n\n" + content[end_idx:]
+
+    with open("$MINIAPP_VERSION_TS", "w") as f:
+        f.write(new_content)
+    print("  \033[32m✓\033[0m LATEST_RELEASE updated")
+else:
+    print("  \033[33m!\033[0m Could not find LATEST_RELEASE markers")
 PYEOF
 }
 
