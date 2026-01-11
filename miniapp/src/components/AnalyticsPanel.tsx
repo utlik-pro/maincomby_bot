@@ -328,8 +328,10 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+      {/* Spacer for Telegram header */}
+      <div className="h-14" />
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-bg border-b border-border">
+      <div className="sticky top-14 z-10 bg-bg border-b border-border">
         <div className="flex items-center gap-3 p-4 bg-purple-500/10">
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <ChevronLeft size={24} />
