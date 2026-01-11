@@ -2,11 +2,11 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, Briefcase, Target, HandshakeIcon, Edit3, ChevronUp, ChevronDown } from 'lucide-react'
 import { PhotoGallery } from './PhotoGallery'
-import type { Profile, BotUser, ProfilePhoto, AvatarSkin } from '@/types'
+import type { User, UserProfile, ProfilePhoto, AvatarSkin } from '@/types'
 
 interface ProfilePreviewCardProps {
-  user: BotUser | null
-  profile: Profile | null
+  user: User | null
+  profile: UserProfile | null
   photos: ProfilePhoto[]
   activeSkin: AvatarSkin | null
   onEdit: () => void
@@ -182,7 +182,7 @@ export const ProfilePreviewCard: React.FC<ProfilePreviewCardProps> = ({
             {/* Skills */}
             {skills.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
-                {displaySkills.map((skill, index) => (
+                {displaySkills.map((skill: string, index: number) => (
                   <span
                     key={index}
                     className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm text-white"
