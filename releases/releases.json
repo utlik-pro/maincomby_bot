@@ -9,10 +9,20 @@
       "date": "2026-01-11",
       "tag": "v1.1.1",
       "type": "patch",
-      "summary": "Release v1.1.1",
-      "highlights": [],
-      "features": [],
-      "fixes": [],
+      "summary": "Ежедневные автоматические релизы",
+      "highlights": [
+        "Автоматические релизы каждый день в 23:59",
+        "Исправлена система начисления XP",
+        "Синхронизация версий во всех компонентах"
+      ],
+      "features": [
+        { "description": "GitHub Actions для ежедневных релизов", "scope": "all" },
+        { "description": "Автосинхронизация releases.json в landing", "scope": "landing" }
+      ],
+      "fixes": [
+        { "description": "Права на RPC функции для XP транзакций", "scope": "miniapp" },
+        { "description": "CURRENT_APP_VERSION триггер для уведомлений", "scope": "miniapp" }
+      ],
       "breaking": []
     },
     {

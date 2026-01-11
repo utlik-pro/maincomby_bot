@@ -27,23 +27,24 @@ export interface ReleaseNote {
 }
 
 // Latest release information for "What's New" modal
+// NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.0',
-  date: '2026-01-10',
-  summary: 'Отзывы о событиях и улучшенный интерфейс',
+  version: '1.1.1',
+  date: '2026-01-11',
+  summary: 'Ежедневные автоматические релизы',
   highlights: [
-    { title: 'Отзывы о событиях', description: 'Оцените мероприятие и получите +20 XP' },
-    { title: 'Новые модальные окна', description: 'Подписка и отзывы в едином стиле' },
-    { title: 'Умные уведомления', description: 'Напоминания об отзыве в 22:30 после события' },
+    { title: 'Автоматические релизы', description: 'Новые версии выходят каждый день в 23:59' },
+    { title: 'Система XP', description: 'Исправлено начисление баллов за активность' },
+    { title: 'История версий', description: 'Полный changelog на сайте' },
   ],
   features: [
-    'Система отзывов о мероприятиях (1-5 звёзд + текст)',
-    'Автоматический запрос отзыва при открытии приложения',
-    'Push-уведомления для отзывов через бота',
-    'Подписка в формате Bottom Sheet',
-    'XP бонус за заполнение профиля',
+    'Автоматические ежедневные релизы через GitHub Actions',
+    'Исправлена система начисления XP',
+    'Синхронизация версий во всех компонентах',
   ],
-  fixes: [],
+  fixes: [
+    'Исправлены права на RPC функции для XP',
+  ],
 }
 
 // Release history for changelog
