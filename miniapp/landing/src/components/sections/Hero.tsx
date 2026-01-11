@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { PhoneMockup } from '../PhoneMockup'
 import { ScreenDescriptions } from '../ScreenDescriptions'
+import { CalButton } from '../CalButton'
 
 interface HeroProps {
     dict: {
@@ -104,15 +105,10 @@ export function Hero({ dict, locale = 'ru' }: HeroProps) {
 
                     {/* CTAs */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <a
-                            href="https://t.me/dmitryutlik"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-shine haptic inline-flex items-center gap-2 px-8 py-4 bg-[var(--accent)] text-black font-semibold rounded-2xl hover:bg-[var(--accent-dark)]"
-                        >
+                        <CalButton className="btn-shine haptic inline-flex items-center gap-2 px-8 py-4 bg-[var(--accent)] text-black font-semibold rounded-2xl hover:bg-[var(--accent-dark)] cursor-pointer">
                             {dict.cta}
                             <ArrowRight size={20} />
-                        </a>
+                        </CalButton>
                         <a
                             href="https://t.me/maincomapp_bot"
                             target="_blank"

@@ -1,6 +1,7 @@
 import { getDictionary, Locale } from '@/lib/i18n'
 import { Hero } from '@/components/sections/Hero'
 import { Stats } from '@/components/sections/Stats'
+import { Testimonials } from '@/components/sections/Testimonials'
 import { Features } from '@/components/sections/Features'
 import { AdminDemo } from '@/components/sections/AdminDemo'
 import { AdminPanelShowcase } from '@/components/sections/AdminPanelShowcase'
@@ -25,6 +26,7 @@ export default async function LocalePage({
             <Navigation dict={dict.nav} locale={locale} />
             <Hero dict={dict.hero} locale={locale} />
             <Stats dict={dict.stats} />
+            <Testimonials dict={dict.testimonials} />
             <Features dict={dict.features} />
             <AdminDemo dict={dict.adminDemo} />
             <AdminPanelShowcase dict={dict.adminShowcase} />

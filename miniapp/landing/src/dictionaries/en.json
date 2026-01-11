@@ -42,6 +42,36 @@
             }
         ]
     },
+    "testimonials": {
+        "title": "What Our Clients Say",
+        "subtitle": "Success stories from communities already using our platform",
+        "testimonials": [
+            {
+                "name": "Alex Peterson",
+                "role": "Founder",
+                "company": "TechMeetup",
+                "avatar": "",
+                "text": "Launched our community in a week. Used to spend months developing our own solution. Now everything works out of the box.",
+                "rating": 5
+            },
+            {
+                "name": "Maria Johnson",
+                "role": "Community Manager",
+                "company": "ProductClub",
+                "avatar": "",
+                "text": "Networking features are exactly what we were missing. Members finally started finding each other.",
+                "rating": 5
+            },
+            {
+                "name": "David Smith",
+                "role": "CEO",
+                "company": "StartupHub",
+                "avatar": "",
+                "text": "Subscription monetization paid for the platform in the first month. ROI exceeded all expectations.",
+                "rating": 5
+            }
+        ]
+    },
     "adminDemo": {
         "title": "Powerful Admin Panel",
         "subtitle": "Full control over your community in one place",

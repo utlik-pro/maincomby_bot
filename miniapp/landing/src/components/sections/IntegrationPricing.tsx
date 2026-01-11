@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Star, CreditCard, ShoppingCart } from 'lucide-react'
 import { GlassCard } from '../GlassCard'
+import { CalButton } from '../CalButton'
 
 interface Plan {
     name: string
@@ -138,18 +139,15 @@ export function IntegrationPricing({ dict }: IntegrationPricingProps) {
                                     ))}
                                 </ul>
 
-                                <a
-                                    href="https://t.me/dmitryutlik"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`btn-shine block w-full py-3 px-6 rounded-xl font-medium text-center mt-auto ${
+                                <CalButton
+                                    className={`btn-shine block w-full py-3 px-6 rounded-xl font-medium text-center mt-auto cursor-pointer ${
                                         plan.popular
                                             ? 'bg-[var(--accent)] text-black'
                                             : 'btn-shine-secondary bg-white/10 text-white border border-white/10'
                                     }`}
                                 >
                                     {plan.cta}
-                                </a>
+                                </CalButton>
                             </GlassCard>
                         </div>
                     ))}

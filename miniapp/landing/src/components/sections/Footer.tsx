@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Send, Bot, Shield, Heart, FileText } from 'lucide-react'
+import { Send, Bot, Shield, Heart, FileText, Calendar } from 'lucide-react'
 import { APP_VERSION } from '@/lib/version'
+import { CalButton } from '../CalButton'
 
 interface FooterProps {
     dict: {
@@ -93,15 +94,10 @@ export function Footer({ dict }: FooterProps) {
                     {/* Contact CTA */}
                     <div>
                         <h4 className="font-semibold text-white mb-4">Связаться</h4>
-                        <a
-                            href="https://t.me/dmitryutlik"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-shine haptic inline-flex items-center gap-2 px-6 py-3 bg-[var(--accent)] text-black font-semibold rounded-xl"
-                        >
-                            <Send size={16} />
-                            Написать в Telegram
-                        </a>
+                        <CalButton className="btn-shine haptic inline-flex items-center gap-2 px-6 py-3 bg-[var(--accent)] text-black font-semibold rounded-xl cursor-pointer">
+                            <Calendar size={16} />
+                            Забронировать звонок
+                        </CalButton>
                     </div>
                 </div>
 
