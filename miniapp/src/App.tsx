@@ -580,8 +580,9 @@ const App: React.FC = () => {
           const streakResult = await checkAndUpdateDailyStreak(user.id)
           if (streakResult.reward) {
             addToast(`🔥 ${streakResult.streak} дней подряд! Pro на ${streakResult.reward.proAwarded} дн.`, 'success')
-          } else if (!streakResult.alreadyCheckedToday && streakResult.streak > 1) {
-            addToast(`🔥 Streak: ${streakResult.streak} дней подряд!`, 'success')
+          } else if (!streakResult.alreadyCheckedToday) {
+            // Show streak for any day (including day 1)
+            addToast(`🔥 День ${streakResult.streak}! Заходи каждый день для награды`, 'success')
           }
         } catch (e) {
           console.warn('Failed to update daily streak:', e)

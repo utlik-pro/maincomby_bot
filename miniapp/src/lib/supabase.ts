@@ -666,7 +666,7 @@ function getRankFromPoints(points: number): string {
 }
 
 // XP & Achievements
-export async function addXP(userId: number, amount: number, reason: string) {
+export async function addXP(userId: number, amount: number, reason: string, skipNotification = false) {
   const supabase = getSupabase()
 
   console.log(`[XP] Adding ${amount} XP to user ${userId} for ${reason}`)
@@ -741,17 +741,19 @@ export async function addXP(userId: number, amount: number, reason: string) {
     }
   }
 
-  // Create XP notification
-  try {
-    await createNotification(
-      userId,
-      'xp',
-      `+${amount} XP`,
-      `Вы получили ${amount} XP за: ${getReasonText(reason)}`,
-      { amount, reason }
-    )
-  } catch (e) {
-    console.warn('Failed to create XP notification:', e)
+  // Create XP notification (unless skipped)
+  if (!skipNotification) {
+    try {
+      await createNotification(
+        userId,
+        'xp',
+        `+${amount} XP`,
+        `Вы получили ${amount} XP за: ${getReasonText(reason)}`,
+        { amount, reason }
+      )
+    } catch (e) {
+      console.warn('Failed to create XP notification:', e)
+    }
   }
 
   return newPoints
@@ -3077,7 +3079,7 @@ export async function checkProfileCompletionRewards(
   if (newProfile.photo_url && (!oldProfile || !oldProfile.photo_url)) {
     const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.photo.reason)
     if (!already) {
-      await addXP(userId, PROFILE_COMPLETION_REWARDS.photo.xp, PROFILE_COMPLETION_REWARDS.photo.reason)
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.photo.xp, PROFILE_COMPLETION_REWARDS.photo.reason, true)
       awarded.push({ field: 'photo', xp: PROFILE_COMPLETION_REWARDS.photo.xp })
     }
   }
@@ -3086,7 +3088,7 @@ export async function checkProfileCompletionRewards(
   if (newProfile.bio && (!oldProfile || !oldProfile.bio)) {
     const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.bio.reason)
     if (!already) {
-      await addXP(userId, PROFILE_COMPLETION_REWARDS.bio.xp, PROFILE_COMPLETION_REWARDS.bio.reason)
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.bio.xp, PROFILE_COMPLETION_REWARDS.bio.reason, true)
       awarded.push({ field: 'bio', xp: PROFILE_COMPLETION_REWARDS.bio.xp })
     }
   }
@@ -3095,7 +3097,7 @@ export async function checkProfileCompletionRewards(
   if (newProfile.occupation && (!oldProfile || !oldProfile.occupation)) {
     const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.occupation.reason)
     if (!already) {
-      await addXP(userId, PROFILE_COMPLETION_REWARDS.occupation.xp, PROFILE_COMPLETION_REWARDS.occupation.reason)
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.occupation.xp, PROFILE_COMPLETION_REWARDS.occupation.reason, true)
       awarded.push({ field: 'occupation', xp: PROFILE_COMPLETION_REWARDS.occupation.xp })
     }
   }
@@ -3104,7 +3106,7 @@ export async function checkProfileCompletionRewards(
   if (newProfile.city && newProfile.city !== 'Минск' && (!oldProfile || oldProfile.city === 'Минск' || !oldProfile.city)) {
     const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.city.reason)
     if (!already) {
-      await addXP(userId, PROFILE_COMPLETION_REWARDS.city.xp, PROFILE_COMPLETION_REWARDS.city.reason)
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.city.xp, PROFILE_COMPLETION_REWARDS.city.reason, true)
       awarded.push({ field: 'city', xp: PROFILE_COMPLETION_REWARDS.city.xp })
     }
   }
@@ -3113,7 +3115,7 @@ export async function checkProfileCompletionRewards(
   if (newProfile.linkedin_url && (!oldProfile || !oldProfile.linkedin_url)) {
     const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.linkedin.reason)
     if (!already) {
-      await addXP(userId, PROFILE_COMPLETION_REWARDS.linkedin.xp, PROFILE_COMPLETION_REWARDS.linkedin.reason)
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.linkedin.xp, PROFILE_COMPLETION_REWARDS.linkedin.reason, true)
       awarded.push({ field: 'linkedin', xp: PROFILE_COMPLETION_REWARDS.linkedin.xp })
     }
   }
@@ -3122,7 +3124,7 @@ export async function checkProfileCompletionRewards(
   if (newProfile.skills && newProfile.skills.length > 0 && (!oldProfile || !oldProfile.skills || oldProfile.skills.length === 0)) {
     const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.skills.reason)
     if (!already) {
-      await addXP(userId, PROFILE_COMPLETION_REWARDS.skills.xp, PROFILE_COMPLETION_REWARDS.skills.reason)
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.skills.xp, PROFILE_COMPLETION_REWARDS.skills.reason, true)
       awarded.push({ field: 'skills', xp: PROFILE_COMPLETION_REWARDS.skills.xp })
     }
   }
@@ -3131,7 +3133,7 @@ export async function checkProfileCompletionRewards(
   if (newProfile.interests && newProfile.interests.length > 0 && (!oldProfile || !oldProfile.interests || oldProfile.interests.length === 0)) {
     const already = await hasReceivedXPBonus(userId, PROFILE_COMPLETION_REWARDS.interests.reason)
     if (!already) {
-      await addXP(userId, PROFILE_COMPLETION_REWARDS.interests.xp, PROFILE_COMPLETION_REWARDS.interests.reason)
+      await addXP(userId, PROFILE_COMPLETION_REWARDS.interests.xp, PROFILE_COMPLETION_REWARDS.interests.reason, true)
       awarded.push({ field: 'interests', xp: PROFILE_COMPLETION_REWARDS.interests.xp })
     }
   }
@@ -3150,7 +3152,7 @@ export async function checkProfileCompletionRewards(
     if (isComplete) {
       const already = await hasReceivedXPBonus(userId, 'PROFILE_COMPLETE_BONUS')
       if (!already) {
-        await addXP(userId, 100, 'PROFILE_COMPLETE_BONUS')
+        await addXP(userId, 100, 'PROFILE_COMPLETE_BONUS', true)
         awarded.push({ field: 'complete_bonus', xp: 100 })
       }
     }
