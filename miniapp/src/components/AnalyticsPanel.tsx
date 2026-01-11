@@ -327,7 +327,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-bg border-b border-border">
         <div className="flex items-center gap-3 p-4 bg-purple-500/10">

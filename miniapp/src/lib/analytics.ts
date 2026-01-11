@@ -158,9 +158,13 @@ export async function getSubscriptionStats(): Promise<SubscriptionStats> {
   const supabase = getSupabase()
 
   // Count by tier
-  const { data: users } = await supabase
+  const { data: users, error: usersError } = await supabase
     .from('bot_users')
     .select('subscription_tier')
+
+  if (usersError) {
+    console.warn('Error fetching users for subscription stats:', usersError)
+  }
 
   const userRecords = (users || []) as { subscription_tier: string | null }[]
   const tiers = { free: 0, light: 0, pro: 0 }
@@ -173,14 +177,21 @@ export async function getSubscriptionStats(): Promise<SubscriptionStats> {
     }
   })
 
-  // Total revenue from payments
-  const { data: payments } = await supabase
-    .from('bot_payments')
-    .select('amount_stars')
-    .eq('status', 'completed')
+  // Total revenue from payments (table may not exist)
+  let totalRevenueStars = 0
+  try {
+    const { data: payments, error: paymentsError } = await supabase
+      .from('bot_payments')
+      .select('amount_stars')
+      .eq('status', 'completed')
 
-  const paymentRecords = (payments || []) as PaymentRecord[]
-  const totalRevenueStars = paymentRecords.reduce((sum, p) => sum + (p.amount_stars || 0), 0)
+    if (!paymentsError && payments) {
+      const paymentRecords = payments as PaymentRecord[]
+      totalRevenueStars = paymentRecords.reduce((sum, p) => sum + (p.amount_stars || 0), 0)
+    }
+  } catch (e) {
+    console.warn('Payments table may not exist:', e)
+  }
 
   return {
     ...tiers,
@@ -425,16 +436,31 @@ export interface AllAnalytics {
   proUsers: TopUser[]
 }
 
+const defaultOverview: OverviewStats = { totalUsers: 0, newThisWeek: 0, newThisMonth: 0, activeUsers: 0, avgXP: 0 }
+const defaultSubscriptions: SubscriptionStats = { free: 0, light: 0, pro: 0, totalRevenueStars: 0 }
+const defaultEvents: EventStats = { total: 0, active: 0, totalRegistrations: 0, totalCheckins: 0, totalCancelled: 0, checkinRate: 0, avgRating: 0, totalReviews: 0 }
+const defaultMatching: MatchingStats = { totalSwipes: 0, totalLikes: 0, totalMatches: 0, matchRate: 0, pendingProfiles: 0, approvedProfiles: 0 }
+const defaultRoles: RoleDistribution = { core: 0, partner: 0, sponsor: 0, volunteer: 0, speaker: 0, none: 0 }
+
+async function safeCall<T>(fn: () => Promise<T>, defaultValue: T, name: string): Promise<T> {
+  try {
+    return await fn()
+  } catch (e) {
+    console.error(`Analytics error in ${name}:`, e)
+    return defaultValue
+  }
+}
+
 export async function getAllAnalytics(): Promise<AllAnalytics> {
   const [overview, subscriptions, events, matching, roles, topByXP, topByEvents, proUsers] = await Promise.all([
-    getOverviewStats(),
-    getSubscriptionStats(),
-    getEventStats(),
-    getMatchingStats(),
-    getRoleDistribution(),
-    getTopUsersByXP(10),
-    getTopUsersByEvents(10),
-    getProSubscribers(10)
+    safeCall(getOverviewStats, defaultOverview, 'getOverviewStats'),
+    safeCall(getSubscriptionStats, defaultSubscriptions, 'getSubscriptionStats'),
+    safeCall(getEventStats, defaultEvents, 'getEventStats'),
+    safeCall(getMatchingStats, defaultMatching, 'getMatchingStats'),
+    safeCall(getRoleDistribution, defaultRoles, 'getRoleDistribution'),
+    safeCall(() => getTopUsersByXP(10), [], 'getTopUsersByXP'),
+    safeCall(() => getTopUsersByEvents(10), [], 'getTopUsersByEvents'),
+    safeCall(() => getProSubscribers(10), [], 'getProSubscribers')
   ])
 
   return {
