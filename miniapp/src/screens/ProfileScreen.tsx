@@ -63,6 +63,7 @@ import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADG
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
 import { ChangelogSheet } from '@/components/ChangelogSheet'
+import { ProfilePreviewCard } from '@/components/ProfilePreviewCard'
 
 // Icon mapping for ranks
 const RANK_ICONS: Record<UserRank, React.ReactNode> = {
@@ -1089,87 +1090,56 @@ const ProfileScreen: React.FC = () => {
     )
   }
 
+  const handleEditClick = () => {
+    // Reset form with current profile data
+    setEditForm({
+      bio: profile?.bio || '',
+      occupation: profile?.occupation || '',
+      city: profile?.city || 'Минск',
+      looking_for: profile?.looking_for || '',
+      can_help_with: profile?.can_help_with || '',
+      skills: profile?.skills || [],
+      interests: profile?.interests || [],
+    })
+    setIsEditing(true)
+  }
+
   return (
-    <div className="pb-6">
-      {/* Header with themed gradient background */}
-      <div className={`${theme.headerGradient} p-6 text-center`}>
-        {/* Avatar with skin - uses integrated skin and badge system */}
-        <div className="relative inline-block cursor-pointer" onClick={handleAvatarTap}>
-          <AvatarWithSkin
-            src={profile?.photo_url}
-            name={user?.first_name || 'User'}
-            size="xl"
-            skin={activeSkin}
-            role={freshUser?.team_role || user?.team_role}
-            tier={freshUser?.subscription_tier === 'pro' ? 'pro' : freshUser?.subscription_tier === 'light' ? 'light' : user?.subscription_tier === 'pro' ? 'pro' : user?.subscription_tier === 'light' ? 'light' : null}
-            className="mx-auto"
-          />
-        </div>
+    <div className="min-h-screen bg-bg">
+      {/* Card Preview Section */}
+      <div className="px-4 pt-4">
+        <ProfilePreviewCard
+          user={user}
+          profile={profile}
+          photos={profilePhotos}
+          activeSkin={activeSkin}
+          onEdit={handleEditClick}
+        />
+      </div>
 
-        <h1 className="text-xl font-bold mt-4">
-          {user?.first_name} {user?.last_name}
-        </h1>
-
-
-        {profile?.occupation && <p className={`${theme.accentColor} mt-1`}>{profile.occupation}</p>}
-
-        {/* Company inline */}
-        {userCompany && <CompanyInline userCompany={userCompany} />}
-
-        <p className="text-gray-400 text-sm flex items-center justify-center gap-1 mt-1">
-          <MapPin size={14} />
-          {profile?.city || 'Не указан'}
-        </p>
-
-        {/* Social links inline */}
-        {userLinks.length > 0 && (
-          <div className="flex justify-center mt-3">
-            <SocialLinks links={userLinks} compact showEmpty={false} />
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="flex justify-center gap-8 mt-4">
-          <div className="text-center">
-            <div className="text-xl font-bold">{user?.points || 0}</div>
-            <div className="text-xs text-gray-400">XP</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold">{userStats?.events || 0}</div>
-            <div className="text-xs text-gray-400">Событий</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold">{userStats?.matches || 0}</div>
-            <div className="text-xs text-gray-400">Матчей</div>
-          </div>
-        </div>
-
-        {/* Rank badge - tap 10 times for easter egg */}
-        <div className="mt-4 cursor-pointer" onClick={handleRankTap}>
-          <Badge variant="accent" className="text-sm flex items-center gap-1 justify-center">
+      {/* Stats Row */}
+      <div className="flex justify-center gap-6 py-4">
+        <div className="text-center" onClick={handleRankTap}>
+          <Badge variant="accent" className="text-xs flex items-center gap-1 justify-center cursor-pointer">
             {RANK_ICONS[rank]}
             {rankInfo.ru}
           </Badge>
         </div>
-
-        {/* Superadmin Settings Button */}
-        {['dmitryutlik', 'utlik_offer'].includes(user?.username || '') && (
-          <div className="mt-4">
-            <button
-              onClick={() => setShowAdminPanel(true)}
-              className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-bold border border-red-500/30 flex items-center gap-2 mx-auto"
-            >
-              <Settings size={16} /> Superadmin
-            </button>
-          </div>
-        )}
+        <div className="text-center">
+          <div className="text-lg font-bold">{userStats?.events || 0}</div>
+          <div className="text-xs text-gray-500">событий</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-bold">{userStats?.matches || 0}</div>
+          <div className="text-xs text-gray-500">матчей</div>
+        </div>
       </div>
 
       {/* Debug Console (hidden, activated by 7 taps on version) */}
       {showDebug && (
         <div className="mx-4 mb-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-yellow-400 font-mono text-sm">🔧 Debug Console</span>
+            <span className="text-yellow-400 font-mono text-sm">Debug Console</span>
             <button onClick={() => setShowDebug(false)} className="text-gray-400">
               <X size={16} />
             </button>
@@ -1187,141 +1157,60 @@ const ProfileScreen: React.FC = () => {
         </div>
       )}
 
-      <div className="px-4">
-        {/* Edit Profile Button */}
-        <Button
-          fullWidth
-          variant="secondary"
-          icon={<Edit3 size={16} />}
-          className="mb-6"
-          onClick={() => {
-            // Reset form with current profile data
-            setEditForm({
-              bio: profile?.bio || '',
-              occupation: profile?.occupation || '',
-              city: profile?.city || 'Минск',
-              looking_for: profile?.looking_for || '',
-              can_help_with: profile?.can_help_with || '',
-              skills: profile?.skills || [],
-              interests: profile?.interests || [],
-            })
-            setIsEditing(true)
-          }}
-        >
-          Редактировать профиль
-        </Button>
-
-        {/* Profile Info Cards */}
-        {profile?.bio && (
-          <Card className="mb-4">
-            <h3 className="text-sm text-gray-400 mb-2">О себе</h3>
-            <p>{profile.bio}</p>
-          </Card>
-        )}
-
-        {profile?.looking_for && (
-          <Card className="mb-4">
-            <h3 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
-              <Search size={14} />
-              Ищу
-            </h3>
-            <p>{profile.looking_for}</p>
-          </Card>
-        )}
-
-        {profile?.can_help_with && (
-          <Card className="mb-4">
-            <h3 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
-              <Dumbbell size={14} />
-              Могу помочь
-            </h3>
-            <p>{profile.can_help_with}</p>
-          </Card>
-        )}
-
-        {/* Skills */}
-        {profile?.skills && profile.skills.length > 0 && (
-          <Card className="mb-4">
-            <h3 className="text-sm text-gray-400 mb-2">Навыки</h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.skills.map((skill, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {/* Interests */}
-        {profile?.interests && profile.interests.length > 0 && (
-          <Card className="mb-4">
-            <h3 className="text-sm text-gray-400 mb-2">Интересы</h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.interests.map((interest, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-sm"
-                >
-                  {interest}
-                </span>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {/* Badges */}
-        {userBadges.length > 0 && (
-          <div className="mb-4">
-            <BadgeGrid
-              badges={userBadges}
-              onBadgeClick={(badge) => setSelectedBadge(badge)}
-            />
-          </div>
-        )}
-
-        {/* Company card (full) */}
-        {userCompany && (
-          <div className="mb-4">
-            <CompanyCard userCompany={userCompany} />
-          </div>
-        )}
-
-        {/* Social links (full) */}
+      {/* Quick Actions */}
+      <div className="px-4 pb-4">
+        {/* Social links */}
         {userLinks.length > 0 && (
-          <div className="mb-4">
-            <SocialLinks links={userLinks} />
+          <div className="flex justify-center mb-4">
+            <SocialLinks links={userLinks} compact showEmpty={false} />
           </div>
         )}
 
-        {/* Menu */}
+        {/* Menu Grid */}
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {[
+            { icon: <Bell size={22} />, label: 'Уведомления', badge: unreadCount, onClick: () => setShowNotifications(true), color: 'text-blue-400' },
+            { icon: <Heart size={22} />, label: 'Матчи', badge: null, onClick: () => setActiveTab('network'), color: 'text-pink-400' },
+            { icon: <Ticket size={22} />, label: 'Билеты', badge: null, onClick: () => setActiveTab('events'), color: 'text-purple-400' },
+            { icon: <Trophy size={22} />, label: 'Награды', badge: null, onClick: () => setActiveTab('achievements'), color: 'text-yellow-400' },
+          ].map((item) => (
+            <motion.button
+              key={item.label}
+              whileTap={{ scale: 0.95 }}
+              onClick={item.onClick}
+              className="relative flex flex-col items-center p-3 bg-bg-card rounded-xl"
+            >
+              <span className={item.color}>{item.icon}</span>
+              <span className="text-xs text-gray-400 mt-1">{item.label}</span>
+              {item.badge && item.badge > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-bg text-xs font-bold rounded-full flex items-center justify-center">
+                  {item.badge}
+                </span>
+              )}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Menu List */}
         <Card className="mb-4 p-0 overflow-hidden">
           {[
-            { icon: <Bell size={20} className="text-blue-400" />, label: 'Уведомления', badge: unreadCount > 0 ? unreadCount : null, onClick: () => setShowNotifications(true) },
-            { icon: <Users size={20} className="text-accent" />, label: 'Команда MAIN', badge: teamMembers.length > 0 ? teamMembers.length : null, onClick: () => setShowTeamSection(true) },
-            // Admin: Skin management (core team only)
-            ...(user?.team_role === 'core' ? [{ icon: <Shield size={20} className="text-red-400" />, label: 'Управление скинами', badge: null, onClick: () => setShowSkinAdmin(true) }] : []),
-            { icon: <Ticket size={20} className="text-purple-400" />, label: 'Мои билеты', badge: null, onClick: () => setActiveTab('events') },
-            { icon: <Heart size={20} className="text-pink-400" />, label: 'Мои матчи', badge: null, onClick: () => setActiveTab('network') },
-            { icon: <Trophy size={20} className="text-yellow-400" />, label: 'Достижения', badge: null, onClick: () => setActiveTab('achievements') },
-            { icon: <Palette size={20} className="text-orange-400" />, label: 'Мой скин', badge: userSkins.length > 0 ? userSkins.length : null, onClick: () => setShowSkinSelector(true) },
-            { icon: <Settings size={20} className="text-gray-400" />, label: 'Настройки', badge: null, onClick: () => setShowSettings(true) },
+            { icon: <Users size={18} className="text-accent" />, label: 'Команда MAIN', onClick: () => setShowTeamSection(true) },
+            { icon: <Palette size={18} className="text-orange-400" />, label: 'Мой скин', badge: userSkins.length > 0 ? userSkins.length : null, onClick: () => setShowSkinSelector(true) },
+            ...(user?.team_role === 'core' ? [{ icon: <Shield size={18} className="text-red-400" />, label: 'Управление скинами', badge: null, onClick: () => setShowSkinAdmin(true) }] : []),
+            { icon: <Settings size={18} className="text-gray-400" />, label: 'Настройки', onClick: () => setShowSettings(true) },
           ].map((item, i, arr) => (
             <motion.div
               key={item.label}
               whileTap={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={item.onClick}
               className={`
-                flex items-center px-4 py-3.5 cursor-pointer
+                flex items-center px-4 py-3 cursor-pointer
                 ${i < arr.length - 1 ? 'border-b border-bg' : ''}
               `}
             >
               <span className="mr-3">{item.icon}</span>
-              <span className="flex-1">{item.label}</span>
-              {item.badge && <Badge variant="accent">{item.badge}</Badge>}
+              <span className="flex-1 text-sm">{item.label}</span>
+              {'badge' in item && item.badge && <Badge variant="accent" className="text-xs">{item.badge}</Badge>}
               <ChevronRight size={16} className="text-gray-500 ml-2" />
             </motion.div>
           ))}
@@ -1336,26 +1225,26 @@ const ProfileScreen: React.FC = () => {
           `}
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-bg flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-bg flex items-center justify-center">
               {tier === 'pro' ? (
-                <Crown size={24} className="text-accent" />
+                <Crown size={20} className="text-accent" />
               ) : tier === 'light' ? (
-                <Star size={24} className="text-yellow-400" />
+                <Star size={20} className="text-yellow-400" />
               ) : (
-                <Shield size={24} className="text-gray-400" />
+                <Shield size={20} className="text-gray-400" />
               )}
             </div>
             <div className="flex-1">
-              <div className={tier !== 'free' ? 'text-accent font-semibold' : 'font-semibold'}>
+              <div className={`text-sm ${tier !== 'free' ? 'text-accent font-semibold' : 'font-semibold'}`}>
                 {tier === 'pro' ? 'Pro Member' : tier === 'light' ? 'Light Member' : 'Free'}
               </div>
               <div className="text-xs text-gray-400">
-                {tier === 'free' ? 'Обновите для больших возможностей' : 'Нажмите для управления'}
+                {tier === 'free' ? 'Улучшить подписку' : 'Управление подпиской'}
               </div>
             </div>
             {tier === 'free' && (
               <Button size="sm" variant="primary">
-                Улучшить
+                PRO
               </Button>
             )}
           </div>
@@ -1364,14 +1253,14 @@ const ProfileScreen: React.FC = () => {
         {/* Invite Friends */}
         <Card className="mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-pink-500/20 flex items-center justify-center">
-              <Gift size={24} className="text-pink-400" />
+            <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center">
+              <Gift size={20} className="text-pink-400" />
             </div>
             <div className="flex-1">
-              <div className="font-semibold">Пригласи друга</div>
+              <div className="font-semibold text-sm">Пригласи друга</div>
               <div className="text-xs text-gray-400">
                 {user?.invites_remaining! > 0
-                  ? `Осталось ${user?.invites_remaining} инвайтов. +50 XP за друга.`
+                  ? `${user?.invites_remaining} инвайтов • +50 XP`
                   : 'Инвайты закончились'}
               </div>
             </div>
@@ -1384,43 +1273,31 @@ const ProfileScreen: React.FC = () => {
           </div>
         </Card>
 
-        {/* Add to Home Screen */}
-        {isHomeScreenSupported() && (
-          <Card className="mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
-                <Smartphone size={24} className="text-accent" />
-              </div>
-              <div className="flex-1">
-                <div className="font-semibold">Добавить на экран</div>
-                <div className="text-xs text-gray-400">Быстрый доступ с главного экрана</div>
-              </div>
-              <Button size="sm" variant="primary" onClick={() => {
-                hapticFeedback.medium()
-                addToHomeScreen()
-                addToast('Добавление на экран...', 'success')
-              }}>
-                Добавить
-              </Button>
-            </div>
-          </Card>
+        {/* Superadmin Settings Button */}
+        {['dmitryutlik', 'utlik_offer'].includes(user?.username || '') && (
+          <button
+            onClick={() => setShowAdminPanel(true)}
+            className="w-full px-4 py-3 bg-red-500/10 text-red-400 rounded-xl text-sm font-bold border border-red-500/20 flex items-center justify-center gap-2 mb-4"
+          >
+            <Settings size={16} /> Superadmin Panel
+          </button>
         )}
 
         {/* Support */}
         <button
-          className="w-full text-center text-gray-400 py-4 flex items-center justify-center gap-2"
+          className="w-full text-center text-gray-500 py-3 flex items-center justify-center gap-2 text-sm"
           onClick={() => openTelegramLink('https://t.me/yana_martynen')}
         >
-          <MessageCircle size={16} />
-          Связаться с поддержкой
+          <MessageCircle size={14} />
+          Поддержка
         </button>
 
-        {/* Version - tap 7 times for debug console */}
+        {/* Version */}
         <p
-          className="text-center text-gray-600 text-xs mt-4 cursor-pointer select-none"
+          className="text-center text-gray-600 text-xs mt-2 cursor-pointer select-none"
           onClick={handleDebugTap}
         >
-          MAIN Community v1.0.0
+          v1.0.0
         </p>
       </div>
 
