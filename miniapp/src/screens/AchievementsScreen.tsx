@@ -21,9 +21,12 @@ import {
   Wrench,
   Flag,
   GraduationCap,
+  History,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getUserAchievements, getLeaderboard } from '@/lib/supabase'
+import { getUserAchievements, getLeaderboard, getXPHistory, getXPReasonText } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Card, Progress } from '@/components/ui'
 import { ACHIEVEMENTS, RANK_LABELS, RANK_THRESHOLDS, UserRank, AchievementId } from '@/types'
 
@@ -71,6 +74,13 @@ const AchievementsScreen: React.FC = () => {
   const { data: leaderboard = [] } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: () => getLeaderboard(10),
+  })
+
+  // Fetch XP history for verification
+  const { data: xpHistory = [] } = useQuery({
+    queryKey: ['xpHistory', user?.id],
+    queryFn: () => (user ? getXPHistory(user.id, 20) : []),
+    enabled: !!user,
   })
 
   const unlockedIds = new Set(userAchievements?.map((a: any) => a.achievement_id) || [])
@@ -205,6 +215,51 @@ const AchievementsScreen: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* XP History */}
+      {xpHistory.length > 0 && (
+        <div className="px-4 mt-6">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <History size={20} className="text-accent" />
+            История XP
+          </h2>
+          <Card>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {xpHistory.map((tx: any) => {
+                const isPositive = tx.amount > 0
+                const date = new Date(tx.created_at)
+                const formattedDate = date.toLocaleDateString('ru-RU', {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+                return (
+                  <div
+                    key={tx.id}
+                    className="flex items-center justify-between py-2 border-b border-bg last:border-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      {isPositive ? (
+                        <TrendingUp size={18} className="text-green-400" />
+                      ) : (
+                        <TrendingDown size={18} className="text-red-400" />
+                      )}
+                      <div>
+                        <div className="text-sm">{getXPReasonText(tx.reason)}</div>
+                        <div className="text-xs text-gray-500">{formattedDate}</div>
+                      </div>
+                    </div>
+                    <Badge variant={isPositive ? 'accent' : 'default'}>
+                      {isPositive ? '+' : ''}{tx.amount}
+                    </Badge>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Leaderboard */}
       <div className="px-4 mt-6">

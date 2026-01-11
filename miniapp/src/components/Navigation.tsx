@@ -5,6 +5,7 @@ import { Home, Calendar, Trophy, User } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
 import { getActiveEvents } from '@/lib/supabase'
+import { useDoubleTapEasterEgg } from '@/lib/easterEggs'
 
 // MVP v1.0: Network tab hidden until critical mass of profiles
 const tabs = [
@@ -17,6 +18,9 @@ const tabs = [
 
 export const Navigation: React.FC = () => {
   const { activeTab, setActiveTab, lastSeenEventId, setLastSeenEventId } = useAppStore()
+
+  // Double tap on profile tab = easter egg
+  const { handleTap: handleDoubleTap, isUnlocked: doubleTapUnlocked } = useDoubleTapEasterEgg(300)
 
   // Fetch events to check for new ones
   const { data: events } = useQuery({
@@ -36,6 +40,11 @@ export const Navigation: React.FC = () => {
     // Mark events as seen when opening events tab
     if (tabId === 'events' && latestEventId > 0) {
       setLastSeenEventId(latestEventId)
+    }
+
+    // Easter egg: double tap on profile tab
+    if (tabId === 'profile' && !doubleTapUnlocked) {
+      handleDoubleTap()
     }
   }
 

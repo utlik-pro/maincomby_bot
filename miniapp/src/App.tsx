@@ -8,7 +8,7 @@ import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
 import { Skeleton } from '@/components/ui'
-import { useSpeedRunner, useShakeDetector } from '@/lib/easterEggs'
+import { useSpeedRunner, useSwipePatternEasterEgg } from '@/lib/easterEggs'
 import { Smartphone } from 'lucide-react'
 
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -118,10 +118,11 @@ const App: React.FC = () => {
   // Easter eggs - speed runner (visit all tabs quickly)
   const { recordTabVisit } = useSpeedRunner(['home', 'events', 'network', 'achievements', 'profile'], 10000)
 
-  // Easter eggs - shake detector (shake phone for bonus)
-  useShakeDetector(() => {
-    console.log('[EasterEgg] Phone shake detected!')
-  }, 3)
+  // Easter eggs - swipe pattern (swipe left-right-left for bonus)
+  const { handlers: swipeHandlers } = useSwipePatternEasterEgg(
+    ['left', 'right', 'left'],
+    () => console.log('[EasterEgg] Swipe pattern completed!')
+  )
 
   // Record tab visits for speed runner
   useEffect(() => {
@@ -731,7 +732,10 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-bg min-h-screen text-white max-w-lg mx-auto">
+    <div
+      className="bg-bg min-h-screen text-white max-w-lg mx-auto"
+      {...swipeHandlers}
+    >
       <LogoHeader />
       <ToastContainer />
 

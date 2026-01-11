@@ -26,10 +26,20 @@ const EASTER_EGGS: Record<string, EasterEgg> = {
     xpReward: 200,
     message: 'Мастер тапов! +200 XP за настойчивость!',
   },
-  phone_shake: {
-    id: 'phone_shake',
+  long_press: {
+    id: 'long_press',
+    xpReward: 75,
+    message: '⏱️ Терпеливый! +75 XP за выдержку!',
+  },
+  double_tap: {
+    id: 'double_tap',
+    xpReward: 100,
+    message: '👆👆 Двойной удар! +100 XP!',
+  },
+  swipe_pattern: {
+    id: 'swipe_pattern',
     xpReward: 150,
-    message: 'Шейкер! +150 XP за встряску!',
+    message: '↔️ Мастер свайпов! +150 XP за ловкость!',
   },
   secret_code: {
     id: 'secret_code',
@@ -136,97 +146,254 @@ export function useTapEasterEgg(
   return { tapCount, handleTap, isUnlocked }
 }
 
-// Hook for shake detection
-export function useShakeDetector(onShake: () => void, requiredShakes = 3) {
-  const [shakeCount, setShakeCount] = useState(0)
-  const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked('phone_shake'))
-  const lastShakeRef = useRef<number>(0)
-  const { user } = useAppStore()
+// Hook for long press easter egg (hold for 3 seconds)
+export function useLongPressEasterEgg(
+  duration = 3000,
+  onUnlock?: () => void
+) {
+  const [isPressed, setIsPressed] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked('long_press'))
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const progressRef = useRef<NodeJS.Timeout | null>(null)
+  const startTimeRef = useRef<number>(0)
+  const { user, addPoints } = useAppStore()
   const { addToast } = useToastStore()
 
-  useEffect(() => {
+  const handlePressStart = useCallback(() => {
     if (isUnlocked) return
 
-    let lastX = 0, lastY = 0, lastZ = 0
-    const threshold = 15
+    setIsPressed(true)
+    startTimeRef.current = Date.now()
+    hapticFeedback.light()
 
-    const handleMotion = (event: DeviceMotionEvent) => {
-      const { accelerationIncludingGravity } = event
-      if (!accelerationIncludingGravity) return
+    // Update progress every 100ms
+    progressRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current
+      const newProgress = Math.min((elapsed / duration) * 100, 100)
+      setProgress(newProgress)
 
-      const { x, y, z } = accelerationIncludingGravity
-      if (x === null || y === null || z === null) return
-
-      const deltaX = Math.abs(x - lastX)
-      const deltaY = Math.abs(y - lastY)
-      const deltaZ = Math.abs(z - lastZ)
-
-      if (deltaX + deltaY + deltaZ > threshold) {
-        const now = Date.now()
-        if (now - lastShakeRef.current > 500) {
-          lastShakeRef.current = now
-          setShakeCount(prev => {
-            const newCount = prev + 1
-            if (newCount >= requiredShakes) {
-              // Unlock easter egg
-              setIsUnlocked(true)
-              saveUnlockedEgg('phone_shake')
-              hapticFeedback.success()
-
-              const egg = EASTER_EGGS.phone_shake
-              if (user) {
-                addXP(user.id, egg.xpReward, 'EASTER_EGG_PHONE_SHAKE').catch(() => { })
-              }
-              addToast(egg.message, 'xp', egg.xpReward)
-              onShake()
-              return 0
-            }
-            hapticFeedback.light()
-            return newCount
-          })
-        }
+      // Haptic feedback at milestones
+      if (newProgress >= 50 && newProgress < 55) {
+        hapticFeedback.light()
+      } else if (newProgress >= 80 && newProgress < 85) {
+        hapticFeedback.medium()
       }
+    }, 100)
 
-      lastX = x
-      lastY = y
-      lastZ = z
-    }
+    // Unlock after duration
+    timerRef.current = setTimeout(async () => {
+      setIsUnlocked(true)
+      saveUnlockedEgg('long_press')
+      hapticFeedback.success()
 
-    // Request permission for iOS
-    const requestPermission = async () => {
-      // @ts-ignore - DeviceMotionEvent.requestPermission is iOS only
-      if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      const egg = EASTER_EGGS.long_press
+      if (user && egg.xpReward > 0) {
         try {
-          // @ts-ignore
-          const permission = await DeviceMotionEvent.requestPermission()
-          if (permission === 'granted') {
-            window.addEventListener('devicemotion', handleMotion)
-          }
+          await addXP(user.id, egg.xpReward, 'EASTER_EGG_LONG_PRESS')
+          addPoints(egg.xpReward)
         } catch (e) {
-          console.warn('Shake detection not available:', e)
+          console.warn('Failed to award easter egg XP:', e)
         }
-      } else {
-        // Android or desktop - just add listener
-        window.addEventListener('devicemotion', handleMotion)
+      }
+
+      addToast(egg.message, 'xp', egg.xpReward)
+      onUnlock?.()
+    }, duration)
+  }, [isUnlocked, duration, user, addToast, onUnlock, addPoints])
+
+  const handlePressEnd = useCallback(() => {
+    setIsPressed(false)
+    setProgress(0)
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+    if (progressRef.current) {
+      clearInterval(progressRef.current)
+      progressRef.current = null
+    }
+  }, [])
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (progressRef.current) clearInterval(progressRef.current)
+    }
+  }, [])
+
+  return {
+    isPressed,
+    progress,
+    isUnlocked,
+    handlers: {
+      onTouchStart: handlePressStart,
+      onTouchEnd: handlePressEnd,
+      onTouchCancel: handlePressEnd,
+      onMouseDown: handlePressStart,
+      onMouseUp: handlePressEnd,
+      onMouseLeave: handlePressEnd,
+    }
+  }
+}
+
+// Hook for double tap easter egg (rapid double tap within 300ms)
+export function useDoubleTapEasterEgg(
+  maxInterval = 300,
+  onUnlock?: () => void
+) {
+  const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked('double_tap'))
+  const lastTapRef = useRef<number>(0)
+  const { user, addPoints } = useAppStore()
+  const { addToast } = useToastStore()
+
+  const handleTap = useCallback(async () => {
+    if (isUnlocked) return
+
+    const now = Date.now()
+    const timeSinceLastTap = now - lastTapRef.current
+
+    if (timeSinceLastTap < maxInterval && timeSinceLastTap > 50) {
+      // Double tap detected!
+      setIsUnlocked(true)
+      saveUnlockedEgg('double_tap')
+      hapticFeedback.success()
+
+      const egg = EASTER_EGGS.double_tap
+      if (user && egg.xpReward > 0) {
+        try {
+          await addXP(user.id, egg.xpReward, 'EASTER_EGG_DOUBLE_TAP')
+          addPoints(egg.xpReward)
+        } catch (e) {
+          console.warn('Failed to award easter egg XP:', e)
+        }
+      }
+
+      addToast(egg.message, 'xp', egg.xpReward)
+      onUnlock?.()
+    } else {
+      hapticFeedback.light()
+    }
+
+    lastTapRef.current = now
+  }, [isUnlocked, maxInterval, user, addToast, onUnlock, addPoints])
+
+  return { handleTap, isUnlocked }
+}
+
+// Hook for swipe pattern easter egg (swipe left-right-left or up-down-up)
+export function useSwipePatternEasterEgg(
+  pattern: ('left' | 'right' | 'up' | 'down')[] = ['left', 'right', 'left'],
+  onUnlock?: () => void
+) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isUnlocked, setIsUnlocked] = useState(() => isEggUnlocked('swipe_pattern'))
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { user, addPoints } = useAppStore()
+  const { addToast } = useToastStore()
+
+  const detectSwipeDirection = useCallback((startX: number, startY: number, endX: number, endY: number): 'left' | 'right' | 'up' | 'down' | null => {
+    const deltaX = endX - startX
+    const deltaY = endY - startY
+    const minSwipeDistance = 50
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (Math.abs(deltaX) >= minSwipeDistance) {
+        return deltaX > 0 ? 'right' : 'left'
+      }
+    } else {
+      // Vertical swipe
+      if (Math.abs(deltaY) >= minSwipeDistance) {
+        return deltaY > 0 ? 'down' : 'up'
       }
     }
+    return null
+  }, [])
 
-    requestPermission()
+  const handleSwipe = useCallback(async (direction: 'left' | 'right' | 'up' | 'down') => {
+    if (isUnlocked) return
 
-    return () => {
-      window.removeEventListener('devicemotion', handleMotion)
+    // Reset timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
     }
-  }, [isUnlocked, requiredShakes, user, addToast, onShake])
 
-  // Reset shake count after inactivity
+    // Check if this swipe matches the expected pattern
+    if (direction === pattern[currentIndex]) {
+      hapticFeedback.light()
+      const nextIndex = currentIndex + 1
+
+      if (nextIndex >= pattern.length) {
+        // Pattern complete!
+        setIsUnlocked(true)
+        saveUnlockedEgg('swipe_pattern')
+        hapticFeedback.success()
+
+        const egg = EASTER_EGGS.swipe_pattern
+        if (user && egg.xpReward > 0) {
+          try {
+            await addXP(user.id, egg.xpReward, 'EASTER_EGG_SWIPE_PATTERN')
+            addPoints(egg.xpReward)
+          } catch (e) {
+            console.warn('Failed to award easter egg XP:', e)
+          }
+        }
+
+        addToast(egg.message, 'xp', egg.xpReward)
+        onUnlock?.()
+        setCurrentIndex(0)
+      } else {
+        setCurrentIndex(nextIndex)
+        // Reset after 2 seconds of inactivity
+        timeoutRef.current = setTimeout(() => setCurrentIndex(0), 2000)
+      }
+    } else {
+      // Wrong direction, reset
+      setCurrentIndex(0)
+    }
+  }, [isUnlocked, currentIndex, pattern, user, addToast, onUnlock, addPoints])
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isUnlocked) return
+    const touch = e.touches[0]
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+  }, [isUnlocked])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (isUnlocked || !touchStartRef.current) return
+    const touch = e.changedTouches[0]
+    const direction = detectSwipeDirection(
+      touchStartRef.current.x,
+      touchStartRef.current.y,
+      touch.clientX,
+      touch.clientY
+    )
+    if (direction) {
+      handleSwipe(direction)
+    }
+    touchStartRef.current = null
+  }, [isUnlocked, detectSwipeDirection, handleSwipe])
+
+  // Cleanup
   useEffect(() => {
-    if (shakeCount > 0 && shakeCount < requiredShakes) {
-      const timeout = setTimeout(() => setShakeCount(0), 3000)
-      return () => clearTimeout(timeout)
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
-  }, [shakeCount, requiredShakes])
+  }, [])
 
-  return { shakeCount, isUnlocked }
+  return {
+    currentIndex,
+    patternLength: pattern.length,
+    isUnlocked,
+    handlers: {
+      onTouchStart: handleTouchStart,
+      onTouchEnd: handleTouchEnd,
+    }
+  }
 }
 
 // Hook for secret code detection in text input

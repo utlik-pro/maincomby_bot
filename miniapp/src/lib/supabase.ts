@@ -740,18 +740,33 @@ export async function addXP(userId: number, amount: number, reason: string) {
   return data
 }
 
-function getReasonText(reason: string): string {
+export function getXPReasonText(reason: string): string {
   const reasons: Record<string, string> = {
-    EVENT_REGISTER: 'регистрацию на событие',
+    EVENT_REGISTER: 'регистрация на событие',
     EVENT_CHECKIN: 'посещение события',
+    EVENT_CANCEL: 'отмена регистрации',
     PROFILE_COMPLETE: 'заполнение профиля',
     MATCH_RECEIVED: 'новый контакт',
     FRIEND_INVITE: 'приглашение друга',
     FIRST_SWIPE: 'первый свайп',
     FEEDBACK_SUBMIT: 'отзыв о событии',
-    TEAM_ROLE_ASSIGNED: 'назначение роли в команде',
+    TEAM_ROLE_ASSIGNED: 'роль в команде',
+    // Easter eggs
+    EASTER_EGG_LOGO_TAPS: 'секрет логотипа',
+    EASTER_EGG_AVATAR_TAPS: 'секрет аватара',
+    EASTER_EGG_RANK_TAPS: 'секрет ранга',
+    EASTER_EGG_LONG_PRESS: 'долгое нажатие',
+    EASTER_EGG_DOUBLE_TAP: 'двойной тап',
+    EASTER_EGG_SWIPE_PATTERN: 'паттерн свайпов',
+    EASTER_EGG_SECRET_CODE: 'секретный код MAIN',
+    EASTER_EGG_SPEED_RUNNER: 'спидраннер',
   }
   return reasons[reason] || reason
+}
+
+// Internal alias for backward compatibility
+function getReasonText(reason: string): string {
+  return getXPReasonText(reason)
 }
 
 // Check if user has received a specific XP bonus
@@ -765,6 +780,32 @@ export async function hasReceivedXPBonus(userId: number, reason: string): Promis
     .limit(1)
 
   return (data && data.length > 0) || false
+}
+
+// Get XP transaction history for a user
+export interface XPTransaction {
+  id: number
+  user_id: number
+  amount: number
+  reason: string
+  created_at: string
+}
+
+export async function getXPHistory(userId: number, limit = 50): Promise<XPTransaction[]> {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('xp_transactions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('[XP] Failed to get XP history:', error)
+    return []
+  }
+
+  return data as XPTransaction[]
 }
 
 export async function getUserAchievements(userId: number) {
