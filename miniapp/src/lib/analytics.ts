@@ -391,6 +391,25 @@ export async function getMatchingStats(): Promise<MatchingStats> {
   }
 }
 
+// ============ USERS BY ROLE ============
+
+export async function getUsersByRole(role: string): Promise<TopUser[]> {
+  const supabase = getSupabase()
+
+  const { data } = await supabase
+    .from('bot_users')
+    .select('id, username, first_name, last_name, points, subscription_tier, team_role')
+    .eq('team_role', role)
+    .order('points', { ascending: false })
+
+  const records = (data || []) as UserRecord[]
+  return records.map(u => ({
+    ...u,
+    points: u.points || 0,
+    subscription_tier: u.subscription_tier || 'free'
+  }))
+}
+
 // ============ ROLE DISTRIBUTION ============
 
 export async function getRoleDistribution(): Promise<RoleDistribution> {

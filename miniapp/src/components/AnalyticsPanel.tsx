@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronLeft,
+  ChevronDown,
   BarChart3,
   Users,
   Calendar,
@@ -23,7 +24,7 @@ import {
   Mic
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getAllAnalytics, AllAnalytics, TopUser } from '@/lib/analytics'
+import { getAllAnalytics, AllAnalytics, TopUser, getUsersByRole } from '@/lib/analytics'
 import { Card } from '@/components/ui'
 
 interface AnalyticsPanelProps {
@@ -44,6 +45,9 @@ const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
 export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
   const { user } = useAppStore()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
+  const [expandedRole, setExpandedRole] = useState<string | null>(null)
+  const [roleUsers, setRoleUsers] = useState<TopUser[]>([])
+  const [loadingRole, setLoadingRole] = useState(false)
 
   // Superadmin check
   const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
@@ -56,6 +60,24 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
   })
 
   if (!isSuperAdmin) return null
+
+  const handleRoleClick = async (role: string) => {
+    if (expandedRole === role) {
+      setExpandedRole(null)
+      return
+    }
+    setExpandedRole(role)
+    setLoadingRole(true)
+    try {
+      const users = await getUsersByRole(role)
+      setRoleUsers(users)
+    } catch (e) {
+      console.error('Error loading role users:', e)
+      setRoleUsers([])
+    } finally {
+      setLoadingRole(false)
+    }
+  }
 
   const renderStatCard = (
     value: number | string,
@@ -264,19 +286,72 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
 
     return (
       <div className="space-y-3">
-        {roleConfig.map(role => (
-          <Card key={role.key} className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={role.color}>{role.icon}</div>
-                <span className="font-medium">{role.label}</span>
-              </div>
-              <div className={`text-2xl font-bold ${role.color}`}>
-                {data.roles[role.key as keyof typeof data.roles]}
-              </div>
-            </div>
-          </Card>
-        ))}
+        {roleConfig.map(role => {
+          const count = data.roles[role.key as keyof typeof data.roles]
+          const isExpanded = expandedRole === role.key
+
+          return (
+            <Card key={role.key} className="overflow-hidden">
+              <button
+                onClick={() => count > 0 && handleRoleClick(role.key)}
+                className={`w-full p-4 text-left ${count > 0 ? 'cursor-pointer active:bg-bg-card/50' : ''}`}
+                disabled={count === 0}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={role.color}>{role.icon}</div>
+                    <span className="font-medium">{role.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`text-2xl font-bold ${role.color}`}>{count}</div>
+                    {count > 0 && (
+                      <ChevronDown
+                        size={18}
+                        className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    )}
+                  </div>
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="border-t border-border"
+                  >
+                    <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
+                      {loadingRole ? (
+                        <div className="text-center text-gray-400 py-4">
+                          <Loader2 size={20} className="animate-spin mx-auto" />
+                        </div>
+                      ) : roleUsers.length === 0 ? (
+                        <div className="text-center text-gray-400 py-4">Нет пользователей</div>
+                      ) : (
+                        roleUsers.map((u, i) => (
+                          <div key={u.id} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+                            <div className="w-6 h-6 rounded-full bg-bg-card text-xs font-bold flex items-center justify-center text-gray-400">
+                              {i + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate text-sm">
+                                {u.first_name} {u.last_name}
+                              </div>
+                              <div className="text-xs text-gray-500">@{u.username || 'no_username'}</div>
+                            </div>
+                            <div className="text-xs text-accent">{u.points} XP</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Card>
+          )
+        })}
 
         <Card className="p-4 opacity-60">
           <div className="flex items-center justify-between">
@@ -328,10 +403,10 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
-      {/* Spacer for Telegram header */}
-      <div className="h-14" />
+      {/* Spacer for Telegram header - larger to account for notch/status bar */}
+      <div className="h-20" />
       {/* Header */}
-      <div className="sticky top-14 z-10 bg-bg border-b border-border">
+      <div className="sticky top-20 z-10 bg-bg border-b border-border">
         <div className="flex items-center gap-3 p-4 bg-purple-500/10">
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <ChevronLeft size={24} />
