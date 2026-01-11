@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { Home, Calendar, Trophy, User } from 'lucide-react'
@@ -18,6 +18,7 @@ const tabs = [
 
 export const Navigation: React.FC = () => {
   const { activeTab, setActiveTab, lastSeenEventId, setLastSeenEventId } = useAppStore()
+  const isProcessingRef = useRef(false)
 
   // Double tap on profile tab = easter egg
   const { handleTap: handleDoubleTap, isUnlocked: doubleTapUnlocked } = useDoubleTapEasterEgg(300)
@@ -42,9 +43,17 @@ export const Navigation: React.FC = () => {
       setLastSeenEventId(latestEventId)
     }
 
-    // Easter egg: double tap on profile tab
-    if (tabId === 'profile' && !doubleTapUnlocked) {
-      handleDoubleTap()
+    // Easter egg: double tap on profile tab (with protection against rapid taps)
+    if (tabId === 'profile' && !doubleTapUnlocked && !isProcessingRef.current) {
+      try {
+        isProcessingRef.current = true
+        handleDoubleTap()
+        // Reset after short delay
+        setTimeout(() => { isProcessingRef.current = false }, 100)
+      } catch (e) {
+        console.warn('Double tap easter egg error:', e)
+        isProcessingRef.current = false
+      }
     }
   }
 
