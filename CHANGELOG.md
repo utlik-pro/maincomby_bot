@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-01-11
+
+[0;34mGenerating changelog from v1.1.2 to HEAD[0m
+### Fixed
+- improve LATEST_RELEASE update reliability
 ## [1.1.2] - 2026-01-11
 
 [0;34mGenerating changelog from v1.1.1 to HEAD[0m

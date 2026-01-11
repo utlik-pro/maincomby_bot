@@ -5,6 +5,17 @@
   "repository": "https://github.com/maincomby/maincomby_bot",
   "releases": [
     {
+      "version": "1.1.3",
+      "date": "2026-01-11",
+      "tag": "v1.1.3",
+      "type": "patch",
+      "summary": "Release v1.1.3",
+      "highlights": [],
+      "features": [],
+      "fixes": [],
+      "breaking": []
+    },
+    {
       "version": "1.1.2",
       "date": "2026-01-11",
       "tag": "v1.1.2",

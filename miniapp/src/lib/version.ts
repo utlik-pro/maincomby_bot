@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.2'
+export const APP_VERSION = '1.1.3'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 6
+export const CURRENT_APP_VERSION = 7
 
 export interface ReleaseHighlight {
   title: string
@@ -29,20 +29,19 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.2',
+  version: '1.1.3',
   date: '2026-01-11',
-  summary: 'Исправления и улучшения v1.1.2',
+  summary: 'Исправления и улучшения v1.1.3',
   highlights: [
-    { title: 'Автоматические релизы', description: 'Новые версии выходят каждый день' },
-    { title: 'Система уведомлений', description: 'Улучшена система changelog' },
-    { title: 'Синхронизация версий', description: 'Все компоненты обновляются вместе' },
+    { title: 'Обновление системы', description: 'Подробнее в changelog' },
+    { title: 'Улучшения', description: 'Подробнее в changelog' },
+    { title: 'Исправления', description: 'Подробнее в changelog' },
   ],
   features: [
-    'Автоматические ежедневные релизы',
-    'Улучшенная система версионирования',
+    'Мелкие улучшения',
   ],
   fixes: [
-    'Исправлено обновление LATEST_RELEASE',
+    'improve LATEST_RELEASE update reliability',
   ],
 }
 
