@@ -1113,6 +1113,10 @@ const EventsScreen: React.FC = () => {
 
       {/* Header */}
       <div className="p-4">
+        {/* DEBUG: Remove after fixing */}
+        <div className="text-[10px] text-gray-600 mb-2 font-mono">
+          role: {user?.team_role || 'null'} | scan: {canAccessScanner() ? 'yes' : 'no'}
+        </div>
         <div className="flex justify-between items-start mb-1">
           <h1 className="text-2xl font-bold">Мероприятия</h1>
           {/* Scanner only for volunteers and core team */}

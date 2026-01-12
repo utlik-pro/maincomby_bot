@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp, validateInitData, getInitData } from '@/lib/telegram'
-import { getUserByTelegramId, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession } from '@/lib/supabase'
+import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -117,6 +118,29 @@ const App: React.FC = () => {
 
     checkPendingReviews()
   }, [user?.id, isLoading, showChangelog])
+
+  // Global user data refresh - sync team_role and other critical fields
+  const { data: freshUserData } = useQuery({
+    queryKey: ['globalUserRefresh', user?.id],
+    queryFn: () => user?.id ? getUserById(user.id) : null,
+    enabled: !!user?.id && !isLoading,
+    refetchInterval: 60000, // Refresh every minute
+    staleTime: 30000,
+  })
+
+  // Sync store when critical fields change (team_role, subscription_tier, etc.)
+  useEffect(() => {
+    if (freshUserData && user) {
+      const needsUpdate =
+        freshUserData.team_role !== user.team_role ||
+        freshUserData.subscription_tier !== user.subscription_tier ||
+        freshUserData.points !== user.points
+
+      if (needsUpdate) {
+        setUser(freshUserData as any)
+      }
+    }
+  }, [freshUserData, user, setUser])
 
   // Easter eggs - speed runner (visit all tabs quickly)
   const { recordTabVisit } = useSpeedRunner(['home', 'events', 'network', 'achievements', 'profile'], 10000)

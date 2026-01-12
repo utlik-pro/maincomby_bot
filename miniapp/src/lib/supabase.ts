@@ -61,10 +61,16 @@ export async function createOrUpdateUser(userData: {
   const { data, error } = await getSupabase()
     .from('bot_users')
     .upsert(userData, { onConflict: 'tg_user_id' })
-    .select()
+    .select('*')
     .single()
 
   if (error) throw error
+
+  // Debug: log team_role to verify it's being returned
+  if (import.meta.env.DEV) {
+    console.log('[createOrUpdateUser] team_role:', data?.team_role)
+  }
+
   return data
 }
 
