@@ -25,6 +25,7 @@ import {
   Send,
   Share2,
   QrCode,
+  TrendingUp,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton, shareUrl } from '@/lib/telegram'
@@ -53,6 +54,7 @@ import {
   trackShare,
 } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
+import { getEventRegistrationStats } from '@/lib/analytics'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { EventCalendar } from '@/components/EventCalendar'
 import { ExpandableSection } from '@/components/ExpandableSection'
@@ -322,6 +324,7 @@ const EventDetail: React.FC<{
   const [programExpanded, setProgramExpanded] = useState(false)
   const [showQRModal, setShowQRModal] = useState(false)
   const { addToast } = useToastStore()
+  const { canAccessScanner, showFunnelForTeam } = useAppStore()
   const queryClient = useQueryClient()
 
   // Fetch speakers and program from iishnica admin (linked by event title)
@@ -363,6 +366,14 @@ const EventDetail: React.FC<{
     queryKey: ['userReview', event.id, userId],
     queryFn: () => userId ? getUserEventReview(event.id, userId) : null,
     enabled: eventPassed && !!userId,
+  })
+
+  // Fetch funnel stats (for core team/volunteers only)
+  const { data: funnelStats } = useQuery({
+    queryKey: ['eventFunnel', event.id],
+    queryFn: () => getEventRegistrationStats(event.id),
+    enabled: canAccessScanner() && showFunnelForTeam,
+    staleTime: 30000, // 30 seconds
   })
 
   // Submit review handler
@@ -505,6 +516,38 @@ const EventDetail: React.FC<{
             </div>
           )}
         </div>
+
+        {/* Funnel Stats - for core team/volunteers only */}
+        {canAccessScanner() && showFunnelForTeam && funnelStats && (
+          <Card className="mb-4 bg-purple-500/5 border-purple-500/20">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp size={16} className="text-purple-500" />
+              <span className="text-sm font-semibold text-purple-500">Воронка события</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="bg-bg rounded-lg p-2">
+                <div className="text-xl font-bold text-accent">{funnelStats.totalRegistrations}</div>
+                <div className="text-[10px] text-gray-400">Зарег.</div>
+              </div>
+              <div className="bg-bg rounded-lg p-2">
+                <div className="text-xl font-bold text-green-500">{funnelStats.checkedInCount}</div>
+                <div className="text-[10px] text-gray-400">Пришли</div>
+              </div>
+              <div className="bg-bg rounded-lg p-2">
+                <div className="text-xl font-bold text-red-500">{funnelStats.cancelledCount}</div>
+                <div className="text-[10px] text-gray-400">Отменили</div>
+              </div>
+              <div className="bg-bg rounded-lg p-2">
+                <div className="text-xl font-bold text-purple-500">
+                  {funnelStats.totalRegistrations > 0
+                    ? Math.round((funnelStats.checkedInCount / funnelStats.totalRegistrations) * 100)
+                    : 0}%
+                </div>
+                <div className="text-[10px] text-gray-400">Конверсия</div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Speakers Section - from iishnica admin */}
         {eventSpeakers.length > 0 && (

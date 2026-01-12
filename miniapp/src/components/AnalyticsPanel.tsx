@@ -26,11 +26,16 @@ import {
   ArrowRight,
   Clock,
   Activity,
-  Wifi
+  Wifi,
+  X,
+  Check
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser, getEventsList, getEventRegistrationStats, EventListItem, EventRegistrationStats, getSpeakerAnalytics, SpeakerAnalytics } from '@/lib/analytics'
-import { Card } from '@/components/ui'
+import { Card, Button, Badge, Avatar } from '@/components/ui'
+import { getEventRegistrations, getEventCheckins } from '@/lib/supabase'
+import { format } from 'date-fns'
+import { ru } from 'date-fns/locale'
 
 interface AnalyticsPanelProps {
   onClose: () => void
@@ -51,13 +56,15 @@ const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
 ]
 
 export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
-  const { user } = useAppStore()
+  const { user, showFunnelForTeam, setShowFunnelForTeam } = useAppStore()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [expandedRole, setExpandedRole] = useState<string | null>(null)
   const [roleUsers, setRoleUsers] = useState<TopUser[]>([])
   const [loadingRole, setLoadingRole] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false)
+  const [showLeadsModal, setShowLeadsModal] = useState(false)
+  const [showCheckinsModal, setShowCheckinsModal] = useState(false)
 
   // Superadmin check
   const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
@@ -114,6 +121,22 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     queryFn: getSpeakerAnalytics,
     enabled: isSuperAdmin && activeTab === 'speakers',
     staleTime: 60000,
+  })
+
+  // Leads query (for modal)
+  const { data: leads, isLoading: isLoadingLeads } = useQuery({
+    queryKey: ['eventLeads', selectedEventId],
+    queryFn: () => selectedEventId ? getEventRegistrations(selectedEventId) : [],
+    enabled: isSuperAdmin && showLeadsModal && !!selectedEventId,
+    staleTime: 30000,
+  })
+
+  // Checkins query (for modal)
+  const { data: checkins, isLoading: isLoadingCheckins } = useQuery({
+    queryKey: ['eventCheckins', selectedEventId],
+    queryFn: () => selectedEventId ? getEventCheckins(selectedEventId) : [],
+    enabled: isSuperAdmin && showCheckinsModal && !!selectedEventId,
+    staleTime: 30000,
   })
 
   if (!isSuperAdmin) return null
@@ -190,6 +213,31 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
 
     return (
       <div className="space-y-4">
+        {/* Team visibility toggle */}
+        <Card className="p-3 bg-purple-500/5 border-purple-500/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={16} className="text-purple-500" />
+              <span className="text-sm">Воронка для команды</span>
+            </div>
+            <button
+              onClick={() => setShowFunnelForTeam(!showFunnelForTeam)}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                showFunnelForTeam ? 'bg-purple-500' : 'bg-gray-600'
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  showFunnelForTeam ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <div className="text-[10px] text-gray-500 mt-1">
+            {showFunnelForTeam ? 'Core/волонтёры видят статистику события' : 'Статистика скрыта от команды'}
+          </div>
+        </Card>
+
         {/* Event Dropdown Selector */}
         <Card className="p-4">
           <div className="text-xs text-gray-400 mb-2">Выберите событие</div>
@@ -296,6 +344,25 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
                     </div>
                   </div>
                 )}
+                {/* Leads/Checkins buttons */}
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowLeadsModal(true)}
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Users size={16} />
+                    Лиды ({eventStats.totalRegistrations})
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowCheckinsModal(true)}
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <UserCheck size={16} />
+                    Чекины ({eventStats.checkedInCount})
+                  </Button>
+                </div>
               </div>
             ) : null}
           </Card>
@@ -899,6 +966,162 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
       <div className="p-4 text-center text-xs text-gray-600 font-mono">
         SUPERADMIN: {user?.username}
       </div>
+
+      {/* Leads Modal */}
+      <AnimatePresence>
+        {showLeadsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/80 flex items-end"
+            onClick={() => setShowLeadsModal(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-h-[80vh] bg-bg rounded-t-3xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-bg border-b border-border p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users size={20} className="text-accent" />
+                  <h2 className="font-bold">Лиды ({leads?.length || 0})</h2>
+                </div>
+                <button onClick={() => setShowLeadsModal(false)} className="text-gray-400 hover:text-white">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="overflow-y-auto max-h-[calc(80vh-60px)] p-4">
+                {isLoadingLeads ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 size={32} className="animate-spin text-accent" />
+                  </div>
+                ) : leads && leads.length > 0 ? (
+                  <div className="space-y-2">
+                    {leads.map((reg: any) => {
+                      const userData = reg.user
+                      const profileData = reg.profile
+                      const isCheckedIn = reg.status === 'attended'
+                      return (
+                        <Card key={reg.id} className="flex items-center gap-3">
+                          <Avatar
+                            src={profileData?.photo_url}
+                            name={userData?.first_name || 'User'}
+                            size="sm"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">
+                              {userData?.first_name} {userData?.last_name || ''}
+                            </div>
+                            <div className="text-xs text-gray-400 flex items-center gap-2">
+                              <span>@{userData?.username || 'no_username'}</span>
+                              {userData?.phone_number && (
+                                <span className="text-accent">{userData.phone_number}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-gray-500">
+                              {format(new Date(reg.registered_at), 'dd.MM HH:mm', { locale: ru })}
+                            </div>
+                            <Badge variant={isCheckedIn ? 'success' : 'default'} className="mt-1">
+                              {isCheckedIn ? <><Check size={12} /> Пришёл</> : 'Ждём'}
+                            </Badge>
+                          </div>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <Users size={48} className="mx-auto mb-3 opacity-50" />
+                    <p>Нет зарегистрированных</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Checkins Modal */}
+      <AnimatePresence>
+        {showCheckinsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/80 flex items-end"
+            onClick={() => setShowCheckinsModal(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-h-[80vh] bg-bg rounded-t-3xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-bg border-b border-border p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserCheck size={20} className="text-green-500" />
+                  <h2 className="font-bold">Чекины ({checkins?.length || 0})</h2>
+                </div>
+                <button onClick={() => setShowCheckinsModal(false)} className="text-gray-400 hover:text-white">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="overflow-y-auto max-h-[calc(80vh-60px)] p-4">
+                {isLoadingCheckins ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 size={32} className="animate-spin text-green-500" />
+                  </div>
+                ) : checkins && checkins.length > 0 ? (
+                  <div className="space-y-2">
+                    {checkins.map((reg: any) => {
+                      const profileData = Array.isArray(reg.profile) ? reg.profile[0] : reg.profile
+                      const userData = Array.isArray(reg.user) ? reg.user[0] : reg.user
+                      return (
+                        <Card key={reg.id} className="flex items-center gap-3">
+                          <Avatar
+                            src={profileData?.photo_url}
+                            name={userData?.first_name || 'User'}
+                            size="sm"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">
+                              {userData?.first_name} {userData?.last_name || ''}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              @{userData?.username || 'no_username'}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {reg.checked_in_at
+                              ? format(new Date(reg.checked_in_at), 'HH:mm', { locale: ru })
+                              : '—'}
+                          </div>
+                          <Badge variant="success" className="flex-shrink-0">
+                            <Check size={12} />
+                          </Badge>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <UserCheck size={48} className="mx-auto mb-3 opacity-50" />
+                    <p>Никто ещё не прошёл чекин</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

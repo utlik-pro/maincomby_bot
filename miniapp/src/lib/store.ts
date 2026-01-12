@@ -57,6 +57,8 @@ interface AppState {
   accessDenied: boolean
   inviteRequired: boolean
   showInvites: boolean
+  // Superadmin settings
+  showFunnelForTeam: boolean
 
   // Actions
   setUser: (user: User | null) => void
@@ -69,6 +71,7 @@ interface AppState {
   setInviteRequired: (required: boolean) => void
   setShowInvites: (show: boolean) => void
   setVolunteerMode: (mode: boolean) => void
+  setShowFunnelForTeam: (show: boolean) => void
   completeOnboarding: () => void
   setLastSeenAppVersion: (version: number) => void
   setLastSeenEventId: (eventId: number) => void
@@ -107,6 +110,7 @@ export const useAppStore = create<AppState>()(
       accessDenied: false,
       inviteRequired: false,
       showInvites: false,
+      showFunnelForTeam: true, // Default: enabled
 
       // Actions
       setDeepLinkTarget: (target) => set({ deepLinkTarget: target }),
@@ -125,6 +129,7 @@ export const useAppStore = create<AppState>()(
       setLoading: (isLoading) => set({ isLoading }),
       setActiveTab: (activeTab) => set({ activeTab }),
       setVolunteerMode: (isVolunteerMode) => set({ isVolunteerMode }),
+      setShowFunnelForTeam: (showFunnelForTeam) => set({ showFunnelForTeam }),
       completeOnboarding: () => set({ onboardingVersion: CURRENT_ONBOARDING_VERSION }),
       setLastSeenAppVersion: (lastSeenAppVersion) => set({ lastSeenAppVersion }),
       setLastSeenEventId: (lastSeenEventId) => set({ lastSeenEventId }),
@@ -207,6 +212,7 @@ export const useAppStore = create<AppState>()(
         lastSeenAppVersion: state.lastSeenAppVersion,
         lastSeenEventId: state.lastSeenEventId,
         lastDismissedAnnouncementEventId: state.lastDismissedAnnouncementEventId,
+        showFunnelForTeam: state.showFunnelForTeam,
       }),
     }
   )
