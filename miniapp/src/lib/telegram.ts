@@ -402,55 +402,82 @@ export interface NotificationPayload {
   type: NotificationType
   title: string
   message: string
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 }
-
-// Send notification via Bot API (@maincomapp_bot - the Mini App bot)
-const BOT_TOKEN = import.meta.env.VITE_BOT_TOKEN || '8234859307:AAFjLWiY4DCZOnHBIJHS_V72mrMWoHqim4c'
 
 // Deep link screens
 export type DeepLinkScreen = 'home' | 'events' | 'network' | 'matches' | 'achievements' | 'profile' | 'notifications'
 
+// ============ EDGE FUNCTION CLIENT ============
+
+interface EdgeFunctionResponse {
+  success?: boolean
+  valid?: boolean
+  user?: TelegramUser
+  error?: string
+  [key: string]: unknown
+}
+
+/**
+ * Call a serverless API function with initData for authentication
+ */
+export async function callEdgeFunction(
+  functionName: string,
+  params: Record<string, unknown> = {}
+): Promise<EdgeFunctionResponse> {
+  const initData = getInitData()
+
+  try {
+    const response = await fetch(`/api/${functionName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ initData, ...params })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[API] ${functionName} failed:`, errorText)
+      return { success: false, error: errorText }
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error(`[API] ${functionName} error:`, error)
+    return { success: false, error: 'Network error' }
+  }
+}
+
+/**
+ * Validate Telegram initData on server side
+ */
+export async function validateInitData(): Promise<{ valid: boolean; user?: TelegramUser; error?: string }> {
+  const result = await callEdgeFunction('validate-init-data')
+  return {
+    valid: result.valid === true,
+    user: result.user as TelegramUser | undefined,
+    error: result.error
+  }
+}
+
+/**
+ * Send push notification via Edge Function (BOT_TOKEN is server-side only)
+ */
 export const sendPushNotification = async (
   userTgId: number,
   notification: NotificationPayload,
   deepLink?: { screen: DeepLinkScreen; buttonText?: string }
 ): Promise<boolean> => {
   try {
-    const emoji = {
-      match: '',
-      event: '',
-      achievement: '',
-      reminder: '',
-      system: '',
-    }[notification.type] || ''
-
-    const text = `${emoji} *${notification.title}*\n\n${notification.message}`
-
-    const body: Record<string, unknown> = {
-      chat_id: userTgId,
-      text,
-      parse_mode: 'Markdown',
-    }
-
-    // Add inline button with deep link if specified
-    if (deepLink) {
-      body.reply_markup = {
-        inline_keyboard: [[{
-          text: deepLink.buttonText || 'Открыть',
-          url: `https://t.me/maincomapp_bot?startapp=${deepLink.screen}`
-        }]]
-      }
-    }
-
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const result = await callEdgeFunction('send-notification', {
+      userTgId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      deepLink
     })
-
-    const result = await response.json()
-    return result.ok === true
+    return result.success === true
   } catch (error) {
     console.error('[Telegram] Failed to send notification:', error)
     return false

@@ -19,7 +19,7 @@ import {
   Lock,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, backButton, openTelegramLink } from '@/lib/telegram'
+import { hapticFeedback, backButton, openTelegramLink, callEdgeFunction } from '@/lib/telegram'
 import {
   getApprovedProfilesWithPhotos,
   createSwipe,
@@ -168,19 +168,23 @@ const NetworkScreen: React.FC = () => {
           createNotification(user.id, 'match', 'Новый контакт!', `${theirName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: currentProfile.profile.user_id }).catch(console.error)
           createNotification(currentProfile.profile.user_id, 'match', 'Новый контакт!', `${myName} тоже хочет познакомиться. Начните общение!`, { matchedUserId: user.id }).catch(console.error)
 
-          // Telegram notifications
+          // Telegram notifications via Edge Function (secure, no BOT_TOKEN on client)
           if (currentProfile.user?.tg_user_id) {
-            fetch('https://iishnica.vercel.app/api/send-match-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userTgId: currentProfile.user.tg_user_id, matchName: myName, matchedUserId: user.id, userId: currentProfile.profile.user_id }),
+            callEdgeFunction('send-notification', {
+              userTgId: currentProfile.user.tg_user_id,
+              type: 'match',
+              title: 'Новый контакт!',
+              message: `${myName} тоже хочет познакомиться. Начните общение!`,
+              deepLink: { screen: 'matches', buttonText: 'Открыть контакты' }
             }).catch(console.error)
           }
           if (user.tg_user_id) {
-            fetch('https://iishnica.vercel.app/api/send-match-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userTgId: user.tg_user_id, matchName: theirName, matchedUserId: currentProfile.profile.user_id, userId: user.id }),
+            callEdgeFunction('send-notification', {
+              userTgId: user.tg_user_id,
+              type: 'match',
+              title: 'Новый контакт!',
+              message: `${theirName} тоже хочет познакомиться. Начните общение!`,
+              deepLink: { screen: 'matches', buttonText: 'Открыть контакты' }
             }).catch(console.error)
           }
 
