@@ -747,6 +747,16 @@ const App: React.FC = () => {
         }
       }
 
+      // Handle profile deep link: profile_{userId}
+      if (deepLinkValue.startsWith('profile_')) {
+        const profileUserId = parseInt(deepLinkValue.replace('profile_', ''), 10)
+        if (!isNaN(profileUserId)) {
+          setActiveTab('profile')
+          setDeepLinkTarget(`profile_${profileUserId}`)
+          return
+        }
+      }
+
       // Map parameter to tab
       const screenMap: Record<string, typeof activeTab> = {
         'home': 'home',

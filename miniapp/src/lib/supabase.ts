@@ -3423,3 +3423,91 @@ export async function fetchEventDetails(botEventTitle: string): Promise<{
 
   return { speakers, program }
 }
+
+// ============================================
+// SHARE TRACKING & ANALYTICS
+// ============================================
+
+export type ShareType = 'event' | 'profile' | 'invite'
+export type ShareMethod = 'telegram' | 'qr_view'
+
+// Track share action for analytics
+export async function trackShare(
+  userId: number,
+  shareType: ShareType,
+  targetId: string | number,
+  method: ShareMethod
+): Promise<void> {
+  const supabase = getSupabase()
+
+  try {
+    await supabase.from('share_events').insert({
+      user_id: userId,
+      share_type: shareType,
+      target_id: String(targetId),
+      method: method,
+    })
+  } catch (error) {
+    // Silently fail - don't break UX for analytics
+    console.warn('[trackShare] Failed to track share:', error)
+  }
+}
+
+// Get share statistics for admin dashboard
+export async function getShareStats(): Promise<{
+  total: number
+  byType: Record<ShareType, number>
+  byMethod: Record<ShareMethod, number>
+  recentShares: Array<{
+    user_id: number
+    share_type: ShareType
+    target_id: string
+    method: ShareMethod
+    created_at: string
+  }>
+}> {
+  const supabase = getSupabase()
+
+  // Get total count
+  const { count: total } = await supabase
+    .from('share_events')
+    .select('*', { count: 'exact', head: true })
+
+  // Get counts by type
+  const { data: typeData } = await supabase
+    .from('share_events')
+    .select('share_type')
+
+  const byType: Record<ShareType, number> = { event: 0, profile: 0, invite: 0 }
+  typeData?.forEach(row => {
+    if (row.share_type in byType) {
+      byType[row.share_type as ShareType]++
+    }
+  })
+
+  // Get counts by method
+  const { data: methodData } = await supabase
+    .from('share_events')
+    .select('method')
+
+  const byMethod: Record<ShareMethod, number> = { telegram: 0, qr_view: 0 }
+  methodData?.forEach(row => {
+    if (row.method in byMethod) {
+      byMethod[row.method as ShareMethod]++
+    }
+  })
+
+  // Get recent shares
+  const { data: recentShares } = await supabase
+    .from('share_events')
+    .select('user_id, share_type, target_id, method, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  return {
+    total: total || 0,
+    byType,
+    byMethod,
+    recentShares: recentShares || []
+  }
+}

@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Send,
   Share2,
+  QrCode,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton, shareUrl } from '@/lib/telegram'
@@ -49,6 +50,7 @@ import {
   getUserEventReview,
   createEventReview,
   fetchEventDetails,
+  trackShare,
 } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
@@ -56,6 +58,7 @@ import { EventCalendar } from '@/components/EventCalendar'
 import { ExpandableSection } from '@/components/ExpandableSection'
 import { SpeakerCard } from '@/components/SpeakerCard'
 import { ProgramItem } from '@/components/ProgramItem'
+import { QRShareModal } from '@/components/QRShareModal'
 import { Event, EventRegistration, EventReview, XP_REWARDS, EventSpeaker, EventProgramItem } from '@/types'
 
 // Event type icons
@@ -317,6 +320,7 @@ const EventDetail: React.FC<{
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
   const [speakersExpanded, setSpeakersExpanded] = useState(false)
   const [programExpanded, setProgramExpanded] = useState(false)
+  const [showQRModal, setShowQRModal] = useState(false)
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -401,6 +405,14 @@ const EventDetail: React.FC<{
         onCancel={() => setShowMapConfirm(false)}
       />
 
+      {/* QR Code Share Modal */}
+      <QRShareModal
+        url={`https://t.me/maincomapp_bot?startapp=event_${event.id}`}
+        title={event.title}
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+      />
+
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto pb-6">
         {/* Hero */}
@@ -420,16 +432,31 @@ const EventDetail: React.FC<{
 
         <div className="flex items-start justify-between gap-2 mb-4">
           <h1 className="text-2xl font-bold">{event.title}</h1>
-          <button
-            onClick={() => {
-              hapticFeedback.light()
-              const eventLink = `https://t.me/maincomapp_bot?startapp=event_${event.id}`
-              shareUrl(eventLink, `${event.title} — присоединяйся!`)
-            }}
-            className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center active:scale-95 transition-transform"
-          >
-            <Share2 size={20} className="text-accent" />
-          </button>
+          <div className="flex flex-col gap-2">
+            {/* Telegram Share */}
+            <button
+              onClick={() => {
+                hapticFeedback.light()
+                const eventLink = `https://t.me/maincomapp_bot?startapp=event_${event.id}`
+                if (userId) trackShare(userId, 'event', event.id, 'telegram')
+                shareUrl(eventLink, `${event.title} — присоединяйся!`)
+              }}
+              className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center active:scale-95 transition-transform"
+            >
+              <Share2 size={20} className="text-accent" />
+            </button>
+            {/* QR Code */}
+            <button
+              onClick={() => {
+                hapticFeedback.light()
+                if (userId) trackShare(userId, 'event', event.id, 'qr_view')
+                setShowQRModal(true)
+              }}
+              className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center active:scale-95 transition-transform"
+            >
+              <QrCode size={20} className="text-accent" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3 mb-6">

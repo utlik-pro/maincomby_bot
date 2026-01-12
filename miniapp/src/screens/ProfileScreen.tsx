@@ -40,11 +40,13 @@ import {
   GraduationCap,
   EyeOff,
   BookOpen,
+  Share2,
+  QrCode,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { APP_VERSION } from '@/lib/version'
-import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported, backButton } from '@/lib/telegram'
-import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto, addXP, hasReceivedXPBonus, checkProfileCompletionRewards } from '@/lib/supabase'
+import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported, backButton, shareUrl } from '@/lib/telegram'
+import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto, addXP, hasReceivedXPBonus, checkProfileCompletionRewards, trackShare } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
 import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
@@ -58,6 +60,7 @@ import { NetworkingGuide } from '@/components/NetworkingGuide'
 import SkinAdminPanel from '@/components/SkinAdminPanel'
 import { TagInput } from '@/components/TagInput'
 import { PhotoUploader } from '@/components/PhotoUploader'
+import { QRShareModal } from '@/components/QRShareModal'
 import type { ProfilePhoto } from '@/types'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin, XP_REWARDS } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
@@ -189,6 +192,7 @@ const ProfileScreen: React.FC = () => {
   const [skinSaving, setSkinSaving] = useState(false)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [uploadingPosition, setUploadingPosition] = useState<number | null>(null)
+  const [showProfileQR, setShowProfileQR] = useState(false)
 
   // Determine which sub-screen is active for back button
   const activeSubScreen = showNotifications ? 'notifications' :
@@ -1148,6 +1152,40 @@ const ProfileScreen: React.FC = () => {
           <div className="text-xs text-gray-500">матчей</div>
         </div>
       </div>
+
+      {/* Share Profile */}
+      <div className="flex justify-center gap-3 pb-4">
+        <button
+          onClick={() => {
+            hapticFeedback.light()
+            const profileLink = `https://t.me/maincomapp_bot?startapp=profile_${user?.id}`
+            if (user?.id) trackShare(user.id, 'profile', user.id, 'telegram')
+            shareUrl(profileLink, `${user?.first_name || 'Мой профиль'} в MAIN Community`)
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-bg-card rounded-full text-sm text-gray-300 active:scale-95 transition-transform"
+        >
+          <Share2 size={16} className="text-accent" />
+          Поделиться
+        </button>
+        <button
+          onClick={() => {
+            hapticFeedback.light()
+            if (user?.id) trackShare(user.id, 'profile', user.id, 'qr_view')
+            setShowProfileQR(true)
+          }}
+          className="flex items-center justify-center w-10 h-10 bg-bg-card rounded-full active:scale-95 transition-transform"
+        >
+          <QrCode size={18} className="text-accent" />
+        </button>
+      </div>
+
+      {/* Profile QR Modal */}
+      <QRShareModal
+        url={`https://t.me/maincomapp_bot?startapp=profile_${user?.id}`}
+        title="Мой профиль"
+        isOpen={showProfileQR}
+        onClose={() => setShowProfileQR(false)}
+      />
 
       {/* Debug Console (hidden, activated by 7 taps on version) */}
       {showDebug && (
