@@ -178,7 +178,13 @@ export const useAppStore = create<AppState>()(
         }
 
         const maxSwipes = limits[tier]
-        const usedSwipes = user.daily_swipes_used || 0
+
+        // Check if daily reset time has passed (new day = fresh swipes)
+        const resetAt = user.daily_swipes_reset_at ? new Date(user.daily_swipes_reset_at) : null
+        const now = new Date()
+        const needsReset = !resetAt || now >= resetAt
+
+        const usedSwipes = needsReset ? 0 : (user.daily_swipes_used || 0)
 
         return Math.max(0, maxSwipes - usedSwipes)
       },
