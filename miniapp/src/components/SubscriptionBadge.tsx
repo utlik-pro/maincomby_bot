@@ -19,19 +19,19 @@ const TIER_STYLES: Record<SubscriptionTier, {
     bg: 'bg-gray-500/10',
     color: 'text-gray-400',
     fill: 'none',
-    label: 'фри'
+    label: 'Free'
   },
   light: {
     bg: 'bg-purple-500/10',
     color: 'text-purple-500',
     fill: 'currentColor',
-    label: 'лайт'
+    label: 'Light'
   },
   pro: {
     bg: 'bg-amber-500/10',
     color: 'text-amber-500',
     fill: 'currentColor',
-    label: 'про',
+    label: 'Pro',
     glow: true
   }
 }
