@@ -29,7 +29,7 @@ import {
   Wifi
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser } from '@/lib/analytics'
+import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser, getEventsList, getEventRegistrationStats, EventListItem, EventRegistrationStats } from '@/lib/analytics'
 import { Card } from '@/components/ui'
 
 interface AnalyticsPanelProps {
@@ -55,6 +55,8 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
   const [expandedRole, setExpandedRole] = useState<string | null>(null)
   const [roleUsers, setRoleUsers] = useState<TopUser[]>([])
   const [loadingRole, setLoadingRole] = useState(false)
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
+  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false)
 
   // Superadmin check
   const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
@@ -88,6 +90,21 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     queryFn: () => getTopUsersByTime(10),
     enabled: isSuperAdmin && activeTab === 'sessions',
     staleTime: 60000,
+  })
+
+  // Event analytics queries
+  const { data: eventsList } = useQuery({
+    queryKey: ['eventsList'],
+    queryFn: getEventsList,
+    enabled: isSuperAdmin && activeTab === 'events',
+    staleTime: 60000,
+  })
+
+  const { data: eventStats, isLoading: isLoadingEventStats } = useQuery({
+    queryKey: ['eventRegistrationStats', selectedEventId],
+    queryFn: () => selectedEventId ? getEventRegistrationStats(selectedEventId) : null,
+    enabled: isSuperAdmin && activeTab === 'events' && !!selectedEventId,
+    staleTime: 30000,
   })
 
   if (!isSuperAdmin) return null
@@ -158,39 +175,108 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     </div>
   )
 
-  const renderEventsTab = (data: AllAnalytics) => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        {renderStatCard(data.events.total, 'Всего событий', <Calendar size={20} />)}
-        {renderStatCard(data.events.active, 'Активных', <TrendingUp size={20} />, 'text-green-500')}
-        {renderStatCard(data.events.totalRegistrations, 'Регистраций', <UserPlus size={20} />, 'text-blue-500')}
-        {renderStatCard(data.events.totalCheckins, 'Check-in', <UserCheck size={20} />, 'text-purple-500')}
-      </div>
+  const renderEventsTab = () => {
+    const events = eventsList || []
+    const selectedEvent = events.find(e => e.id === selectedEventId)
 
-      <div className="grid grid-cols-2 gap-3">
+    return (
+      <div className="space-y-4">
+        {/* Event Dropdown Selector */}
         <Card className="p-4">
-          <div className="text-xs text-gray-400 mb-1">Check-in Rate</div>
-          <div className="text-2xl font-bold text-accent">{data.events.checkinRate}%</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-xs text-gray-400 mb-1">Отменено</div>
-          <div className="text-2xl font-bold text-red-500">{data.events.totalCancelled}</div>
-        </Card>
-      </div>
+          <div className="text-xs text-gray-400 mb-2">Выберите событие</div>
+          <div className="relative">
+            <button
+              onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+              className="w-full flex items-center justify-between p-3 bg-bg rounded-xl border border-border"
+            >
+              <span className={selectedEvent ? 'text-white' : 'text-gray-500'}>
+                {selectedEvent ? selectedEvent.title : 'Выберите событие...'}
+              </span>
+              <ChevronDown
+                size={18}
+                className={`text-gray-400 transition-transform ${isEventDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
 
-      <Card className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Star size={18} className="text-yellow-500" />
-          <span className="font-semibold">Средний рейтинг</span>
-        </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-accent">{data.events.avgRating}</span>
-          <span className="text-gray-400">/ 5</span>
-          <span className="text-xs text-gray-500 ml-2">({data.events.totalReviews} отзывов)</span>
-        </div>
-      </Card>
-    </div>
-  )
+            {/* Dropdown */}
+            <AnimatePresence>
+              {isEventDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute z-50 top-full left-0 right-0 mt-2 bg-bg-card rounded-xl border border-border shadow-xl max-h-60 overflow-y-auto"
+                >
+                  {events.length === 0 ? (
+                    <div className="p-4 text-center text-gray-400">Нет событий</div>
+                  ) : (
+                    events.map((event, index) => (
+                      <button
+                        key={event.id}
+                        onClick={() => {
+                          setSelectedEventId(event.id)
+                          setIsEventDropdownOpen(false)
+                        }}
+                        className={`w-full text-left p-3 hover:bg-bg transition-colors border-b border-border/50 last:border-0 ${
+                          selectedEventId === event.id ? 'bg-accent/10 text-accent' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate text-sm">{event.title}</div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(event.event_date).toLocaleDateString('ru-RU')}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </Card>
+
+        {/* Event Stats */}
+        {selectedEventId && (
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar size={18} className="text-accent" />
+              <span className="font-semibold truncate">{selectedEvent?.title}</span>
+            </div>
+
+            {isLoadingEventStats ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 size={24} className="animate-spin text-accent" />
+              </div>
+            ) : eventStats ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-bg rounded-xl p-4 text-center">
+                  <div className="text-3xl font-bold text-accent">{eventStats.totalRegistrations}</div>
+                  <div className="text-xs text-gray-400 mt-1">Всего зарег.</div>
+                </div>
+                <div className="bg-bg rounded-xl p-4 text-center">
+                  <div className="text-3xl font-bold text-green-500">{eventStats.todayRegistrations}</div>
+                  <div className="text-xs text-gray-400 mt-1">Сегодня</div>
+                </div>
+              </div>
+            ) : null}
+          </Card>
+        )}
+
+        {!selectedEventId && (
+          <div className="text-center py-8 text-gray-400">
+            <Calendar size={48} className="mx-auto mb-3 opacity-50" />
+            <p>Выберите событие для просмотра статистики</p>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const renderSubscriptionsTab = (data: AllAnalytics) => {
     const total = data.subscriptions.free + data.subscriptions.light + data.subscriptions.pro
@@ -610,7 +696,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
       case 'sessions':
         return renderSessionsTab()
       case 'events':
-        return renderEventsTab(analytics)
+        return renderEventsTab()
       case 'subscriptions':
         return renderSubscriptionsTab(analytics)
       case 'top':

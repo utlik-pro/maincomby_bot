@@ -281,6 +281,63 @@ export async function getEventStats(): Promise<EventStats> {
   }
 }
 
+// Get list of events for dropdown
+export interface EventListItem {
+  id: number
+  title: string
+  event_date: string
+}
+
+export async function getEventsList(): Promise<EventListItem[]> {
+  const supabase = getSupabase()
+
+  const { data } = await supabase
+    .from('bot_events')
+    .select('id, title, event_date')
+    .order('event_date', { ascending: false })
+    .limit(50)
+
+  return (data || []) as EventListItem[]
+}
+
+// Get registration stats for a specific event
+export interface EventRegistrationStats {
+  totalRegistrations: number
+  todayRegistrations: number
+}
+
+interface RegistrationWithDate {
+  registered_at: string
+  status: string
+}
+
+export async function getEventRegistrationStats(eventId: number): Promise<EventRegistrationStats> {
+  const supabase = getSupabase()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // Total registrations (registered + attended)
+  const { data: allRegs } = await supabase
+    .from('bot_registrations')
+    .select('registered_at, status')
+    .eq('event_id', eventId)
+    .in('status', ['registered', 'attended'])
+
+  const regs = (allRegs || []) as RegistrationWithDate[]
+  const totalRegistrations = regs.length
+
+  // Today's registrations
+  const todayRegistrations = regs.filter(r => {
+    const regDate = new Date(r.registered_at)
+    return regDate >= today
+  }).length
+
+  return {
+    totalRegistrations,
+    todayRegistrations
+  }
+}
+
 // ============ TOP USERS ============
 
 export async function getTopUsersByXP(limit: number = 10): Promise<TopUser[]> {
