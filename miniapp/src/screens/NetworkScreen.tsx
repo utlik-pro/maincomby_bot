@@ -245,7 +245,18 @@ const NetworkScreen: React.FC = () => {
               const matchSkin = matchUser?.active_skin
               const skinData = Array.isArray(matchSkin) ? matchSkin[0] : matchSkin
               return (
-                <Card key={match.id} className="flex items-center gap-3">
+                <Card
+                  key={match.id}
+                  className="flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+                  onClick={() => {
+                    setShowProfileDetail({
+                      profile: matchProfile,
+                      user: matchUser,
+                      photos: [],
+                      activeSkin: skinData
+                    })
+                  }}
+                >
                   <AvatarWithSkin
                     src={matchProfile?.photo_url}
                     name={matchUser?.first_name}
@@ -254,17 +265,20 @@ const NetworkScreen: React.FC = () => {
                     role={matchUser?.team_role}
                     tier={matchUser?.subscription_tier === 'pro' ? 'pro' : matchUser?.subscription_tier === 'light' ? 'light' : null}
                   />
-                  <div className="flex-1">
-                    <div className="font-semibold">{matchUser?.first_name} {matchUser?.last_name}</div>
-                    <div className="text-sm text-gray-400">{matchProfile?.occupation || 'Участник'}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold truncate">{matchUser?.first_name} {matchUser?.last_name}</div>
+                    <div className="text-sm text-gray-400 truncate">{matchProfile?.occupation || 'Участник'}</div>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleMessageMatch(matchUser)}
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleMessageMatch(matchUser)
+                    }}
                   >
-                    <MessageCircle size={16} />
-                  </Button>
+                    <Button variant="secondary" size="sm">
+                      <MessageCircle size={16} />
+                    </Button>
+                  </div>
                 </Card>
               )
             })}

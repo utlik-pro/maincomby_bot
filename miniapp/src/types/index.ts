@@ -238,6 +238,7 @@ export interface User {
   last_streak_check_at?: string | null
   swipe_streak?: number
   last_swipe_streak_at?: string | null
+  week_activity?: number[] // [0,1,2...] = days of week visited (0=Mon, 6=Sun)
   // Team role (legacy)
   team_role: TeamRole
   // Avatar skin

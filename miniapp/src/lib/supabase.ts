@@ -2897,10 +2897,20 @@ async function recordStreakReward(userId: number, rewardType: string, daysAwarde
 }
 
 // Check and update daily login streak
+// Helper to get ISO week number
+function getWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+}
+
 export async function checkAndUpdateDailyStreak(userId: number): Promise<{
   streak: number
   reward?: { days: number; proAwarded: number }
   alreadyCheckedToday: boolean
+  weekActivity: number[]
 }> {
   const supabase = getSupabase()
   const now = new Date()
@@ -2908,19 +2918,36 @@ export async function checkAndUpdateDailyStreak(userId: number): Promise<{
   // Get current streak info
   const { data: user } = await supabase
     .from('bot_users')
-    .select('daily_streak, last_streak_check_at')
+    .select('daily_streak, last_streak_check_at, week_activity')
     .eq('id', userId)
     .single()
 
   if (!user) {
-    return { streak: 0, alreadyCheckedToday: false }
+    return { streak: 0, alreadyCheckedToday: false, weekActivity: [] }
   }
 
   const lastCheck = user.last_streak_check_at
 
+  // Calculate day of week (0=Mon, 6=Sun)
+  const dayOfWeek = (now.getDay() + 6) % 7
+
+  // Check if new week (compare week numbers)
+  const lastCheckDate = lastCheck ? new Date(lastCheck) : null
+  const isNewWeek = !lastCheckDate || getWeekNumber(lastCheckDate) !== getWeekNumber(now) ||
+                    lastCheckDate.getFullYear() !== now.getFullYear()
+
+  // Update week_activity
+  let weekActivity: number[]
+  if (isNewWeek) {
+    weekActivity = [dayOfWeek]
+  } else {
+    const current = user.week_activity || []
+    weekActivity = current.includes(dayOfWeek) ? current : [...current, dayOfWeek]
+  }
+
   // Already checked today?
   if (lastCheck && isSameDay(new Date(lastCheck), now)) {
-    return { streak: user.daily_streak || 0, alreadyCheckedToday: true }
+    return { streak: user.daily_streak || 0, alreadyCheckedToday: true, weekActivity }
   }
 
   let newStreak = 1
@@ -2936,7 +2963,8 @@ export async function checkAndUpdateDailyStreak(userId: number): Promise<{
     .from('bot_users')
     .update({
       daily_streak: newStreak,
-      last_streak_check_at: now.toISOString()
+      last_streak_check_at: now.toISOString(),
+      week_activity: weekActivity
     })
     .eq('id', userId)
 
@@ -2952,14 +2980,15 @@ export async function checkAndUpdateDailyStreak(userId: number): Promise<{
           return {
             streak: newStreak,
             reward: { days: milestone.days, proAwarded: milestone.proAwarded },
-            alreadyCheckedToday: false
+            alreadyCheckedToday: false,
+            weekActivity
           }
         }
       }
     }
   }
 
-  return { streak: newStreak, alreadyCheckedToday: false }
+  return { streak: newStreak, alreadyCheckedToday: false, weekActivity }
 }
 
 // Check and update swipe streak (called when all daily swipes are used)
@@ -3135,17 +3164,25 @@ export async function getUserStreakStatus(userId: number): Promise<{
   swipeStreak: number
   nextDailyMilestone: number | null
   nextSwipeMilestone: number | null
+  weekActivity: number[]
 }> {
   const supabase = getSupabase()
+  const now = new Date()
 
   const { data: user } = await supabase
     .from('bot_users')
-    .select('daily_streak, swipe_streak')
+    .select('daily_streak, swipe_streak, week_activity, last_streak_check_at')
     .eq('id', userId)
     .single()
 
   const dailyStreak = user?.daily_streak || 0
   const swipeStreak = user?.swipe_streak || 0
+
+  // Check if it's a new week - if so, week_activity should be empty
+  const lastCheck = user?.last_streak_check_at ? new Date(user.last_streak_check_at) : null
+  const isNewWeek = !lastCheck || getWeekNumber(lastCheck) !== getWeekNumber(now) ||
+                    lastCheck.getFullYear() !== now.getFullYear()
+  const weekActivity = isNewWeek ? [] : (user?.week_activity || [])
 
   // Find next unclaimed daily milestone
   let nextDailyMilestone: number | null = null
@@ -3175,7 +3212,8 @@ export async function getUserStreakStatus(userId: number): Promise<{
     dailyStreak,
     swipeStreak,
     nextDailyMilestone,
-    nextSwipeMilestone
+    nextSwipeMilestone,
+    weekActivity
   }
 }
 

@@ -205,37 +205,38 @@ const HomeScreen: React.FC = () => {
       {streakStatus && (
         <div className="px-4 mb-6">
           <Card className="bg-gradient-to-r from-orange-500/20 to-red-500/10 border border-orange-500/20">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center shrink-0">
                 <Flame className="text-orange-500" size={24} />
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2">
                   <span className="font-bold text-orange-400">
                     {streakStatus.dailyStreak} {streakStatus.dailyStreak === 1 ? 'день' : streakStatus.dailyStreak < 5 ? 'дня' : 'дней'}
                   </span>
                   <span className="text-xs text-gray-400">подряд</span>
                 </div>
                 {streakStatus.nextDailyMilestone && (
-                  <>
-                    <div className="flex items-center gap-2 text-xs text-gray-400 mb-1.5">
-                      <span>До Pro:</span>
-                      <span className="text-orange-400 font-medium">
-                        {streakStatus.nextDailyMilestone - streakStatus.dailyStreak} дн.
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all"
-                        style={{ width: `${Math.min(100, (streakStatus.dailyStreak / streakStatus.nextDailyMilestone) * 100)}%` }}
-                      />
-                    </div>
-                  </>
+                  <div className="text-xs text-gray-400">
+                    До Pro: <span className="text-orange-400 font-medium">{streakStatus.nextDailyMilestone - streakStatus.dailyStreak} дн.</span>
+                  </div>
                 )}
                 {!streakStatus.nextDailyMilestone && streakStatus.dailyStreak >= 30 && (
                   <div className="text-xs text-green-400">Все награды получены!</div>
                 )}
               </div>
+            </div>
+            {/* 7 Day Dots */}
+            <div className="flex items-center justify-between">
+              {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day, i) => {
+                const isActive = streakStatus.weekActivity?.includes(i)
+                return (
+                  <div key={day} className="flex flex-col items-center gap-1">
+                    <div className={`w-4 h-4 rounded-full transition-colors ${isActive ? 'bg-orange-500' : 'bg-gray-700'}`} />
+                    <span className="text-[10px] text-gray-500">{day}</span>
+                  </div>
+                )
+              })}
             </div>
           </Card>
         </div>
