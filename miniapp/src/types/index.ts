@@ -1,6 +1,6 @@
 // User subscription types
 export type SubscriptionTier = 'free' | 'light' | 'pro'
-export type AppSettingKey = 'invite_required' | 'maintenance_mode' | 'onboarding_enabled'
+export type AppSettingKey = 'invite_required' | 'maintenance_mode' | 'onboarding_enabled' | 'show_funnel_for_team'
 
 // User ranks (community roles)
 export type UserRank =

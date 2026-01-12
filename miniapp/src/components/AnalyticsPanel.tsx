@@ -33,7 +33,7 @@ import {
 import { useAppStore } from '@/lib/store'
 import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser, getEventsList, getEventRegistrationStats, EventListItem, EventRegistrationStats, getSpeakerAnalytics, SpeakerAnalytics } from '@/lib/analytics'
 import { Card, Button, Badge, Avatar } from '@/components/ui'
-import { getEventRegistrations, getEventCheckins } from '@/lib/supabase'
+import { getEventRegistrations, getEventCheckins, updateAppSetting } from '@/lib/supabase'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
@@ -221,7 +221,14 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
               <span className="text-sm">Воронка для команды</span>
             </div>
             <button
-              onClick={() => setShowFunnelForTeam(!showFunnelForTeam)}
+              onClick={async () => {
+                const newValue = !showFunnelForTeam
+                setShowFunnelForTeam(newValue)
+                // Save to database for all users
+                if (user?.id) {
+                  await updateAppSetting('show_funnel_for_team', newValue, user.id)
+                }
+              }}
               className={`relative w-11 h-6 rounded-full transition-colors ${
                 showFunnelForTeam ? 'bg-purple-500' : 'bg-gray-600'
               }`}

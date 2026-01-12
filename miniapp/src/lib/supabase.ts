@@ -3556,3 +3556,10 @@ export async function getShareStats(): Promise<{
     recentShares: recentShares || []
   }
 }
+
+// ============ APP SETTINGS HELPERS ============
+
+// Get show_funnel_for_team setting specifically
+export async function getShowFunnelForTeam(): Promise<boolean> {
+  return getAppSetting('show_funnel_for_team', true)
+}
