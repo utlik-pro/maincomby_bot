@@ -2747,19 +2747,24 @@ export async function getPendingReviewEvents(userId: number): Promise<Event[]> {
 }
 
 /**
- * Create a new event review
+ * Create a new event review with optional speaker rating
  */
 export async function createEventReview(
   eventId: number,
   userId: number,
   rating: number,
-  text?: string
+  text?: string,
+  speakerId?: string,
+  speakerRating?: number
 ): Promise<EventReview | null> {
   const supabase = getSupabase()
 
-  // Validate rating
+  // Validate ratings
   if (rating < 1 || rating > 5) {
     throw new Error('Rating must be between 1 and 5')
+  }
+  if (speakerRating !== undefined && (speakerRating < 1 || speakerRating > 5)) {
+    throw new Error('Speaker rating must be between 1 and 5')
   }
 
   // Check if user can review
@@ -2774,7 +2779,9 @@ export async function createEventReview(
       event_id: eventId,
       user_id: userId,
       rating,
-      text: text?.trim() || null
+      text: text?.trim() || null,
+      speaker_id: speakerId || null,
+      speaker_rating: speakerRating || null
     })
     .select()
     .single()

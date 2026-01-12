@@ -951,3 +951,121 @@ export async function getSessionStats(): Promise<SessionStats> {
     totalSessionsToday
   }
 }
+
+// ============ SPEAKER ANALYTICS ============
+
+export interface SpeakerStats {
+  id: string
+  name: string
+  title: string | null
+  photo_url: string | null
+  average_rating: number
+  total_reviews: number
+  events_count: number
+}
+
+export interface SpeakerAnalytics {
+  speakers: SpeakerStats[]
+  totalReviews: number
+  averageRating: number
+}
+
+// Types for speaker analytics queries
+interface SpeakerRecord {
+  id: string
+  name: string
+  title: string | null
+  photo_url: string | null
+}
+
+interface SpeakerReviewRecord {
+  speaker_id: string | null
+  speaker_rating: number | null
+}
+
+interface EventSpeakerRecord {
+  speaker_id: string
+}
+
+// Get all speakers with their ratings
+export async function getSpeakerAnalytics(): Promise<SpeakerAnalytics> {
+  const supabase = getSupabase()
+
+  // Get all speakers
+  const { data: speakersData } = await supabase
+    .from('speakers')
+    .select('id, name, title, photo_url')
+
+  const speakers = (speakersData || []) as SpeakerRecord[]
+
+  if (speakers.length === 0) {
+    return { speakers: [], totalReviews: 0, averageRating: 0 }
+  }
+
+  // Get all speaker reviews
+  const { data: reviewsData } = await supabase
+    .from('bot_event_reviews')
+    .select('speaker_id, speaker_rating')
+    .not('speaker_id', 'is', null)
+    .not('speaker_rating', 'is', null)
+
+  const reviews = (reviewsData || []) as SpeakerReviewRecord[]
+
+  // Get event counts per speaker
+  const { data: eventSpeakersData } = await supabase
+    .from('event_speakers')
+    .select('speaker_id')
+
+  const eventSpeakers = (eventSpeakersData || []) as EventSpeakerRecord[]
+
+  // Aggregate ratings per speaker
+  const speakerRatings: Record<string, { total: number; count: number }> = {}
+  const speakerEventCount: Record<string, number> = {}
+
+  // Count events per speaker
+  eventSpeakers.forEach(es => {
+    speakerEventCount[es.speaker_id] = (speakerEventCount[es.speaker_id] || 0) + 1
+  })
+
+  // Sum ratings per speaker
+  reviews.forEach(r => {
+    if (r.speaker_id && r.speaker_rating) {
+      if (!speakerRatings[r.speaker_id]) {
+        speakerRatings[r.speaker_id] = { total: 0, count: 0 }
+      }
+      speakerRatings[r.speaker_id].total += r.speaker_rating
+      speakerRatings[r.speaker_id].count += 1
+    }
+  })
+
+  // Build speaker stats
+  const speakerStats: SpeakerStats[] = speakers.map(s => {
+    const ratings = speakerRatings[s.id] || { total: 0, count: 0 }
+    return {
+      id: s.id,
+      name: s.name,
+      title: s.title,
+      photo_url: s.photo_url,
+      average_rating: ratings.count > 0 ? Math.round((ratings.total / ratings.count) * 10) / 10 : 0,
+      total_reviews: ratings.count,
+      events_count: speakerEventCount[s.id] || 0
+    }
+  }).sort((a, b) => {
+    // Sort by average rating (desc), then by review count (desc)
+    if (b.average_rating !== a.average_rating) return b.average_rating - a.average_rating
+    return b.total_reviews - a.total_reviews
+  })
+
+  // Calculate totals
+  const totalReviews = reviews.length
+  const allRatings = reviews.map(r => r.speaker_rating).filter((r): r is number => r !== null)
+  const averageRating = allRatings.length > 0
+    ? Math.round((allRatings.reduce((a, b) => a + b, 0) / allRatings.length) * 10) / 10
+    : 0
+
+  return {
+    speakers: speakerStats,
+    totalReviews,
+    averageRating
+  }
+}

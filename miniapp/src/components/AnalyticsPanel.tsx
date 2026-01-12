@@ -29,19 +29,20 @@ import {
   Wifi
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser, getEventsList, getEventRegistrationStats, EventListItem, EventRegistrationStats } from '@/lib/analytics'
+import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser, getEventsList, getEventRegistrationStats, EventListItem, EventRegistrationStats, getSpeakerAnalytics, SpeakerAnalytics } from '@/lib/analytics'
 import { Card } from '@/components/ui'
 
 interface AnalyticsPanelProps {
   onClose: () => void
 }
 
-type TabType = 'overview' | 'sessions' | 'events' | 'subscriptions' | 'top' | 'matching' | 'team' | 'referrals'
+type TabType = 'overview' | 'sessions' | 'events' | 'speakers' | 'subscriptions' | 'top' | 'matching' | 'team' | 'referrals'
 
 const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Обзор', icon: <BarChart3 size={16} /> },
   { id: 'sessions', label: 'Сессии', icon: <Activity size={16} /> },
   { id: 'events', label: 'События', icon: <Calendar size={16} /> },
+  { id: 'speakers', label: 'Спикеры', icon: <Mic size={16} /> },
   { id: 'subscriptions', label: 'Подписки', icon: <CreditCard size={16} /> },
   { id: 'top', label: 'Топ', icon: <Trophy size={16} /> },
   { id: 'matching', label: 'Matching', icon: <Heart size={16} /> },
@@ -105,6 +106,14 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     queryFn: () => selectedEventId ? getEventRegistrationStats(selectedEventId) : null,
     enabled: isSuperAdmin && activeTab === 'events' && !!selectedEventId,
     staleTime: 30000,
+  })
+
+  // Speaker analytics query
+  const { data: speakerAnalytics, isLoading: isLoadingSpeakers } = useQuery({
+    queryKey: ['speakerAnalytics'],
+    queryFn: getSpeakerAnalytics,
+    enabled: isSuperAdmin && activeTab === 'speakers',
+    staleTime: 60000,
   })
 
   if (!isSuperAdmin) return null
@@ -296,6 +305,110 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
           <div className="text-center py-8 text-gray-400">
             <Calendar size={48} className="mx-auto mb-3 opacity-50" />
             <p>Выберите событие для просмотра статистики</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderSpeakersTab = () => {
+    const data = speakerAnalytics
+
+    if (isLoadingSpeakers) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={32} className="animate-spin text-purple-500" />
+        </div>
+      )
+    }
+
+    if (!data) {
+      return (
+        <div className="text-center py-12 text-gray-400">
+          <Mic size={48} className="mx-auto mb-3 opacity-50" />
+          <p>Нет данных о спикерах</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Summary stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="p-4 text-center">
+            <div className="text-3xl font-bold text-purple-500">{data.speakers.length}</div>
+            <div className="text-xs text-gray-400">Всего спикеров</div>
+          </Card>
+          <Card className="p-4 text-center">
+            <div className="text-3xl font-bold text-accent">{data.totalReviews}</div>
+            <div className="text-xs text-gray-400">Отзывов</div>
+          </Card>
+        </div>
+
+        {data.averageRating > 0 && (
+          <Card className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <Star size={24} className="text-yellow-500 fill-yellow-500" />
+              <span className="text-3xl font-bold text-yellow-500">{data.averageRating}</span>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">Средний рейтинг</div>
+          </Card>
+        )}
+
+        {/* Speaker list */}
+        {data.speakers.length > 0 && (
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy size={18} className="text-accent" />
+              <span className="font-semibold">Рейтинг спикеров</span>
+            </div>
+            <div className="space-y-3">
+              {data.speakers.map((speaker, index) => (
+                <div key={speaker.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                    index === 0 ? 'bg-yellow-500/20 text-yellow-500' :
+                    index === 1 ? 'bg-gray-400/20 text-gray-400' :
+                    index === 2 ? 'bg-amber-600/20 text-amber-600' :
+                    'bg-bg text-gray-500'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden">
+                    {speaker.photo_url ? (
+                      <img src={speaker.photo_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Mic size={16} className="text-purple-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate text-sm">{speaker.name}</div>
+                    {speaker.title && (
+                      <div className="text-xs text-gray-500 truncate">{speaker.title}</div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {speaker.average_rating > 0 ? (
+                      <div className="flex items-center gap-1">
+                        <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                        <span className="font-bold text-yellow-500">{speaker.average_rating}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-500">—</span>
+                    )}
+                    <div className="text-[10px] text-gray-500">
+                      {speaker.total_reviews} отз. • {speaker.events_count} ив.
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {data.speakers.length === 0 && (
+          <div className="text-center py-8 text-gray-400">
+            <Mic size={48} className="mx-auto mb-3 opacity-50" />
+            <p>Нет спикеров</p>
           </div>
         )}
       </div>
@@ -721,6 +834,8 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
         return renderSessionsTab()
       case 'events':
         return renderEventsTab()
+      case 'speakers':
+        return renderSpeakersTab()
       case 'subscriptions':
         return renderSubscriptionsTab(analytics)
       case 'top':

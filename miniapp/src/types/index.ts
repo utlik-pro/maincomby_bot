@@ -285,6 +285,8 @@ export interface Event {
   image_url: string | null
   event_type: 'meetup' | 'workshop' | 'conference' | 'hackathon'
   price: number
+  // Link to web events table
+  web_event_id?: string | null
 }
 
 export interface EventRegistration {
@@ -305,15 +307,20 @@ export interface EventReview {
   id: number
   event_id: number
   user_id: number
-  rating: number  // 1-5
+  rating: number  // 1-5 event rating
   text: string | null
   created_at: string
+  // Speaker rating (optional)
+  speaker_id?: string | null
+  speaker_rating?: number | null  // 1-5 speaker rating
   // Joined user data
   user?: {
     first_name: string | null
     last_name: string | null
     username: string | null
   }
+  // Joined speaker data
+  speaker?: Speaker | null
 }
 
 export interface Match {
