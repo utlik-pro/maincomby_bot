@@ -723,11 +723,12 @@ const EventDetail: React.FC<{
 }
 
 const EventsScreen: React.FC = () => {
-  const { user, setUser, addPoints, canAccessScanner, deepLinkTarget, setDeepLinkTarget } = useAppStore()
+  const { user, setUser, addPoints, canAccessScanner, showFunnelForTeam, deepLinkTarget, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
-  const [filter, setFilter] = useState<'all' | 'calendar' | 'registered' | 'checkins' | 'leads'>('all')
+  const [filter, setFilter] = useState<'all' | 'calendar' | 'registered' | 'checkins' | 'leads' | 'analytics'>('all')
+  const [selectedAnalyticsEvent, setSelectedAnalyticsEvent] = useState<number | null>(null)
   const [selectedCalendarEvents, setSelectedCalendarEvents] = useState<Event[]>([])
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null)
   const [selectedCheckinsEvent, setSelectedCheckinsEvent] = useState<number | null>(null)
@@ -815,6 +816,14 @@ const EventsScreen: React.FC = () => {
     console.error('[Leads] Error:', leadsError)
   }
 
+  // Fetch analytics stats for selected event (for core team/volunteers - always available)
+  const { data: analyticsStats, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['eventAnalytics', selectedAnalyticsEvent],
+    queryFn: () => selectedAnalyticsEvent ? getEventRegistrationStats(selectedAnalyticsEvent) : null,
+    enabled: !!selectedAnalyticsEvent && canAccessScanner(),
+    staleTime: 30000,
+  })
+
   // Auto-select first event for checkins when events load
   useEffect(() => {
     if (filter === 'checkins' && events && events.length > 0 && !selectedCheckinsEvent) {
@@ -823,7 +832,10 @@ const EventsScreen: React.FC = () => {
     if (filter === 'leads' && events && events.length > 0 && !selectedLeadsEvent) {
       setSelectedLeadsEvent(events[0].id)
     }
-  }, [filter, events, selectedCheckinsEvent, selectedLeadsEvent])
+    if (filter === 'analytics' && events && events.length > 0 && !selectedAnalyticsEvent) {
+      setSelectedAnalyticsEvent(events[0].id)
+    }
+  }, [filter, events, selectedCheckinsEvent, selectedLeadsEvent, selectedAnalyticsEvent])
 
   // Real-time subscription for check-in notifications
   useEffect(() => {
@@ -1180,8 +1192,11 @@ const EventsScreen: React.FC = () => {
           { id: 'calendar' as const, label: 'Календарь', icon: CalendarDays },
           { id: 'registered' as const, label: 'Мои', icon: Ticket },
           ...(canAccessScanner() ? [
-            { id: 'leads' as const, label: 'Лиды', icon: Users },
-            { id: 'checkins' as const, label: 'Check-ins', icon: UserCheck },
+            { id: 'analytics' as const, label: 'Аналитика', icon: TrendingUp },
+            ...(showFunnelForTeam ? [
+              { id: 'leads' as const, label: 'Лиды', icon: Users },
+              { id: 'checkins' as const, label: 'Check-ins', icon: UserCheck },
+            ] : []),
           ] : []),
         ].map((f) => (
           <motion.button
@@ -1194,6 +1209,9 @@ const EventsScreen: React.FC = () => {
               }
               if (f.id === 'leads' && events && events.length > 0 && !selectedLeadsEvent) {
                 setSelectedLeadsEvent(events[0].id)
+              }
+              if (f.id === 'analytics' && events && events.length > 0 && !selectedAnalyticsEvent) {
+                setSelectedAnalyticsEvent(events[0].id)
               }
             }}
             className={`
@@ -1273,6 +1291,89 @@ const EventsScreen: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Analytics (for core team/volunteers - always available) */}
+      {filter === 'analytics' && canAccessScanner() && (
+        <div className="px-4 mb-6 pb-20">
+          {/* Event selector */}
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center gap-2">
+              <Calendar size={14} />
+              Выберите событие
+            </h3>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {events?.map((event: Event) => (
+                <motion.button
+                  key={event.id}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedAnalyticsEvent(event.id)}
+                  className={`
+                    px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap
+                    ${selectedAnalyticsEvent === event.id ? 'bg-purple-500 text-white' : 'bg-bg-card text-white'}
+                  `}
+                >
+                  {event.title}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Analytics stats */}
+          <Card className="bg-purple-500/5 border-purple-500/20">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp size={18} className="text-purple-500" />
+              <h3 className="font-semibold text-purple-500">Статистика события</h3>
+            </div>
+
+            {analyticsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+              </div>
+            ) : analyticsStats ? (
+              <div className="space-y-3">
+                {/* Main stats */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <div className="text-3xl font-bold text-accent">{analyticsStats.totalRegistrations}</div>
+                    <div className="text-xs text-gray-400 mt-1">Всего зарег.</div>
+                  </div>
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <div className="text-3xl font-bold text-blue-500">{analyticsStats.todayRegistrations}</div>
+                    <div className="text-xs text-gray-400 mt-1">Сегодня</div>
+                  </div>
+                </div>
+                {/* Funnel */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <div className="text-3xl font-bold text-green-500">{analyticsStats.checkedInCount}</div>
+                    <div className="text-xs text-gray-400 mt-1">Зачекинились</div>
+                  </div>
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <div className="text-3xl font-bold text-red-500">{analyticsStats.cancelledCount}</div>
+                    <div className="text-xs text-gray-400 mt-1">Отменили</div>
+                  </div>
+                </div>
+                {/* Conversion */}
+                {analyticsStats.totalRegistrations > 0 && (
+                  <div className="bg-bg rounded-xl p-3 text-center">
+                    <div className="text-sm text-gray-400">
+                      Конверсия в check-in: <span className="text-purple-500 font-bold">
+                        {Math.round((analyticsStats.checkedInCount / analyticsStats.totalRegistrations) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center text-gray-400 py-6">
+                <TrendingUp size={32} className="mx-auto mb-2 opacity-50" />
+                <div className="text-sm">Выберите событие для просмотра статистики</div>
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
@@ -1577,7 +1678,7 @@ const EventsScreen: React.FC = () => {
       )}
 
       {/* Events List (hide when checkins, leads, calendar, or registered filter is active) */}
-      {filter !== 'checkins' && filter !== 'leads' && filter !== 'calendar' && filter !== 'registered' && (
+      {filter !== 'checkins' && filter !== 'leads' && filter !== 'analytics' && filter !== 'calendar' && filter !== 'registered' && (
       <div className="px-4">
         {isLoading ? (
           <div className="space-y-4">
