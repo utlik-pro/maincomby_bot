@@ -742,3 +742,37 @@ export interface SwipeCardProfile {
 
 // Max photos per user
 export const MAX_PROFILE_PHOTOS = 3
+
+// ============================================
+// Event Speakers & Program (from iishnica admin)
+// ============================================
+
+export interface Speaker {
+  id: string
+  name: string
+  title: string | null
+  description: string | null
+  photo_url: string | null
+}
+
+export interface EventSpeaker {
+  speaker_id: string
+  talk_title: string | null
+  talk_description: string | null
+  order_index: number
+  speaker: Speaker
+}
+
+export type EventProgramType = 'registration' | 'talk' | 'workshop' | 'networking' | 'break' | 'lunch' | 'coffee' | 'qa' | 'other'
+
+export interface EventProgramItem {
+  id: string
+  time_start: string  // "HH:MM:SS"
+  time_end: string
+  title: string
+  description: string | null
+  type: EventProgramType
+  speaker_id: string | null
+  order_index: number
+  speaker?: Speaker
+}

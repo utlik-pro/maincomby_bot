@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User, TeamRole, ProfilePhoto, PhotoUploadResult, SwipeCardProfile, UserProfile } from '@/types'
+import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User, TeamRole, ProfilePhoto, PhotoUploadResult, SwipeCardProfile, UserProfile, Speaker, EventSpeaker, EventProgramItem } from '@/types'
 import { sendPushNotification, callEdgeFunction, type NotificationType as TelegramNotificationType } from './telegram'
 
 
@@ -3299,4 +3299,127 @@ export async function endSession(sessionId: number, userId: number): Promise<voi
     .from('bot_users')
     .update({ total_time_seconds: currentTotal + cappedDuration })
     .eq('id', userId)
+}
+
+// ============================================
+// EVENT SPEAKERS & PROGRAM (from iishnica admin)
+// ============================================
+
+// Helper: Find web event UUID by bot_event title
+async function findWebEventId(botEventTitle: string): Promise<string | null> {
+  const supabase = getSupabase()
+
+  const { data } = await supabase
+    .from('events')
+    .select('id')
+    .eq('title', botEventTitle)
+    .limit(1)
+    .maybeSingle()
+
+  return data?.id || null
+}
+
+// Fetch event speakers with speaker details (uses web event UUID)
+export async function fetchEventSpeakers(webEventId: string): Promise<EventSpeaker[]> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('event_speakers')
+    .select(`
+      speaker_id,
+      talk_title,
+      talk_description,
+      order_index,
+      speaker:speakers (
+        id,
+        name,
+        title,
+        description,
+        photo_url
+      )
+    `)
+    .eq('event_id', webEventId)
+    .order('order_index')
+
+  if (error) {
+    console.error('[fetchEventSpeakers] Error:', error)
+    return []
+  }
+
+  // Transform data to match EventSpeaker interface
+  // Note: Supabase returns single relation as object, but TS infers as array
+  return (data || []).map(item => ({
+    speaker_id: item.speaker_id,
+    talk_title: item.talk_title,
+    talk_description: item.talk_description,
+    order_index: item.order_index,
+    speaker: item.speaker as unknown as Speaker
+  }))
+}
+
+// Fetch event program with optional speaker details (uses web event UUID)
+export async function fetchEventProgram(webEventId: string): Promise<EventProgramItem[]> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('event_program')
+    .select(`
+      id,
+      time_start,
+      time_end,
+      title,
+      description,
+      type,
+      speaker_id,
+      order_index,
+      speaker:speakers (
+        id,
+        name,
+        title,
+        description,
+        photo_url
+      )
+    `)
+    .eq('event_id', webEventId)
+    .order('order_index')
+
+  if (error) {
+    console.error('[fetchEventProgram] Error:', error)
+    return []
+  }
+
+  // Transform data to match EventProgramItem interface
+  // Note: Supabase returns single relation as object, but TS infers as array
+  return (data || []).map(item => ({
+    id: item.id,
+    time_start: item.time_start,
+    time_end: item.time_end,
+    title: item.title,
+    description: item.description,
+    type: item.type,
+    speaker_id: item.speaker_id,
+    order_index: item.order_index,
+    speaker: item.speaker as unknown as Speaker | undefined
+  }))
+}
+
+// Combined: Get speakers and program by bot_event title
+export async function fetchEventDetails(botEventTitle: string): Promise<{
+  speakers: EventSpeaker[]
+  program: EventProgramItem[]
+}> {
+  // Find web event UUID by title
+  const webEventId = await findWebEventId(botEventTitle)
+
+  if (!webEventId) {
+    return { speakers: [], program: [] }
+  }
+
+  // Fetch speakers and program in parallel
+  const [speakers, program] = await Promise.all([
+    fetchEventSpeakers(webEventId),
+    fetchEventProgram(webEventId)
+  ])
+
+  return { speakers, program }
 }

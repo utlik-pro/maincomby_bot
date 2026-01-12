@@ -48,11 +48,15 @@ import {
   canUserReviewEvent,
   getUserEventReview,
   createEventReview,
+  fetchEventDetails,
 } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import { Avatar, Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui'
 import { EventCalendar } from '@/components/EventCalendar'
-import { Event, EventRegistration, EventReview, XP_REWARDS } from '@/types'
+import { ExpandableSection } from '@/components/ExpandableSection'
+import { SpeakerCard } from '@/components/SpeakerCard'
+import { ProgramItem } from '@/components/ProgramItem'
+import { Event, EventRegistration, EventReview, XP_REWARDS, EventSpeaker, EventProgramItem } from '@/types'
 
 // Event type icons
 const eventTypeIcons: Record<string, React.ReactNode> = {
@@ -311,8 +315,18 @@ const EventDetail: React.FC<{
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewText, setReviewText] = useState('')
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+  const [speakersExpanded, setSpeakersExpanded] = useState(false)
+  const [programExpanded, setProgramExpanded] = useState(false)
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
+
+  // Fetch speakers and program from iishnica admin (linked by event title)
+  const { data: eventDetails } = useQuery({
+    queryKey: ['eventDetails', event.title],
+    queryFn: () => fetchEventDetails(event.title),
+  })
+  const eventSpeakers = eventDetails?.speakers || []
+  const eventProgram = eventDetails?.program || []
 
   const eventDate = new Date(event.event_date)
   const eventPassed = isPast(eventDate)
@@ -465,14 +479,43 @@ const EventDetail: React.FC<{
           )}
         </div>
 
-        {event.description && (
+        {/* Speakers Section - from iishnica admin */}
+        {eventSpeakers.length > 0 && (
+          <ExpandableSection
+            title="Спикеры"
+            preview={eventSpeakers.map(s => s.speaker.name).join('; ')}
+            expanded={speakersExpanded}
+            onToggle={() => setSpeakersExpanded(!speakersExpanded)}
+          >
+            {eventSpeakers.map(es => (
+              <SpeakerCard key={es.speaker_id} speaker={es.speaker} />
+            ))}
+          </ExpandableSection>
+        )}
+
+        {/* Program Section - from iishnica admin */}
+        {eventProgram.length > 0 && (
+          <ExpandableSection
+            title="Программа"
+            preview={eventProgram.filter(p => p.type === 'talk').map(p => p.title).join('; ') || eventProgram.map(p => p.title).join('; ')}
+            expanded={programExpanded}
+            onToggle={() => setProgramExpanded(!programExpanded)}
+          >
+            {eventProgram.map(item => (
+              <ProgramItem key={item.id} item={item} />
+            ))}
+          </ExpandableSection>
+        )}
+
+        {/* Fallback: show old description if no speakers/program from admin */}
+        {eventSpeakers.length === 0 && event.description && (
           <Card className="mb-6">
             <h3 className="font-semibold mb-2">О мероприятии</h3>
             <p className="text-gray-400 text-sm leading-relaxed">{event.description}</p>
           </Card>
         )}
 
-        {event.speakers && (
+        {eventSpeakers.length === 0 && eventProgram.length === 0 && event.speakers && (
           <Card className="mb-6">
             <h3 className="font-semibold mb-2">Что вас ждёт</h3>
             <p className="text-gray-400 text-sm leading-relaxed">{event.speakers}</p>
