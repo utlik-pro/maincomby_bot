@@ -26,6 +26,7 @@ import { useToastStore } from '@/lib/store'
 import { openTelegramLink } from '@/lib/telegram'
 import NotificationsScreen from './NotificationsScreen'
 import EventAnnouncementModal from '@/components/EventAnnouncementModal'
+import { SubscriptionBadge } from '@/components/SubscriptionBadge'
 
 // Legacy fallback - Avatar ring styles based on role/tier (used when skin system not available)
 const getLegacyAvatarRing = (teamRole?: string | null, tier?: string) => {
@@ -167,14 +168,11 @@ const HomeScreen: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          {/* Hidden easter egg - tap logo 6 times */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
+          {/* Subscription tier badge - tap 6 times for easter egg */}
+          <SubscriptionBadge
+            tier={getSubscriptionTier()}
             onClick={handleLogoTap}
-            className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center"
-          >
-            <span className="text-accent font-bold text-lg">M</span>
-          </motion.button>
+          />
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowNotifications(true)}
