@@ -300,10 +300,12 @@ export async function getEventsList(): Promise<EventListItem[]> {
   return (data || []) as EventListItem[]
 }
 
-// Get registration stats for a specific event
+// Get registration stats for a specific event (funnel)
 export interface EventRegistrationStats {
   totalRegistrations: number
   todayRegistrations: number
+  cancelledCount: number
+  checkedInCount: number
 }
 
 interface RegistrationWithDate {
@@ -316,25 +318,35 @@ export async function getEventRegistrationStats(eventId: number): Promise<EventR
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Total registrations (registered + attended)
+  // Get all registrations for this event (all statuses)
   const { data: allRegs } = await supabase
     .from('bot_registrations')
     .select('registered_at, status')
     .eq('event_id', eventId)
-    .in('status', ['registered', 'attended'])
 
   const regs = (allRegs || []) as RegistrationWithDate[]
-  const totalRegistrations = regs.length
+
+  // Total active registrations (registered + attended)
+  const activeRegs = regs.filter(r => r.status === 'registered' || r.status === 'attended')
+  const totalRegistrations = activeRegs.length
 
   // Today's registrations
-  const todayRegistrations = regs.filter(r => {
+  const todayRegistrations = activeRegs.filter(r => {
     const regDate = new Date(r.registered_at)
     return regDate >= today
   }).length
 
+  // Cancelled registrations
+  const cancelledCount = regs.filter(r => r.status === 'cancelled').length
+
+  // Checked in (attended)
+  const checkedInCount = regs.filter(r => r.status === 'attended').length
+
   return {
     totalRegistrations,
-    todayRegistrations
+    todayRegistrations,
+    cancelledCount,
+    checkedInCount
   }
 }
 

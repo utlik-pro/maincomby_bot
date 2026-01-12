@@ -65,12 +65,6 @@ export async function createOrUpdateUser(userData: {
     .single()
 
   if (error) throw error
-
-  // Debug: log team_role to verify it's being returned
-  if (import.meta.env.DEV) {
-    console.log('[createOrUpdateUser] team_role:', data?.team_role)
-  }
-
   return data
 }
 

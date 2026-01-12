@@ -254,15 +254,39 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
                 <Loader2 size={24} className="animate-spin text-accent" />
               </div>
             ) : eventStats ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-bg rounded-xl p-4 text-center">
-                  <div className="text-3xl font-bold text-accent">{eventStats.totalRegistrations}</div>
-                  <div className="text-xs text-gray-400 mt-1">Всего зарег.</div>
+              <div className="space-y-3">
+                {/* Main stats row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <div className="text-3xl font-bold text-accent">{eventStats.totalRegistrations}</div>
+                    <div className="text-xs text-gray-400 mt-1">Всего зарег.</div>
+                  </div>
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <div className="text-3xl font-bold text-blue-500">{eventStats.todayRegistrations}</div>
+                    <div className="text-xs text-gray-400 mt-1">Сегодня</div>
+                  </div>
                 </div>
-                <div className="bg-bg rounded-xl p-4 text-center">
-                  <div className="text-3xl font-bold text-green-500">{eventStats.todayRegistrations}</div>
-                  <div className="text-xs text-gray-400 mt-1">Сегодня</div>
+                {/* Funnel row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <div className="text-3xl font-bold text-green-500">{eventStats.checkedInCount}</div>
+                    <div className="text-xs text-gray-400 mt-1">Зачекинились</div>
+                  </div>
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <div className="text-3xl font-bold text-red-500">{eventStats.cancelledCount}</div>
+                    <div className="text-xs text-gray-400 mt-1">Отменили</div>
+                  </div>
                 </div>
+                {/* Conversion rate */}
+                {eventStats.totalRegistrations > 0 && (
+                  <div className="bg-bg rounded-xl p-3 text-center">
+                    <div className="text-sm text-gray-400">
+                      Конверсия в check-in: <span className="text-accent font-bold">
+                        {Math.round((eventStats.checkedInCount / eventStats.totalRegistrations) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
           </Card>

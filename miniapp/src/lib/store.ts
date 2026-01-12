@@ -195,19 +195,7 @@ export const useAppStore = create<AppState>()(
         // Allow: core team, volunteers, or anyone with volunteer mode enabled
         const allowedRoles = ['core', 'volunteer']
         const userRole = (user.team_role || '').toLowerCase()
-        const hasAccess = allowedRoles.includes(userRole) || get().isVolunteerMode
-
-        // Debug logging
-        if (typeof window !== 'undefined') {
-          console.log('[canAccessScanner]', {
-            team_role: user.team_role,
-            userRole,
-            isVolunteerMode: get().isVolunteerMode,
-            hasAccess
-          })
-        }
-
-        return hasAccess
+        return allowedRoles.includes(userRole) || get().isVolunteerMode
       },
     }),
     {
