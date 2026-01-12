@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-01-12
+
+[0;34mGenerating changelog from v1.1.3 to HEAD[0m
+### Added
+- add session tracking and analytics for super admin
+- add streak progress UI card on HomeScreen
+- add streak rewards + profile completion XP
+
+### Fixed
+- daily streak shows on day 1 + disable XP notification spam
 ## [1.1.3] - 2026-01-11
 
 [0;34mGenerating changelog from v1.1.2 to HEAD[0m

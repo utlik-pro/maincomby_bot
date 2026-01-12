@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.3'
+export const APP_VERSION = '1.1.4'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 7
+export const CURRENT_APP_VERSION = 8
 
 export interface ReleaseHighlight {
   title: string
@@ -29,19 +29,21 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.3',
-  date: '2026-01-11',
-  summary: 'Исправления и улучшения v1.1.3',
+  version: '1.1.4',
+  date: '2026-01-12',
+  summary: 'Исправления и улучшения v1.1.4',
   highlights: [
-    { title: 'Обновление системы', description: 'Подробнее в changelog' },
-    { title: 'Улучшения', description: 'Подробнее в changelog' },
-    { title: 'Исправления', description: 'Подробнее в changelog' },
+    { title: 'add session tracking and ...', description: 'Подробнее в changelog' },
+    { title: 'add streak progress UI ca...', description: 'Подробнее в changelog' },
+    { title: 'add streak rewards + prof...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'Мелкие улучшения',
+    'add session tracking and analytics for super admin',
+    'add streak progress UI card on HomeScreen',
+    'add streak rewards + profile completion XP',
   ],
   fixes: [
-    'improve LATEST_RELEASE update reliability',
+    'daily streak shows on day 1 + disable XP notification spam',
   ],
 }
 
