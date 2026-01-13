@@ -5,7 +5,7 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.4'
+export const APP_VERSION = '1.1.5'
 export const APP_NAME = 'MAIN Community'
 export const COPYRIGHT_YEAR = '2026'
 

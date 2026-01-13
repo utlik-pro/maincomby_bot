@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.5] - 2026-01-13
+
+[0;34mGenerating changelog from v1.1.4 to HEAD[0m
+### Added
+- add event funnel stats for team + leads/checkins modals
+- add speaker ratings and analytics
+- add event funnel analytics (registered, today, checked-in, cancelled)
+- superadmin events analytics with dropdown selector
+- UI improvements - matches profile view & streak dots
+- replace M badge with subscription status crown icon
+- add QR code sharing for events and profiles with analytics
+- add expandable Speakers & Program sections
+- add Cal.com integration, Testimonials & SEO
+
+### Fixed
+- store funnel visibility setting in database for all users
+- hide leads/checkins tabs when toggle is off, add analytics tab
+- reset daily swipes counter on new day
+- English labels (Free/Light/Pro)
+- smaller crown + text labels (фри/лайт/про)
 ## [1.1.4] - 2026-01-12
 
 [0;34mGenerating changelog from v1.1.3 to HEAD[0m

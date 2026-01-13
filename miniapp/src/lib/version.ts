@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.4'
+export const APP_VERSION = '1.1.5'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 8
+export const CURRENT_APP_VERSION = 9
 
 export interface ReleaseHighlight {
   title: string
@@ -29,21 +29,23 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.4',
-  date: '2026-01-12',
-  summary: 'Исправления и улучшения v1.1.4',
+  version: '1.1.5',
+  date: '2026-01-13',
+  summary: 'Исправления и улучшения v1.1.5',
   highlights: [
-    { title: 'add session tracking and ...', description: 'Подробнее в changelog' },
-    { title: 'add streak progress UI ca...', description: 'Подробнее в changelog' },
-    { title: 'add streak rewards + prof...', description: 'Подробнее в changelog' },
+    { title: 'add event funnel stats fo...', description: 'Подробнее в changelog' },
+    { title: 'add speaker ratings and a...', description: 'Подробнее в changelog' },
+    { title: 'add event funnel analytic...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'add session tracking and analytics for super admin',
-    'add streak progress UI card on HomeScreen',
-    'add streak rewards + profile completion XP',
+    'add event funnel stats for team + leads/checkins modals',
+    'add speaker ratings and analytics',
+    'add event funnel analytics (registered, today, checked-in, cancelled)',
   ],
   fixes: [
-    'daily streak shows on day 1 + disable XP notification spam',
+    'store funnel visibility setting in database for all users',
+    'hide leads/checkins tabs when toggle is off, add analytics tab',
+    'reset daily swipes counter on new day',
   ],
 }
 
