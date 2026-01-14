@@ -33,29 +33,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = async (userData: TelegramUser) => {
         try {
+            // DEBUG: Verbose logging for user
+            alert(`Step 1: Callback Received for ${userData.first_name} (ID: ${userData.id})`)
+
             // Validate with backend
+            alert('Step 2: Sending data to server...')
+            const payload = JSON.stringify(userData)
+
             const response = await fetch('/api/auth/telegram', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData),
+                body: payload,
             })
 
+            alert(`Step 3: Server status ${response.status}`)
+
             if (!response.ok) {
-                throw new Error('Verification failed')
+                const errText = await response.text()
+                throw new Error(`Server Error: ${response.status} - ${errText}`)
             }
 
             const data = await response.json()
 
             if (data.success && data.user) {
+                alert('Step 4: Success! Storing session...')
                 // Store verified and enriched user data
                 setUser(data.user)
                 localStorage.setItem('telegram_user', JSON.stringify(data.user))
             } else {
-                throw new Error('Invalid server response')
+                throw new Error(`Invalid response: ${JSON.stringify(data)}`)
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login error:', error)
-            alert('Login verification failed')
+            alert(`LOGIN ERROR: ${error.message || JSON.stringify(error)}`)
         }
     }
 

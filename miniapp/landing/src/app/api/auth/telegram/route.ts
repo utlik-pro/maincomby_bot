@@ -11,8 +11,11 @@ let supabase: any = null
 if (supabaseUrl && supabaseServiceKey) {
     supabase = createClient(supabaseUrl, supabaseServiceKey)
 } else {
-    console.warn('Supabase credentials missing in API route')
+    // We log this but don't crash yet, as it might be a build time check
+    console.warn('Supabase credentials missing in API Route global scope')
 }
+
+export const runtime = 'nodejs' // Ensure Node.js runtime for crypto module
 
 export async function POST(req: NextRequest) {
     try {
