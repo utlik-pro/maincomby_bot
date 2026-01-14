@@ -70,7 +70,7 @@ const LearnScreen: React.FC = () => {
       return markLessonComplete(user.id, lessonId)
     },
     onSuccess: () => {
-      hapticFeedback.notification('success')
+      hapticFeedback.success()
       addToast('Урок пройден! +50 XP', 'xp')
       queryClient.invalidateQueries({ queryKey: ['lessonProgress'] })
     },

@@ -1,11 +1,11 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { BookOpen, Clock, CheckCircle, Sparkles, GraduationCap, Code, Lightbulb } from 'lucide-react'
+import { BookOpen, Clock, CheckCircle, Sparkles, GraduationCap, Code, Lightbulb, LucideIcon } from 'lucide-react'
 import { Progress } from '@/components/ui'
 import type { Course } from '@/types'
 
 // Map icon name to component
-const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   BookOpen,
   Sparkles,
   GraduationCap,

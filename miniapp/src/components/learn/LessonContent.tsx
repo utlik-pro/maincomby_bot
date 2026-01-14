@@ -21,7 +21,7 @@ const BlockRenderer: React.FC<{ block: LessonBlock }> = ({ block }) => {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
-      hapticFeedback.notification('success')
+      hapticFeedback.success()
       setTimeout(() => setCopied(false), 2000)
     } catch (e) {
       console.warn('Failed to copy:', e)

@@ -76,7 +76,7 @@ const CourseItem: React.FC<{
     mutationFn: ({ lessonId, enabled }: { lessonId: string; enabled: boolean }) =>
       toggleLessonEnabled(lessonId, enabled),
     onSuccess: () => {
-      hapticFeedback.notification('success')
+      hapticFeedback.success()
       queryClient.invalidateQueries({ queryKey: ['adminCourseLessons', course.id] })
       queryClient.invalidateQueries({ queryKey: ['courseLessons'] })
     },
@@ -204,7 +204,7 @@ export const LearningAdminPanel: React.FC<LearningAdminPanelProps> = ({ onClose 
       setTogglingCourseId(courseId)
     },
     onSuccess: () => {
-      hapticFeedback.notification('success')
+      hapticFeedback.success()
       queryClient.invalidateQueries({ queryKey: ['adminCourses'] })
       queryClient.invalidateQueries({ queryKey: ['courses'] })
     },
