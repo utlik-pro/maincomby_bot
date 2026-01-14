@@ -784,3 +784,173 @@ export interface EventProgramItem {
   order_index: number
   speaker?: Speaker
 }
+
+// ============================================
+// Learning System (Courses & Lessons)
+// ============================================
+
+export type LessonBlockType = 'text' | 'heading' | 'example' | 'tip' | 'list'
+
+export interface LessonBlock {
+  type: LessonBlockType
+  content: string
+  items?: string[]    // For 'list' type
+  good?: boolean      // For 'example' type (good/bad example)
+}
+
+export interface Course {
+  id: string
+  title: string
+  description: string | null
+  icon: string
+  color: string
+  is_enabled: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Lesson {
+  id: string
+  course_id: string
+  title: string
+  duration_minutes: number
+  content: LessonBlock[]
+  is_enabled: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface UserLessonProgress {
+  id: number
+  user_id: number
+  lesson_id: string
+  completed_at: string
+}
+
+// Course with lessons (joined)
+export interface CourseWithLessons extends Course {
+  lessons: Lesson[]
+}
+
+// Lesson progress for display
+export interface LessonWithProgress extends Lesson {
+  isCompleted: boolean
+  completedAt?: string
+}
+
+// ============================================
+// Broadcast System (Push Notifications)
+// ============================================
+
+export type BroadcastStatus = 'draft' | 'scheduled' | 'sending' | 'completed' | 'cancelled' | 'failed'
+export type BroadcastAudienceType = 'all' | 'city' | 'subscription' | 'team_role' | 'event_not_registered' | 'custom'
+export type RecipientStatus = 'pending' | 'sent' | 'delivered' | 'failed'
+
+export interface BroadcastAudienceConfig {
+  city?: string              // 'Minsk', 'Grodno', 'Gomel'
+  tiers?: SubscriptionTier[] // ['pro', 'light']
+  team_roles?: TeamRole[]    // ['core', 'volunteer']
+  event_id?: number          // For inverse targeting (not registered)
+  user_ids?: number[]        // For custom targeting
+}
+
+export interface Broadcast {
+  id: number
+  title: string
+  message: string
+  message_type: 'text' | 'markdown'
+  deep_link_screen: string | null
+  deep_link_button_text: string | null
+
+  audience_type: BroadcastAudienceType
+  audience_config: BroadcastAudienceConfig
+  exclude_banned: boolean
+
+  status: BroadcastStatus
+  scheduled_at: string | null
+  started_at: string | null
+  completed_at: string | null
+
+  total_recipients: number
+  sent_count: number
+  delivered_count: number
+  failed_count: number
+
+  created_by: number
+  created_at: string
+  updated_at: string
+}
+
+export interface BroadcastRecipient {
+  id: number
+  broadcast_id: number
+  user_id: number
+  tg_user_id: number
+  status: RecipientStatus
+  message_id: number | null
+  error_message: string | null
+  queued_at: string
+  sent_at: string | null
+
+  // Joined data
+  user?: {
+    first_name: string | null
+    last_name: string | null
+    username: string | null
+  }
+}
+
+export interface BroadcastTemplate {
+  id: number
+  name: string
+  title: string
+  message: string
+  deep_link_screen: string | null
+  deep_link_button_text: string | null
+  use_count: number
+  created_by: number
+  created_at: string
+  updated_at: string
+}
+
+export interface BroadcastStats {
+  total: number
+  pending: number
+  sent: number
+  delivered: number
+  failed: number
+  deliveryRate: number
+}
+
+// Deep link screens for broadcasts
+export type DeepLinkScreen = 'home' | 'events' | 'network' | 'matches' | 'achievements' | 'profile' | 'notifications'
+
+export const DEEP_LINK_SCREENS: { value: DeepLinkScreen; label: string }[] = [
+  { value: 'home', label: 'Главная' },
+  { value: 'events', label: 'События' },
+  { value: 'network', label: 'Нетворкинг' },
+  { value: 'matches', label: 'Контакты' },
+  { value: 'achievements', label: 'Достижения' },
+  { value: 'profile', label: 'Профиль' },
+  { value: 'notifications', label: 'Уведомления' },
+]
+
+export const AUDIENCE_TYPE_LABELS: Record<BroadcastAudienceType, string> = {
+  all: 'Все пользователи',
+  city: 'По городу',
+  subscription: 'По подписке',
+  team_role: 'По роли в команде',
+  event_not_registered: 'Не зарегистрированы на событие',
+  custom: 'Выборочно',
+}
+
+export const BROADCAST_STATUS_CONFIG: Record<BroadcastStatus, { label: string; color: string }> = {
+  draft: { label: 'Черновик', color: 'bg-gray-500' },
+  scheduled: { label: 'Запланировано', color: 'bg-blue-500' },
+  sending: { label: 'Отправляется', color: 'bg-yellow-500' },
+  completed: { label: 'Завершено', color: 'bg-green-500' },
+  cancelled: { label: 'Отменено', color: 'bg-gray-500' },
+  failed: { label: 'Ошибка', color: 'bg-red-500' },
+}

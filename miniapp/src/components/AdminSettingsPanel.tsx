@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { isInviteRequired, updateAppSetting, getActiveEvents } from '@/lib/supabase'
-import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw } from 'lucide-react'
+import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw, BookOpen, Send } from 'lucide-react'
 import { UserRoleManager } from './UserRoleManager'
 import { AnalyticsPanel } from './AnalyticsPanel'
+import { LearningAdminPanel } from './LearningAdminPanel'
+import { BroadcastPanel } from './BroadcastPanel'
 import { Event } from '@/types'
 import { hapticFeedback, shareUrl } from '@/lib/telegram'
 
@@ -21,6 +23,8 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     const [showRoleManager, setShowRoleManager] = useState(false)
     const [showEventLinks, setShowEventLinks] = useState(false)
     const [showAnalytics, setShowAnalytics] = useState(false)
+    const [showLearningAdmin, setShowLearningAdmin] = useState(false)
+    const [showBroadcast, setShowBroadcast] = useState(false)
     const [events, setEvents] = useState<Event[]>([])
     const [eventsLoading, setEventsLoading] = useState(false)
 
@@ -203,6 +207,44 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                         </div>
                     </button>
 
+                    {/* Learning Admin */}
+                    <button
+                        onClick={() => setShowLearningAdmin(true)}
+                        className="w-full p-4 rounded-xl bg-bg border border-border hover:border-accent/50 transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-accent/20 text-accent flex items-center justify-center">
+                                    <BookOpen size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Управление курсами</div>
+                                    <div className="text-xs text-gray-400">Вкл/выкл курсы и уроки</div>
+                                </div>
+                            </div>
+                            <div className="text-accent">→</div>
+                        </div>
+                    </button>
+
+                    {/* Broadcast */}
+                    <button
+                        onClick={() => setShowBroadcast(true)}
+                        className="w-full p-4 rounded-xl bg-bg border border-border hover:border-blue-500/50 transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-500 flex items-center justify-center">
+                                    <Send size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Рассылка</div>
+                                    <div className="text-xs text-gray-400">Push-уведомления пользователям</div>
+                                </div>
+                            </div>
+                            <div className="text-blue-500">→</div>
+                        </div>
+                    </button>
+
                     {/* Reset Easter Eggs */}
                     <button
                         onClick={() => {
@@ -239,6 +281,16 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
             {/* Analytics Panel */}
             {showAnalytics && (
                 <AnalyticsPanel onClose={() => setShowAnalytics(false)} />
+            )}
+
+            {/* Learning Admin Panel */}
+            {showLearningAdmin && (
+                <LearningAdminPanel onClose={() => setShowLearningAdmin(false)} />
+            )}
+
+            {/* Broadcast Panel */}
+            {showBroadcast && (
+                <BroadcastPanel onClose={() => setShowBroadcast(false)} />
             )}
 
             {/* Event Links Panel */}

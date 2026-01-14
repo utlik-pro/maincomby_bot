@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User, TeamRole, ProfilePhoto, PhotoUploadResult, SwipeCardProfile, UserProfile, Speaker, EventSpeaker, EventProgramItem } from '@/types'
+import type { CustomBadge, UserBadge, Company, UserCompany, UserLink, LinkType, Event, AvatarSkin, UserAvatarSkin, SkinPermission, AppSetting, AppSettingKey, Invite, User, TeamRole, ProfilePhoto, PhotoUploadResult, SwipeCardProfile, UserProfile, Speaker, EventSpeaker, EventProgramItem, Course, Lesson, UserLessonProgress, LessonBlock, Broadcast, BroadcastRecipient, BroadcastTemplate, BroadcastAudienceType, BroadcastAudienceConfig, BroadcastStatus } from '@/types'
 import { sendPushNotification, callEdgeFunction, type NotificationType as TelegramNotificationType } from './telegram'
 
 
@@ -3562,4 +3562,634 @@ export async function getShareStats(): Promise<{
 // Get show_funnel_for_team setting specifically
 export async function getShowFunnelForTeam(): Promise<boolean> {
   return getAppSetting('show_funnel_for_team', true)
+}
+
+// ============ LEARNING SYSTEM HELPERS ============
+
+// Get all enabled courses (for users)
+export async function getEnabledCourses(): Promise<Course[]> {
+  const { data, error } = await getSupabase()
+    .from('courses')
+    .select('*')
+    .eq('is_enabled', true)
+    .order('sort_order')
+
+  if (error) throw error
+  return data || []
+}
+
+// Get all courses (for admin)
+export async function getAllCourses(): Promise<Course[]> {
+  const { data, error } = await getSupabase()
+    .from('courses')
+    .select('*')
+    .order('sort_order')
+
+  if (error) throw error
+  return data || []
+}
+
+// Get enabled lessons for a course (for users)
+export async function getCourseLessons(courseId: string): Promise<Lesson[]> {
+  const { data, error } = await getSupabase()
+    .from('lessons')
+    .select('*')
+    .eq('course_id', courseId)
+    .eq('is_enabled', true)
+    .order('sort_order')
+
+  if (error) throw error
+  return (data || []).map(lesson => ({
+    ...lesson,
+    content: lesson.content as LessonBlock[]
+  }))
+}
+
+// Get all lessons for a course (for admin)
+export async function getAllCourseLessons(courseId: string): Promise<Lesson[]> {
+  const { data, error } = await getSupabase()
+    .from('lessons')
+    .select('*')
+    .eq('course_id', courseId)
+    .order('sort_order')
+
+  if (error) throw error
+  return (data || []).map(lesson => ({
+    ...lesson,
+    content: lesson.content as LessonBlock[]
+  }))
+}
+
+// Get a single lesson by ID
+export async function getLesson(lessonId: string): Promise<Lesson | null> {
+  const { data, error } = await getSupabase()
+    .from('lessons')
+    .select('*')
+    .eq('id', lessonId)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null // Not found
+    throw error
+  }
+
+  return data ? {
+    ...data,
+    content: data.content as LessonBlock[]
+  } : null
+}
+
+// Get user's lesson progress
+export async function getUserLessonProgress(userId: number): Promise<UserLessonProgress[]> {
+  const { data, error } = await getSupabase()
+    .from('user_lesson_progress')
+    .select('*')
+    .eq('user_id', userId)
+
+  if (error) throw error
+  return data || []
+}
+
+// Mark a lesson as completed
+export async function markLessonComplete(userId: number, lessonId: string): Promise<UserLessonProgress> {
+  const { data, error } = await getSupabase()
+    .from('user_lesson_progress')
+    .upsert({
+      user_id: userId,
+      lesson_id: lessonId,
+      completed_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// Toggle course enabled status (admin)
+export async function toggleCourseEnabled(courseId: string, enabled: boolean): Promise<void> {
+  const { error } = await getSupabase()
+    .from('courses')
+    .update({
+      is_enabled: enabled,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', courseId)
+
+  if (error) throw error
+}
+
+// Toggle lesson enabled status (admin)
+export async function toggleLessonEnabled(lessonId: string, enabled: boolean): Promise<void> {
+  const { error } = await getSupabase()
+    .from('lessons')
+    .update({
+      is_enabled: enabled,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', lessonId)
+
+  if (error) throw error
+}
+
+// Get course statistics (for admin/landing)
+export async function getCourseStats(courseId: string): Promise<{
+  totalLessons: number
+  enabledLessons: number
+  totalDuration: number
+}> {
+  const { data, error } = await getSupabase()
+    .from('lessons')
+    .select('is_enabled, duration_minutes')
+    .eq('course_id', courseId)
+
+  if (error) throw error
+
+  const lessons = data || []
+  return {
+    totalLessons: lessons.length,
+    enabledLessons: lessons.filter(l => l.is_enabled).length,
+    totalDuration: lessons
+      .filter(l => l.is_enabled)
+      .reduce((sum, l) => sum + (l.duration_minutes || 0), 0)
+  }
+}
+
+// Get course with all lessons and user progress
+export async function getCourseWithProgress(
+  courseId: string,
+  userId: number
+): Promise<{
+  course: Course
+  lessons: Array<Lesson & { isCompleted: boolean; completedAt?: string }>
+  completedCount: number
+  totalDuration: number
+} | null> {
+  // Get course
+  const { data: course, error: courseError } = await getSupabase()
+    .from('courses')
+    .select('*')
+    .eq('id', courseId)
+    .single()
+
+  if (courseError || !course) return null
+
+  // Get lessons
+  const lessons = await getCourseLessons(courseId)
+
+  // Get user progress
+  const progress = await getUserLessonProgress(userId)
+  const progressMap = new Map(progress.map(p => [p.lesson_id, p.completed_at]))
+
+  // Combine lessons with progress
+  const lessonsWithProgress = lessons.map(lesson => ({
+    ...lesson,
+    isCompleted: progressMap.has(lesson.id),
+    completedAt: progressMap.get(lesson.id)
+  }))
+
+  return {
+    course,
+    lessons: lessonsWithProgress,
+    completedCount: lessonsWithProgress.filter(l => l.isCompleted).length,
+    totalDuration: lessons.reduce((sum, l) => sum + l.duration_minutes, 0)
+  }
+}
+
+// ============================================
+// BROADCAST SYSTEM
+// ============================================
+
+/**
+ * Get users by audience criteria for broadcast targeting
+ */
+export async function getBroadcastAudience(
+  audienceType: BroadcastAudienceType,
+  config: BroadcastAudienceConfig,
+  excludeBanned: boolean = true
+): Promise<{ user_id: number; tg_user_id: number }[]> {
+  const supabase = getSupabase()
+
+  // Start with base query
+  let baseQuery = supabase
+    .from('bot_users')
+    .select('id, tg_user_id')
+
+  // Always exclude banned users if requested
+  if (excludeBanned) {
+    baseQuery = baseQuery.eq('banned', false)
+  }
+
+  switch (audienceType) {
+    case 'all': {
+      const { data, error } = await baseQuery
+      if (error) throw error
+      return (data || []).map(u => ({ user_id: u.id, tg_user_id: u.tg_user_id }))
+    }
+
+    case 'city': {
+      if (!config.city) return []
+
+      // Get users with profiles in the specified city
+      const { data: profiles } = await supabase
+        .from('bot_profiles')
+        .select('user_id')
+        .eq('city', config.city)
+
+      const userIds = profiles?.map(p => p.user_id) || []
+      if (userIds.length === 0) return []
+
+      const { data, error } = await baseQuery.in('id', userIds)
+      if (error) throw error
+      return (data || []).map(u => ({ user_id: u.id, tg_user_id: u.tg_user_id }))
+    }
+
+    case 'subscription': {
+      if (!config.tiers || config.tiers.length === 0) return []
+
+      const { data, error } = await baseQuery.in('subscription_tier', config.tiers)
+      if (error) throw error
+      return (data || []).map(u => ({ user_id: u.id, tg_user_id: u.tg_user_id }))
+    }
+
+    case 'team_role': {
+      if (!config.team_roles || config.team_roles.length === 0) return []
+
+      const { data, error } = await baseQuery.in('team_role', config.team_roles)
+      if (error) throw error
+      return (data || []).map(u => ({ user_id: u.id, tg_user_id: u.tg_user_id }))
+    }
+
+    case 'event_not_registered': {
+      if (!config.event_id) return []
+
+      // Get all users who ARE registered for this event
+      const { data: registrations } = await supabase
+        .from('bot_registrations')
+        .select('user_id')
+        .eq('event_id', config.event_id)
+        .neq('status', 'cancelled')
+
+      const registeredIds = new Set(registrations?.map(r => r.user_id) || [])
+
+      // Get all non-banned users
+      const { data: allUsers, error } = await baseQuery
+      if (error) throw error
+
+      // Filter out registered users
+      return (allUsers || [])
+        .filter(u => !registeredIds.has(u.id))
+        .map(u => ({ user_id: u.id, tg_user_id: u.tg_user_id }))
+    }
+
+    case 'custom': {
+      if (!config.user_ids || config.user_ids.length === 0) return []
+
+      const { data, error } = await baseQuery.in('id', config.user_ids)
+      if (error) throw error
+      return (data || []).map(u => ({ user_id: u.id, tg_user_id: u.tg_user_id }))
+    }
+
+    default:
+      return []
+  }
+}
+
+/**
+ * Get count of audience (for preview)
+ */
+export async function getBroadcastAudienceCount(
+  audienceType: BroadcastAudienceType,
+  config: BroadcastAudienceConfig,
+  excludeBanned: boolean = true
+): Promise<number> {
+  const audience = await getBroadcastAudience(audienceType, config, excludeBanned)
+  return audience.length
+}
+
+/**
+ * Create a new broadcast
+ */
+export async function createBroadcast(broadcast: {
+  title: string
+  message: string
+  message_type?: 'text' | 'markdown'
+  deep_link_screen?: string | null
+  deep_link_button_text?: string | null
+  audience_type: BroadcastAudienceType
+  audience_config: BroadcastAudienceConfig
+  exclude_banned?: boolean
+  scheduled_at?: string | null
+  created_by: number
+}): Promise<Broadcast> {
+  const supabase = getSupabase()
+
+  const status: BroadcastStatus = broadcast.scheduled_at ? 'scheduled' : 'draft'
+
+  const { data, error } = await supabase
+    .from('broadcasts')
+    .insert({
+      title: broadcast.title,
+      message: broadcast.message,
+      message_type: broadcast.message_type || 'text',
+      deep_link_screen: broadcast.deep_link_screen || null,
+      deep_link_button_text: broadcast.deep_link_button_text || null,
+      audience_type: broadcast.audience_type,
+      audience_config: broadcast.audience_config,
+      exclude_banned: broadcast.exclude_banned ?? true,
+      scheduled_at: broadcast.scheduled_at || null,
+      status,
+      created_by: broadcast.created_by
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as Broadcast
+}
+
+/**
+ * Get broadcast by ID
+ */
+export async function getBroadcastById(broadcastId: number): Promise<Broadcast | null> {
+  const { data, error } = await getSupabase()
+    .from('broadcasts')
+    .select('*')
+    .eq('id', broadcastId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data as Broadcast | null
+}
+
+/**
+ * Get all broadcasts with pagination
+ */
+export async function getBroadcasts(
+  limit = 20,
+  offset = 0,
+  status?: BroadcastStatus
+): Promise<Broadcast[]> {
+  const supabase = getSupabase()
+
+  let query = supabase
+    .from('broadcasts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (status) {
+    query = query.eq('status', status)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return (data || []) as Broadcast[]
+}
+
+/**
+ * Update broadcast status
+ */
+export async function updateBroadcastStatus(
+  broadcastId: number,
+  status: BroadcastStatus,
+  updates?: Partial<Broadcast>
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from('broadcasts')
+    .update({
+      status,
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', broadcastId)
+
+  if (error) throw error
+}
+
+/**
+ * Queue recipients for a broadcast
+ */
+export async function queueBroadcastRecipients(
+  broadcastId: number,
+  recipients: { user_id: number; tg_user_id: number }[]
+): Promise<void> {
+  const supabase = getSupabase()
+
+  // Batch insert recipients (500 at a time)
+  const batchSize = 500
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    const batch = recipients.slice(i, i + batchSize).map(r => ({
+      broadcast_id: broadcastId,
+      user_id: r.user_id,
+      tg_user_id: r.tg_user_id,
+      status: 'pending'
+    }))
+
+    const { error } = await supabase
+      .from('broadcast_recipients')
+      .insert(batch)
+
+    if (error) throw error
+  }
+
+  // Update total recipients count
+  await supabase
+    .from('broadcasts')
+    .update({ total_recipients: recipients.length })
+    .eq('id', broadcastId)
+}
+
+/**
+ * Get pending recipients for processing
+ */
+export async function getPendingRecipients(
+  broadcastId: number,
+  limit = 30
+): Promise<BroadcastRecipient[]> {
+  const { data, error } = await getSupabase()
+    .from('broadcast_recipients')
+    .select('*')
+    .eq('broadcast_id', broadcastId)
+    .eq('status', 'pending')
+    .limit(limit)
+
+  if (error) throw error
+  return (data || []) as BroadcastRecipient[]
+}
+
+/**
+ * Update recipient status after send attempt
+ */
+export async function updateRecipientStatus(
+  recipientId: number,
+  status: 'sent' | 'delivered' | 'failed',
+  messageId?: number,
+  errorMessage?: string
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from('broadcast_recipients')
+    .update({
+      status,
+      message_id: messageId || null,
+      error_message: errorMessage || null,
+      sent_at: new Date().toISOString()
+    })
+    .eq('id', recipientId)
+
+  if (error) throw error
+}
+
+/**
+ * Get broadcast recipients with user data
+ */
+export async function getBroadcastRecipients(
+  broadcastId: number,
+  status?: string,
+  limit = 50,
+  offset = 0
+): Promise<BroadcastRecipient[]> {
+  const supabase = getSupabase()
+
+  let query = supabase
+    .from('broadcast_recipients')
+    .select(`
+      *,
+      user:bot_users(first_name, last_name, username)
+    `)
+    .eq('broadcast_id', broadcastId)
+    .order('sent_at', { ascending: false, nullsFirst: false })
+    .range(offset, offset + limit - 1)
+
+  if (status) {
+    query = query.eq('status', status)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return (data || []) as BroadcastRecipient[]
+}
+
+/**
+ * Get scheduled broadcasts that need processing
+ */
+export async function getScheduledBroadcasts(): Promise<Broadcast[]> {
+  const { data, error } = await getSupabase()
+    .from('broadcasts')
+    .select('*')
+    .eq('status', 'scheduled')
+    .lte('scheduled_at', new Date().toISOString())
+
+  if (error) throw error
+  return (data || []) as Broadcast[]
+}
+
+/**
+ * Cancel a broadcast
+ */
+export async function cancelBroadcast(broadcastId: number): Promise<void> {
+  await updateBroadcastStatus(broadcastId, 'cancelled')
+}
+
+/**
+ * Delete a broadcast and its recipients
+ */
+export async function deleteBroadcast(broadcastId: number): Promise<void> {
+  const { error } = await getSupabase()
+    .from('broadcasts')
+    .delete()
+    .eq('id', broadcastId)
+
+  if (error) throw error
+}
+
+// ============================================
+// BROADCAST TEMPLATES
+// ============================================
+
+/**
+ * Get all broadcast templates
+ */
+export async function getBroadcastTemplates(): Promise<BroadcastTemplate[]> {
+  const { data, error } = await getSupabase()
+    .from('broadcast_templates')
+    .select('*')
+    .order('use_count', { ascending: false })
+
+  if (error) throw error
+  return (data || []) as BroadcastTemplate[]
+}
+
+/**
+ * Create a broadcast template
+ */
+export async function createBroadcastTemplate(template: {
+  name: string
+  title: string
+  message: string
+  deep_link_screen?: string | null
+  deep_link_button_text?: string | null
+  created_by: number
+}): Promise<BroadcastTemplate> {
+  const { data, error } = await getSupabase()
+    .from('broadcast_templates')
+    .insert({
+      name: template.name,
+      title: template.title,
+      message: template.message,
+      deep_link_screen: template.deep_link_screen || null,
+      deep_link_button_text: template.deep_link_button_text || null,
+      created_by: template.created_by
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as BroadcastTemplate
+}
+
+/**
+ * Increment template use count
+ */
+export async function incrementTemplateUseCount(templateId: number): Promise<void> {
+  const { data: template } = await getSupabase()
+    .from('broadcast_templates')
+    .select('use_count')
+    .eq('id', templateId)
+    .single()
+
+  if (template) {
+    await getSupabase()
+      .from('broadcast_templates')
+      .update({ use_count: (template.use_count || 0) + 1 })
+      .eq('id', templateId)
+  }
+}
+
+/**
+ * Delete a broadcast template
+ */
+export async function deleteBroadcastTemplate(templateId: number): Promise<void> {
+  const { error } = await getSupabase()
+    .from('broadcast_templates')
+    .delete()
+    .eq('id', templateId)
+
+  if (error) throw error
+}
+
+/**
+ * Get distinct cities from profiles (for audience picker)
+ */
+export async function getDistinctCities(): Promise<string[]> {
+  const { data, error } = await getSupabase()
+    .from('bot_profiles')
+    .select('city')
+    .not('city', 'is', null)
+
+  if (error) throw error
+
+  // Get unique cities
+  const cities = [...new Set((data || []).map(p => p.city).filter(Boolean))]
+  return cities.sort()
 }
