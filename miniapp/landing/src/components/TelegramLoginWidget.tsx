@@ -45,11 +45,11 @@ export const TelegramLoginWidget: React.FC<TelegramLoginWidgetProps> = ({
     useEffect(() => {
         if (!ref.current) return
 
-        // Define callback function in global scope
-        window.TelegramLoginWidget = {
-            dataOnauth: (user: TelegramUser) => {
-                onAuth(user)
-            },
+        // Define callback function in global scope with a flat name
+        // @ts-ignore
+        window.onTelegramAuth = (user: TelegramUser) => {
+            alert(`Step 0: Widget Callback Triggered for ${user.first_name}`)
+            onAuth(user)
         }
 
         const script = document.createElement('script')
@@ -59,7 +59,9 @@ export const TelegramLoginWidget: React.FC<TelegramLoginWidgetProps> = ({
         if (cornerRadius) script.setAttribute('data-radius', cornerRadius.toString())
         if (requestAccess) script.setAttribute('data-request-access', 'write')
         if (usePic === false) script.setAttribute('data-userpic', 'false')
-        script.setAttribute('data-onauth', 'TelegramLoginWidget.dataOnauth(user)')
+
+        // Use the flat function name
+        script.setAttribute('data-onauth', 'onTelegramAuth(user)')
         script.async = true
 
         ref.current.appendChild(script)
