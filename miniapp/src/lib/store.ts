@@ -45,7 +45,7 @@ interface AppState {
   isLoading: boolean
 
   // UI state
-  activeTab: 'home' | 'events' | 'network' | 'achievements' | 'profile'
+  activeTab: 'home' | 'events' | 'learn' | 'network' | 'achievements' | 'profile'
   isVolunteerMode: boolean
   onboardingVersion: number
   lastSeenAppVersion: number // For "What's New" modal

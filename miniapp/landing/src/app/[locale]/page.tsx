@@ -9,6 +9,7 @@ import { TargetAudience } from '@/components/sections/TargetAudience'
 import { HowItWorks } from '@/components/sections/HowItWorks'
 import { Monetization } from '@/components/sections/Monetization'
 import { IntegrationPricing } from '@/components/sections/IntegrationPricing'
+import { Learn } from '@/components/sections/Learn'
 import { FAQ } from '@/components/sections/FAQ'
 import { Footer } from '@/components/sections/Footer'
 import { Navigation } from '@/components/Navigation'
@@ -34,6 +35,7 @@ export default async function LocalePage({
             <Monetization dict={dict.monetization} />
             <HowItWorks dict={dict.howItWorks} />
             <IntegrationPricing dict={dict.integration} />
+            <Learn dict={dict.learn} />
             <FAQ dict={dict.faq} />
             <Footer dict={dict.footer} />
         </main>

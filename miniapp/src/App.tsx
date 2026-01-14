@@ -17,6 +17,7 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 // Screen imports (lazy loaded)
 const HomeScreen = React.lazy(() => import('@/screens/HomeScreen'))
 const EventsScreen = React.lazy(() => import('@/screens/EventsScreen'))
+const LearnScreen = React.lazy(() => import('@/screens/LearnScreen'))
 const NetworkScreen = React.lazy(() => import('@/screens/NetworkScreen'))
 const AchievementsScreen = React.lazy(() => import('@/screens/AchievementsScreen'))
 const ProfileScreen = React.lazy(() => import('@/screens/ProfileScreen'))
@@ -850,6 +851,8 @@ const App: React.FC = () => {
         return <HomeScreen />
       case 'events':
         return <EventsScreen />
+      case 'learn':
+        return <LearnScreen />
       case 'network':
         return <NetworkScreen />
       case 'achievements':

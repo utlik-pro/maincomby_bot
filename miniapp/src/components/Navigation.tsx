@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
-import { Home, Calendar, Trophy, User } from 'lucide-react'
+import { Home, Calendar, Trophy, User, GraduationCap } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
 import { getActiveEvents } from '@/lib/supabase'
@@ -11,6 +11,7 @@ import { useDoubleTapEasterEgg } from '@/lib/easterEggs'
 const tabs = [
   { id: 'home' as const, icon: Home, label: 'Главная' },
   { id: 'events' as const, icon: Calendar, label: 'События' },
+  { id: 'learn' as const, icon: GraduationCap, label: 'Обучение' },
   // { id: 'network' as const, icon: Flame, label: 'Нетворк' }, // Coming in v2
   { id: 'achievements' as const, icon: Trophy, label: 'Награды' },
   { id: 'profile' as const, icon: User, label: 'Профиль' },
