@@ -52,6 +52,8 @@ export async function generateStaticParams() {
     return [{ locale: 'ru' }, { locale: 'en' }]
 }
 
+import { AuthProvider } from "@/context/AuthContext";
+
 export default async function LocaleLayout({
     children,
     params,
@@ -62,19 +64,21 @@ export default async function LocaleLayout({
     const { locale } = await params;
 
     return (
-        <html lang={locale} className="dark">
+        <html lang={locale} className="dark" data-scroll-behavior="smooth">
             <head>
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
             </head>
             <body className="antialiased">
-                <LoadingScreen />
-                <ScrollProgress />
-                <Particles />
-                <UpdateBanner />
-                {children}
-                <BackToTop />
+                <AuthProvider>
+                    <LoadingScreen />
+                    <ScrollProgress />
+                    <Particles />
+                    <UpdateBanner />
+                    {children}
+                    <BackToTop />
+                </AuthProvider>
             </body>
         </html>
     );

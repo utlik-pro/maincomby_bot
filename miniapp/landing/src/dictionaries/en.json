@@ -2,13 +2,20 @@
     "hero": {
         "title": "Launch Your App",
         "titleHighlight": "for",
-        "rotatingWords": ["Business", "Networking", "Bloggers", "Community", "Clubs"],
+        "rotatingWords": [
+            "Business",
+            "Networking",
+            "Bloggers",
+            "Community",
+            "Clubs"
+        ],
         "subtitle": "Ready-made platform for networking, events and monetization. No development needed — just customize for your brand",
         "cta": "Request Demo",
         "ctaSecondary": "See Example"
     },
     "nav": {
         "features": "Features",
+        "courses": "Courses",
         "howItWorks": "How It Works",
         "pricing": "Pricing",
         "faq": "FAQ"
@@ -260,22 +267,38 @@
             {
                 "title": "Professional Communities",
                 "description": "IT communities, entrepreneur clubs, professional associations",
-                "examples": ["IT Meetups", "Business Clubs", "HR Communities"]
+                "examples": [
+                    "IT Meetups",
+                    "Business Clubs",
+                    "HR Communities"
+                ]
             },
             {
                 "title": "Educational Projects",
                 "description": "Online schools, courses, accelerators with strong community",
-                "examples": ["Edtech", "Bootcamps", "Accelerators"]
+                "examples": [
+                    "Edtech",
+                    "Bootcamps",
+                    "Accelerators"
+                ]
             },
             {
                 "title": "Conferences & Events",
                 "description": "Event organizers who want to build long-term community",
-                "examples": ["Conferences", "Hackathons", "Workshops"]
+                "examples": [
+                    "Conferences",
+                    "Hackathons",
+                    "Workshops"
+                ]
             },
             {
                 "title": "Corporate Communities",
                 "description": "Company alumni clubs, internal networking platforms",
-                "examples": ["Alumni", "Employee Networks", "Partnerships"]
+                "examples": [
+                    "Alumni",
+                    "Employee Networks",
+                    "Partnerships"
+                ]
             }
         ]
     },

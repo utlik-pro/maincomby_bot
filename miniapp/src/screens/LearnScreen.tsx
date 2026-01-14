@@ -21,7 +21,7 @@ type ViewState =
   | { type: 'lesson'; course: Course; lesson: Lesson }
 
 const LearnScreen: React.FC = () => {
-  const { user } = useAppStore()
+  const { user, deepLinkTarget, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -32,6 +32,19 @@ const LearnScreen: React.FC = () => {
     queryKey: ['courses'],
     queryFn: getEnabledCourses,
   })
+
+  // Handle deep links
+  React.useEffect(() => {
+    if (deepLinkTarget && deepLinkTarget.startsWith('course_') && courses.length > 0) {
+      const courseId = deepLinkTarget.replace('course_', '')
+      const course = courses.find((c) => c.id === courseId)
+
+      if (course) {
+        setViewState({ type: 'lessons', course })
+        setDeepLinkTarget(null) // Clear target
+      }
+    }
+  }, [deepLinkTarget, courses, setDeepLinkTarget])
 
   // Fetch user progress
   const { data: userProgress = [] } = useQuery({

@@ -725,7 +725,7 @@ const App: React.FC = () => {
         // Use sendBeacon for more reliable delivery
         navigator.sendBeacon?.('/api/end-session', JSON.stringify({ sessionId, userId: user.id }))
         // Also try normal end (may not complete)
-        endSession(sessionId, user.id).catch(() => {})
+        endSession(sessionId, user.id).catch(() => { })
       }
     }
 
@@ -788,6 +788,13 @@ const App: React.FC = () => {
           setDeepLinkTarget(`profile_${profileUserId}`)
           return
         }
+      }
+
+      // Handle course deep link: course_{courseId}
+      if (deepLinkValue.startsWith('course_')) {
+        setActiveTab('learn')
+        setDeepLinkTarget(deepLinkValue)
+        return
       }
 
       // Map parameter to tab
