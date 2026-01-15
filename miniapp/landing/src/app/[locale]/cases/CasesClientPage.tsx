@@ -170,6 +170,61 @@ export default function CasesClientPage({ dict, locale }: CasesClientPageProps) 
                 </div>
             </section>
 
+            {/* Partners Marquee */}
+            <section className="py-10 border-y border-white/5 bg-white/[0.02] overflow-hidden mb-8">
+                <div className="max-w-7xl mx-auto px-4 mb-8 text-center">
+                    <p className="text-sm text-gray-500 uppercase tracking-widest font-medium">
+                        {isRussian ? 'Нам доверяют лидеры рынка' : 'Trusted by market leaders'}
+                    </p>
+                </div>
+
+                <div className="relative flex overflow-x-hidden group">
+                    <div className="animate-marquee whitespace-nowrap flex items-center gap-16 px-8">
+                        {[
+                            { name: 'Belaz', logo: '/partners/belaz.png', h: 35 },
+                            { name: 'BelHard', logo: '/partners/belhard.png', h: 40 },
+                            { name: 'Na Svyazi', logo: '/partners/nasvyazi.png', h: 30 },
+                            { name: 'Zborka Labs', logo: '/partners/zborka.png', h: 35 },
+                            { name: 'Sky Cross', logo: '/partners/skycross.png', h: 55 },
+                        ].map((partner, i) => (
+                            <div
+                                key={i}
+                                className="relative grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer filter"
+                            >
+                                <Image
+                                    src={partner.logo}
+                                    alt={partner.name}
+                                    height={partner.h}
+                                    width={140}
+                                    className="object-contain w-auto h-auto max-h-12"
+                                />
+                            </div>
+                        ))}
+                        {/* Duplicate for loop */}
+                        {[
+                            { name: 'Belaz', logo: '/partners/belaz.png', h: 35 },
+                            { name: 'BelHard', logo: '/partners/belhard.png', h: 40 },
+                            { name: 'Na Svyazi', logo: '/partners/nasvyazi.png', h: 30 },
+                            { name: 'Zborka Labs', logo: '/partners/zborka.png', h: 35 },
+                            { name: 'Sky Cross', logo: '/partners/skycross.png', h: 55 },
+                        ].map((partner, i) => (
+                            <div
+                                key={`dup-${i}`}
+                                className="relative grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer filter"
+                            >
+                                <Image
+                                    src={partner.logo}
+                                    alt={partner.name}
+                                    height={partner.h}
+                                    width={140}
+                                    className="object-contain w-auto h-auto max-h-12"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* Cases Grid */}
             <section className="py-16 px-4">
                 <div className="max-w-6xl mx-auto">
