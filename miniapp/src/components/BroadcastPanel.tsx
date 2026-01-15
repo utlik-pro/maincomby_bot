@@ -294,7 +294,7 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Заголовок сообщения"
-          className="w-full bg-bg-secondary border border-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+          className="w-full bg-[#1a1a1a] border border-border rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-accent"
           maxLength={100}
         />
         <div className="text-xs text-gray-500 mt-1 text-right">{title.length}/100</div>
@@ -307,7 +307,7 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Текст рассылки..."
-          className="w-full bg-bg-secondary border border-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 min-h-[120px] resize-none"
+          className="w-full bg-[#1a1a1a] border border-border rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-accent min-h-[120px] resize-none"
           maxLength={1000}
         />
         <div className="text-xs text-gray-500 mt-1 text-right">{message.length}/1000</div>
