@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.6] - 2026-01-15
+
+[0;34mGenerating changelog from v1.1.5 to HEAD[0m
+### Added
+- implement Telegram Login and Fix Deep Links
+- add learning module with prompting basics course
+- add broadcast module for event notifications
+
+### Fixed
+- refactor telegram widget callback to flat global function
+- resolve TypeScript errors in learning system
+
+### Changed
+- add verbose debugging for login flow
 ## [1.1.5] - 2026-01-13
 
 [0;34mGenerating changelog from v1.1.4 to HEAD[0m

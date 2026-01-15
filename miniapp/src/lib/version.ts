@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.5'
+export const APP_VERSION = '1.1.6'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 9
+export const CURRENT_APP_VERSION = 10
 
 export interface ReleaseHighlight {
   title: string
@@ -29,23 +29,22 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.5',
-  date: '2026-01-13',
-  summary: 'Исправления и улучшения v1.1.5',
+  version: '1.1.6',
+  date: '2026-01-15',
+  summary: 'Исправления и улучшения v1.1.6',
   highlights: [
-    { title: 'add event funnel stats fo...', description: 'Подробнее в changelog' },
-    { title: 'add speaker ratings and a...', description: 'Подробнее в changelog' },
-    { title: 'add event funnel analytic...', description: 'Подробнее в changelog' },
+    { title: 'implement Telegram Login ...', description: 'Подробнее в changelog' },
+    { title: 'add learning module with ...', description: 'Подробнее в changelog' },
+    { title: 'add broadcast module for ...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'add event funnel stats for team + leads/checkins modals',
-    'add speaker ratings and analytics',
-    'add event funnel analytics (registered, today, checked-in, cancelled)',
+    'implement Telegram Login and Fix Deep Links',
+    'add learning module with prompting basics course',
+    'add broadcast module for event notifications',
   ],
   fixes: [
-    'store funnel visibility setting in database for all users',
-    'hide leads/checkins tabs when toggle is off, add analytics tab',
-    'reset daily swipes counter on new day',
+    'refactor telegram widget callback to flat global function',
+    'resolve TypeScript errors in learning system',
   ],
 }
 
