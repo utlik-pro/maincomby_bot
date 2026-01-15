@@ -95,6 +95,30 @@ const casesData: CaseStudy[] = [
         testimonial: 'Мы не только сократили расходы в 10 раз, но и получили полный контроль над конфиденциальными данными наших совещаний.',
         testimonialEn: 'We not only cut costs by 10x but also gained full control over confidential data from our meetings.',
         color: '#16a34a'
+    },
+    {
+        id: 'a-100',
+        company: 'АЗС А-100',
+        companyEn: 'A-100 Gas Stations',
+        logo: '/cases/a100.png',
+        industry: 'Ритейл / АЗС',
+        industryEn: 'Retail / Gas Stations',
+        description: 'AI-ассистент для помощи сотрудникам в работе с корпоративной базой знаний и СЭД',
+        descriptionEn: 'AI assistant to help employees work with corporate knowledge base and document management system',
+        challenge: 'Долгая адаптация новых сотрудников (8 месяцев) и сложность поиска информации в регламентах',
+        challengeEn: 'Long adaptation of new employees (8 months) and difficulty finding information in regulations',
+        solution: 'Умный AI-поиск и ассистент, интегрированный с СЭД и внутренней базой знаний',
+        solutionEn: 'Smart AI search and assistant integrated with DMS and internal knowledge base',
+        results: [
+            { metric: 'Срок адаптации', metricEn: 'Adaptation period', value: '6 мес' },
+            { metric: 'Ускорение', metricEn: 'Speed up', value: '-25%' },
+            { metric: 'Скорость ответа', metricEn: 'Response speed', value: '< 10 сек' },
+        ],
+        launchDate: 'Февраль 2026',
+        launchDateEn: 'February 2026',
+        testimonial: 'Ассистент помогает новичкам находить ответы на сложные вопросы по регламентам за секунды, а не часы.',
+        testimonialEn: 'The assistant helps newcomers find answers to complex regulatory questions in seconds, not hours.',
+        color: '#84cc16' // Lime green matching logo
     }
 ]
 

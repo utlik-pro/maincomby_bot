@@ -877,6 +877,7 @@ export interface Broadcast {
   sent_count: number
   delivered_count: number
   failed_count: number
+  clicked_count: number
 
   created_by: number
   created_at: string
@@ -893,6 +894,7 @@ export interface BroadcastRecipient {
   error_message: string | null
   queued_at: string
   sent_at: string | null
+  clicked_at: string | null
 
   // Joined data
   user?: {
