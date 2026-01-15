@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Урок 4: Chain-of-Thought | PromptCraft</title>
+  <link rel="stylesheet" href="/courses/prompt-engineering/css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          PromptCraft
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 42%"></div>
+        </div>
+        <div class="progress-text">3 из 7 уроков</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">Основы промптинга</div>
+
+        <a href="index.html" class="nav-item">
+          <span class="nav-item-number">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9,22 9,12 15,12 15,22"/>
+            </svg>
+          </span>
+          Главная
+        </a>
+
+        <a href="lesson-1.html" class="nav-item completed" data-lesson="1">
+          <span class="nav-item-number">1</span>
+          Почему AI не понимает
+        </a>
+
+        <a href="lesson-2.html" class="nav-item completed" data-lesson="2">
+          <span class="nav-item-number">2</span>
+          Анатомия промпта
+        </a>
+
+        <a href="lesson-3.html" class="nav-item completed" data-lesson="3">
+          <span class="nav-item-number">3</span>
+          Роли и персоны
+        </a>
+
+        <a href="lesson-4.html" class="nav-item active" data-lesson="4">
+          <span class="nav-item-number">4</span>
+          Chain-of-Thought
+        </a>
+
+        <a href="lesson-5.html" class="nav-item" data-lesson="5">
+          <span class="nav-item-number">5</span>
+          Few-shot Learning
+        </a>
+
+        <a href="lesson-6.html" class="nav-item" data-lesson="6">
+          <span class="nav-item-number">6</span>
+          10 готовых промптов
+        </a>
+
+        <a href="project.html" class="nav-item" data-lesson="7">
+          <span class="nav-item-number">P</span>
+          Домашнее задание
+        </a>
+
+        <a href="/ru/learn" class="nav-item exit-btn">
+          <span class="nav-item-number">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16,17 21,12 16,7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </span>
+          Выйти из курса
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Overlay for mobile -->
+    <div class="overlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <button class="mobile-menu-btn" aria-label="Меню">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="breadcrumb">
+          <a href="index.html">Основы промптинга</a>
+          <span class="breadcrumb-separator">/</span>
+          <span>Урок 4</span>
+        </div>
+
+        <div class="header-actions">
+          <div class="mode-toggle" title="Переключить режим">
+            <div class="mode-toggle-switch"></div>
+            <span class="mode-toggle-label">Режим студента</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- Lesson Header -->
+        <div class="lesson-header">
+          <div class="lesson-meta">
+            <span class="lesson-number">Урок 4</span>
+            <span class="lesson-duration">20 минут</span>
+            <span class="lesson-badge" style="background: var(--warning); color: black;">Продвинутая техника</span>
+          </div>
+          <h1 class="lesson-title">Chain-of-Thought: Думай шаг за шагом</h1>
+          <div class="lesson-objectives">
+            <h4>Цели урока:</h4>
+            <ul>
+              <li>Понять, почему AI ошибается в сложных задачах</li>
+              <li>Изучить технику пошагового рассуждения (CoT)</li>
+              <li>Научиться применять CoT для разных задач</li>
+              <li>Увидеть реальную разницу в качестве ответов</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Teacher Note -->
+        <div class="teacher-note">
+          <div class="teacher-note-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+            Заметка для преподавателя
+          </div>
+          <div class="teacher-note-content">
+            <p><strong>Время:</strong> 20 минут</p>
+            <p><strong>Подход:</strong> Это самая "научная" техника курса. Покажите математический пример в реальном времени — студенты увидят, как AI "думает" вслух.</p>
+            <p><strong>Важно:</strong> Подчеркните, что CoT не нужен для простых задач. Это инструмент для сложных случаев.</p>
+          </div>
+        </div>
+
+        <!-- Section 1: The Problem -->
+        <h2>Проблема: AI ошибается в сложных задачах</h2>
+
+        <div class="card">
+          <div class="card-body">
+            <p>Языковые модели обучены предсказывать следующее слово. Они не "думают" — они генерируют вероятный текст.</p>
+
+            <p>Это приводит к проблеме: <strong>в сложных задачах AI может "перепрыгнуть" к ответу, минуя важные шаги рассуждения</strong>.</p>
+
+            <div class="alert alert-danger">
+              <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              <div>
+                <strong>Типичные ошибки:</strong> Неправильные расчёты, ошибки в логике, пропущенные факторы, поверхностный анализ.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: The Solution -->
+        <h2>Решение: Chain-of-Thought (CoT)</h2>
+
+        <div class="card" style="background: linear-gradient(135deg, rgba(200, 255, 0, 0.1) 0%, rgba(168, 217, 0, 0.05) 100%); border: 2px solid var(--primary);">
+          <div class="card-body" style="text-align: center;">
+            <h3 style="margin-bottom: 0.5rem; color: var(--primary);">Chain-of-Thought</h3>
+            <p style="font-size: 1.125rem; margin: 0; color: var(--text-primary);">
+              "Давай подумаем шаг за шагом"
+            </p>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+              Техника, которая заставляет AI показывать ход своих рассуждений
+            </p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-body">
+            <h4 style="color: var(--primary);">Почему это работает?</h4>
+            <p>Когда AI записывает промежуточные шаги:</p>
+            <ol>
+              <li>Каждый шаг становится частью контекста для следующего</li>
+              <li>AI "проверяет" себя на каждом этапе</li>
+              <li>Ошибки легче заметить и исправить</li>
+              <li>Результат становится более обоснованным</li>
+            </ol>
+
+            <div class="alert alert-success" style="margin-top: 1rem;">
+              <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <div>
+                <strong>Исследования показывают:</strong> CoT повышает точность на 30-40% в задачах на логику и математику.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Example -->
+        <h2>Пример: математическая задача</h2>
+
+        <div class="card" style="background: var(--bg-main); border: 1px solid var(--border); margin-bottom: 1rem;">
+          <div class="card-header">Задача</div>
+          <div class="card-body">
+            <p style="margin: 0;">
+              В магазине было 23 яблока. Утром купили 6 яблок, а после обеда привезли ещё 12. Сколько яблок стало в магазине?
+            </p>
+          </div>
+        </div>
+
+        <div class="comparison">
+          <div class="comparison-item bad">
+            <div class="comparison-header">
+              <span>Без CoT</span>
+            </div>
+            <pre style="font-size: 0.875rem; white-space: pre-wrap;">В магазине стало 29 яблок.
+
+<span style="color: var(--danger);">❌ Неправильно!</span></pre>
+          </div>
+          <div class="comparison-item good">
+            <div class="comparison-header">
+              <span>С CoT</span>
+            </div>
+            <pre style="font-size: 0.875rem; white-space: pre-wrap;">Давай решим шаг за шагом:
+
+1. Изначально было: 23 яблока
+2. Утром купили (забрали): 23 - 6 = 17
+3. После обеда привезли: 17 + 12 = 29
+
+Ответ: 29 яблок
+
+<span style="color: var(--success);">✓ Правильно!</span></pre>
+          </div>
+        </div>
+
+        <div class="alert alert-info" style="margin-top: 1rem;">
+          <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+          <div>
+            <strong>Заметили?</strong> В данном случае ответ одинаковый, но с CoT мы можем проверить логику. В более сложных задачах без CoT ошибки будут неизбежны.
+          </div>
+        </div>
+
+        <!-- Section 4: Trigger Phrases -->
+        <h2>Фразы-триггеры для CoT</h2>
+
+        <div class="prompt-example">
+          <div class="prompt-example-header">
+            <span>Варианты запроса CoT</span>
+          </div>
+          <pre>Давай подумаем шаг за шагом.
+
+Рассуждай вслух, показывая каждый шаг.
+
+Объясни своё рассуждение перед ответом.
+
+Сначала разбери задачу на части, потом реши.
+
+Проанализируй все факторы по порядку.
+
+Think step by step. (на английском тоже работает)</pre>
+        </div>
+
+        <!-- Section 5: When to Use -->
+        <h2>Когда использовать CoT?</h2>
+
+        <div class="card">
+          <div class="card-body" style="padding: 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--bg-main);">
+                  <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); color: var(--success);">✓ Используйте</th>
+                  <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); color: var(--danger);">✗ Не нужно</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary);">
+                    Математические расчёты
+                  </td>
+                  <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary);">
+                    Простые вопросы
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary);">
+                    Логические задачи
+                  </td>
+                  <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary);">
+                    Творческое письмо
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary);">
+                    Многофакторный анализ
+                  </td>
+                  <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary);">
+                    Перевод текста
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary);">
+                    Принятие решений
+                  </td>
+                  <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary);">
+                    Генерация списков
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-secondary);">
+                    Отладка кода
+                  </td>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-secondary);">
+                    Простое редактирование
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 6: Real Examples -->
+        <h2>Практические примеры CoT</h2>
+
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header" style="color: var(--primary);">Пример 1: Бизнес-решение</div>
+          <div class="card-body">
+            <div class="prompt-example" style="margin: 0;">
+              <div class="prompt-example-header">
+                <span>Промпт с CoT</span>
+              </div>
+              <pre>У меня стартап: приложение для изучения языков. Бюджет на маркетинг: $5000.
+Каналы: Instagram Ads, Google Ads, Influencer Marketing, Content Marketing.
+
+Как распределить бюджет?
+
+<span style="color: var(--primary);">Проанализируй каждый канал по критериям: стоимость привлечения,
+скорость результата, масштабируемость. Затем дай рекомендацию.</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header" style="color: var(--primary);">Пример 2: Отладка кода</div>
+          <div class="card-body">
+            <div class="prompt-example" style="margin: 0;">
+              <div class="prompt-example-header">
+                <span>Промпт с CoT</span>
+              </div>
+              <pre>Этот код должен сортировать массив, но выдаёт ошибку:
+
+```javascript
+function sort(arr) {
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] > arr[i+1]) {
+      [arr[i], arr[i+1]] = [arr[i+1], arr[i]];
+    }
+  }
+  return arr;
+}
+```
+
+<span style="color: var(--primary);">Пройди по коду строка за строкой. Объясни, что происходит на каждом шаге.
+Найди, где возникает ошибка.</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="color: var(--primary);">Пример 3: Сложный анализ</div>
+          <div class="card-body">
+            <div class="prompt-example" style="margin: 0;">
+              <div class="prompt-example-header">
+                <span>Промпт с CoT</span>
+              </div>
+              <pre>Компания: онлайн-магазин одежды.
+Проблема: конверсия упала с 3% до 1.5% за месяц.
+
+Что могло случиться?
+
+<span style="color: var(--primary);">Рассуждай пошагово:
+1. Перечисли все возможные причины падения конверсии
+2. Оцени вероятность каждой причины
+3. Предложи способ проверки каждой гипотезы
+4. Дай приоритизированный план действий</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 7: Zero-shot CoT -->
+        <h2>Бонус: Zero-shot CoT</h2>
+
+        <div class="card">
+          <div class="card-body">
+            <p>Самый простой способ активировать CoT — добавить в конец промпта:</p>
+
+            <div class="prompt-example" style="margin: 1rem 0 0;">
+              <pre style="text-align: center; font-size: 1.25rem; color: var(--primary);">"Let's think step by step."</pre>
+            </div>
+
+            <p style="margin-top: 1rem; color: var(--text-secondary);">
+              Это работает даже без примеров. AI понимает, что нужно показать рассуждение.
+            </p>
+          </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz">
+          <div class="quiz-header">
+            <div class="quiz-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <h3 class="quiz-title">Проверка понимания</h3>
+          </div>
+
+          <div class="quiz-question">Для какой задачи Chain-of-Thought будет наиболее полезен?</div>
+
+          <div class="quiz-options">
+            <div class="quiz-option" data-correct="false">
+              <span class="quiz-option-marker"></span>
+              <span>Написать поздравление с днём рождения</span>
+            </div>
+            <div class="quiz-option" data-correct="false">
+              <span class="quiz-option-marker"></span>
+              <span>Перевести абзац с английского на русский</span>
+            </div>
+            <div class="quiz-option" data-correct="true">
+              <span class="quiz-option-marker"></span>
+              <span>Проанализировать финансовый отчёт и найти проблемы</span>
+            </div>
+            <div class="quiz-option" data-correct="false">
+              <span class="quiz-option-marker"></span>
+              <span>Сгенерировать 10 идей для названия продукта</span>
+            </div>
+          </div>
+
+          <div class="quiz-feedback">
+            <span class="quiz-feedback-text"></span>
+          </div>
+
+          <div class="quiz-actions">
+            <button class="btn btn-primary quiz-check-btn">Проверить</button>
+            <button class="btn btn-secondary quiz-next-btn hidden">Далее</button>
+            <button class="btn btn-secondary quiz-reset-btn hidden">Попробовать снова</button>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-card">
+          <h3>Ключевые выводы</h3>
+          <ul>
+            <li><strong>Chain-of-Thought</strong> — техника пошагового рассуждения</li>
+            <li><strong>Ключевая фраза:</strong> "Давай подумаем шаг за шагом"</li>
+            <li><strong>Повышает точность</strong> на 30-40% в сложных задачах</li>
+            <li><strong>Используйте для:</strong> математики, логики, анализа, отладки</li>
+            <li><strong>Не нужно для:</strong> простых задач, творчества, переводов</li>
+            <li><strong>Zero-shot CoT:</strong> просто добавьте "Let's think step by step"</li>
+          </ul>
+        </div>
+
+        <!-- Mark Complete Button -->
+        <div style="text-align: center; margin: 2rem 0;">
+          <button class="btn btn-primary mark-complete-btn" data-lesson="4">
+            Завершить урок
+          </button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="lesson-nav">
+          <a href="lesson-3.html" class="nav-arrow nav-arrow-prev">
+            <span>←</span>
+            <div>
+              <div class="nav-arrow-label">Назад</div>
+              <div class="nav-arrow-title">Роли и персоны</div>
+            </div>
+          </a>
+          <a href="lesson-5.html" class="nav-arrow nav-arrow-next">
+            <div>
+              <div class="nav-arrow-label">Далее</div>
+              <div class="nav-arrow-title">Few-shot Learning</div>
+            </div>
+            <span>→</span>
+          </a>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/courses/prompt-engineering/js/admin.js"></script>
+  <script src="/courses/prompt-engineering/js/app.js"></script>
+  <script src="/courses/prompt-engineering/js/quiz.js"></script>
+</body>
+</html>

@@ -130,11 +130,11 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                             <div className="flex items-center gap-4">
                                 {course.isPublic ? (
                                     <a
-                                        href="#curriculum"
+                                        href={`/courses/${course.slug}/index.html`}
                                         className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
                                     >
                                         <Play size={20} />
-                                        {isRussian ? 'Смотреть программу' : 'View Curriculum'}
+                                        {isRussian ? 'Начать курс' : 'Start Course'}
                                     </a>
                                 ) : (
                                     <button
@@ -150,7 +150,7 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                             </div>
                             <p className="mt-4 text-xs text-center sm:text-left text-gray-500">
                                 {course.isPublic
-                                    ? (isRussian ? 'Открытый доступ — смотрите прямо здесь' : 'Open access — watch right here')
+                                    ? (isRussian ? 'Бесплатный курс — начните прямо сейчас' : 'Free course — start right now')
                                     : (isRussian ? 'Доступ откроется в Telegram боте сразу после старта' : 'Access will open in Telegram bot immediately after start')
                                 }
                             </p>
