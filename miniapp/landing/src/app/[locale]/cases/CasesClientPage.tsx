@@ -71,6 +71,30 @@ const casesData: CaseStudy[] = [
         testimonial: 'AI-агент полностью изменил наш подход к работе с клиентами. Теперь мы не упускаем ни одного запроса.',
         testimonialEn: 'AI agent completely changed our approach to working with clients. Now we don\'t miss a single request.',
         color: '#dc2626'
+    },
+    {
+        id: 'dana-holdings-transcription',
+        company: 'Dana Holdings',
+        companyEn: 'Dana Holdings',
+        logo: '/cases/dana-holdings.png',
+        industry: 'Корпоративные процессы',
+        industryEn: 'Corporate Processes',
+        description: 'Автоматизация протоколирования встреч и совещаний',
+        descriptionEn: 'Automation of meeting minutes and summarization',
+        challenge: 'Высокие расходы на сторонний сервис Plaud ($10,000/мес) и риски утечки данных',
+        challengeEn: 'High costs for third-party service Plaud ($10,000/mo) and data leakage risks',
+        solution: 'Локальный AI-транскрибатор и саммаризатор на собственных серверах компании',
+        solutionEn: 'Local AI transcription and summarization on company\'s own servers',
+        results: [
+            { metric: 'Расходы в месяц', metricEn: 'Monthly costs', value: '$1,000' },
+            { metric: 'Экономия', metricEn: 'Savings', value: '10x' },
+            { metric: 'Безопасность данных', metricEn: 'Data Security', value: '100%' },
+        ],
+        launchDate: 'Январь 2026',
+        launchDateEn: 'January 2026',
+        testimonial: 'Мы не только сократили расходы в 10 раз, но и получили полный контроль над конфиденциальными данными наших совещаний.',
+        testimonialEn: 'We not only cut costs by 10x but also gained full control over confidential data from our meetings.',
+        color: '#16a34a'
     }
 ]
 
