@@ -8,10 +8,11 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 // Rate limiting: Telegram allows ~30 msg/sec, we use 25 to be safe
 const BATCH_SIZE = 25
 
-type BroadcastAction = 'start' | 'process_batch' | 'check_scheduled'
+type BroadcastAction = 'start' | 'process_batch' | 'check_scheduled' | 'log_click'
 
 interface BroadcastRequest {
   broadcastId?: number
+  userId?: number
   action: BroadcastAction
 }
 
@@ -76,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    const { broadcastId, action } = req.body as BroadcastRequest
+    const { broadcastId, userId, action } = req.body as BroadcastRequest
 
     switch (action) {
       case 'start':
@@ -93,6 +94,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       case 'check_scheduled':
         return await checkScheduledBroadcasts(supabase, res)
+
+      case 'log_click':
+        if (!broadcastId || !userId) {
+          return res.status(400).json({ success: false, error: 'broadcastId and userId required' })
+        }
+        return await logBroadcastClick(supabase, broadcastId, userId, res)
 
       default:
         return res.status(400).json({ success: false, error: 'Invalid action' })
@@ -238,7 +245,8 @@ async function processBatch(
       broadcast.title,
       broadcast.message,
       broadcast.deep_link_screen,
-      broadcast.deep_link_button_text
+      broadcast.deep_link_button_text,
+      broadcastId
     )
 
     if (result.success) {
@@ -464,6 +472,32 @@ async function getAudienceUsers(
 }
 
 /**
+ * Log a broadcast click (prevents duplicate counting)
+ */
+async function logBroadcastClick(
+  supabase: ReturnType<typeof createClient<any, any>>,
+  broadcastId: number,
+  userId: number,
+  res: VercelResponse
+) {
+  // Use the database function to handle deduplication
+  const { data, error } = await supabase.rpc('log_broadcast_click', {
+    p_broadcast_id: broadcastId,
+    p_user_id: userId
+  })
+
+  if (error) {
+    console.error('Error logging click:', error)
+    return res.status(500).json({ success: false, error: 'Failed to log click' })
+  }
+
+  return res.status(200).json({
+    success: true,
+    logged: data === true
+  })
+}
+
+/**
  * Send a single Telegram message
  */
 async function sendTelegramMessage(
@@ -471,7 +505,8 @@ async function sendTelegramMessage(
   title: string,
   message: string,
   deepLinkScreen?: string | null,
-  buttonText?: string | null
+  buttonText?: string | null,
+  broadcastId?: number
 ): Promise<{ success: boolean; message_id?: number; error?: string }> {
   const text = `*${escapeMarkdown(title)}*\n\n${escapeMarkdown(message)}`
 
@@ -482,10 +517,14 @@ async function sendTelegramMessage(
   }
 
   if (deepLinkScreen) {
+    // Include broadcast_id in deep link for click tracking
+    const startParam = broadcastId
+      ? `${deepLinkScreen}_b${broadcastId}`
+      : deepLinkScreen
     body.reply_markup = {
       inline_keyboard: [[{
         text: buttonText || 'Открыть',
-        url: `https://t.me/maincomapp_bot?startapp=${deepLinkScreen}`
+        url: `https://t.me/maincomapp_bot?startapp=${startParam}`
       }]]
     }
   }

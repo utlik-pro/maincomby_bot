@@ -750,9 +750,26 @@ const App: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search)
     const screenParam = urlParams.get('screen')
 
-    const deepLinkValue = startParam || screenParam
+    let deepLinkValue = startParam || screenParam
 
     if (deepLinkValue) {
+      // Check for broadcast tracking suffix: screen_b{broadcastId}
+      const broadcastMatch = deepLinkValue.match(/^(.+)_b(\d+)$/)
+      if (broadcastMatch) {
+        const [, actualScreen, broadcastIdStr] = broadcastMatch
+        const broadcastId = parseInt(broadcastIdStr, 10)
+        // Log broadcast click asynchronously (don't await)
+        if (!isNaN(broadcastId) && user?.id) {
+          fetch('/api/send-broadcast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'log_click', broadcastId, userId: user.id })
+          }).catch(console.warn)
+        }
+        // Use the actual screen for navigation
+        deepLinkValue = actualScreen
+      }
+
       // Handle review deep link: review_{eventId}
       if (deepLinkValue.startsWith('review_')) {
         const eventId = parseInt(deepLinkValue.replace('review_', ''), 10)

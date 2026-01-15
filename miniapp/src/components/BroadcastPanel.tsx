@@ -531,7 +531,7 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
 
         {/* Stats */}
         {broadcast.status !== 'draft' && broadcast.status !== 'scheduled' && (
-          <div className="grid grid-cols-4 gap-2 mb-3">
+          <div className="grid grid-cols-5 gap-2 mb-3">
             <div className="text-center">
               <div className="text-lg font-bold text-white">{broadcast.total_recipients}</div>
               <div className="text-xs text-gray-500">Всего</div>
@@ -541,12 +541,20 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
               <div className="text-xs text-gray-500">Доставлено</div>
             </div>
             <div className="text-center">
+              <div className="text-lg font-bold text-accent">{broadcast.clicked_count || 0}</div>
+              <div className="text-xs text-gray-500">Кликов</div>
+            </div>
+            <div className="text-center">
               <div className="text-lg font-bold text-red-500">{broadcast.failed_count}</div>
               <div className="text-xs text-gray-500">Ошибок</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-blue-500">{deliveryRate}%</div>
-              <div className="text-xs text-gray-500">Доставка</div>
+              <div className="text-lg font-bold text-blue-500">
+                {broadcast.delivered_count > 0
+                  ? ((broadcast.clicked_count || 0) / broadcast.delivered_count * 100).toFixed(1)
+                  : 0}%
+              </div>
+              <div className="text-xs text-gray-500">CTR</div>
             </div>
           </div>
         )}
