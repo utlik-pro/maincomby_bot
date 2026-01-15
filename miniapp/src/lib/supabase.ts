@@ -361,11 +361,15 @@ export async function getUserMatches(userId: number) {
 
 // Events
 export async function getActiveEvents() {
+  // Show events for the entire current day (not just future times)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
   const { data, error } = await getSupabase()
     .from('bot_events')
     .select('*')
     .eq('is_active', true)
-    .gte('event_date', new Date().toISOString())
+    .gte('event_date', today.toISOString())
     .order('event_date', { ascending: true })
 
   if (error) throw error
