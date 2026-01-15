@@ -18,6 +18,7 @@ export interface CourseData {
     color: string
     tags: string[]
     tagsEn: string[]
+    isPublic?: boolean // If true, content is viewable on landing without auth
     learningOutcomes: string[]
     learningOutcomesEn: string[]
     program: {
@@ -28,6 +29,50 @@ export interface CourseData {
 }
 
 export const coursesData: CourseData[] = [
+    {
+        id: 'prompt-engineering',
+        slug: 'prompt-engineering',
+        title: 'Prompt Engineering: Основы',
+        titleEn: 'Prompt Engineering: Fundamentals',
+        subtitle: 'Научись говорить с AI на одном языке',
+        subtitleEn: 'Learn to speak the same language as AI',
+        description: 'Фундаментальный курс по промпт-инжинирингу. От базовых принципов до продвинутых техник. Открытый доступ для всех.',
+        descriptionEn: 'Fundamental prompt engineering course. From basic principles to advanced techniques. Open access for everyone.',
+        price: 0,
+        currency: 'XTR',
+        difficulty: 'beginner',
+        duration: 90,
+        lessonsCount: 6,
+        icon: Sparkles,
+        color: '#c8ff00',
+        tags: ['Бесплатно', 'Открытый доступ'],
+        tagsEn: ['Free', 'Open Access'],
+        isPublic: true, // This course is publicly accessible on the landing page
+        learningOutcomes: [
+            'Структура эффективного промпта',
+            'Ролевые модели и контекст',
+            'Chain-of-Thought техника',
+            'Few-shot и Zero-shot промптинг',
+            'Итеративное улучшение ответов',
+            'Практические примеры для работы'
+        ],
+        learningOutcomesEn: [
+            'Effective prompt structure',
+            'Role models and context',
+            'Chain-of-Thought technique',
+            'Few-shot and Zero-shot prompting',
+            'Iterative response improvement',
+            'Practical work examples'
+        ],
+        program: [
+            { title: 'Почему AI не понимает тебя', titleEn: 'Why AI doesn\'t understand you', duration: '10 мин' },
+            { title: 'Анатомия идеального промпта', titleEn: 'Anatomy of a perfect prompt', duration: '15 мин' },
+            { title: 'Роли и персоны', titleEn: 'Roles and personas', duration: '15 мин' },
+            { title: 'Chain-of-Thought: Думай шаг за шагом', titleEn: 'Chain-of-Thought: Think step by step', duration: '20 мин' },
+            { title: 'Few-shot: Учим на примерах', titleEn: 'Few-shot: Learning by examples', duration: '15 мин' },
+            { title: 'Практика: 10 готовых промптов', titleEn: 'Practice: 10 ready prompts', duration: '15 мин' }
+        ]
+    },
     {
         id: 'code-code',
         slug: 'code-code',

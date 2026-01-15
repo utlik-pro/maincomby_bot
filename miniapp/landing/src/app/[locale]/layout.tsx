@@ -52,8 +52,6 @@ export async function generateStaticParams() {
     return [{ locale: 'ru' }, { locale: 'en' }]
 }
 
-import { AuthProvider } from "@/context/AuthContext";
-
 export default async function LocaleLayout({
     children,
     params,
@@ -71,14 +69,12 @@ export default async function LocaleLayout({
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
             </head>
             <body className="antialiased">
-                <AuthProvider>
-                    <LoadingScreen />
-                    <ScrollProgress />
-                    <Particles />
-                    <UpdateBanner />
-                    {children}
-                    <BackToTop />
-                </AuthProvider>
+                <LoadingScreen />
+                <ScrollProgress />
+                <Particles />
+                <UpdateBanner />
+                {children}
+                <BackToTop />
             </body>
         </html>
     );

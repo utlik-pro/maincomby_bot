@@ -128,20 +128,31 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
 
                             {/* Action Buttons */}
                             <div className="flex items-center gap-4">
-                                <button
-                                    onClick={handleStart}
-                                    className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
-                                >
-                                    {course.price === 0 ? <Play size={20} /> : <Zap size={20} />}
-                                    {course.price === 0
-                                        ? (isRussian ? 'Начать бесплатно' : 'Start for Free')
-                                        : (isRussian ? `Купить за ${course.price} ${course.currency}` : `Buy for ${course.price} ${course.currency}`)}
-                                </button>
+                                {course.isPublic ? (
+                                    <a
+                                        href="#curriculum"
+                                        className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+                                    >
+                                        <Play size={20} />
+                                        {isRussian ? 'Смотреть программу' : 'View Curriculum'}
+                                    </a>
+                                ) : (
+                                    <button
+                                        onClick={handleStart}
+                                        className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+                                    >
+                                        {course.price === 0 ? <Play size={20} /> : <Zap size={20} />}
+                                        {course.price === 0
+                                            ? (isRussian ? 'Начать бесплатно' : 'Start for Free')
+                                            : (isRussian ? `Купить за ${course.price} ${course.currency}` : `Buy for ${course.price} ${course.currency}`)}
+                                    </button>
+                                )}
                             </div>
                             <p className="mt-4 text-xs text-center sm:text-left text-gray-500">
-                                {isRussian
-                                    ? 'Доступ откроется в Telegram боте сразу после старта'
-                                    : 'Access will open in Telegram bot immediately after start'}
+                                {course.isPublic
+                                    ? (isRussian ? 'Открытый доступ — смотрите прямо здесь' : 'Open access — watch right here')
+                                    : (isRussian ? 'Доступ откроется в Telegram боте сразу после старта' : 'Access will open in Telegram bot immediately after start')
+                                }
                             </p>
                         </motion.div>
 
@@ -197,7 +208,7 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
             </section>
 
             {/* Curriculum */}
-            <section className="py-16 px-4">
+            <section id="curriculum" className="py-16 px-4">
                 <div className="max-w-4xl mx-auto">
                     <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 text-center">
                         {isRussian ? 'Программа курса' : 'Course Curriculum'}
