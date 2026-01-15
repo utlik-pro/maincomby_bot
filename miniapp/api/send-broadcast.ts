@@ -107,7 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
  * Start a broadcast - queue recipients and begin sending
  */
 async function startBroadcast(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any, any>>,
   broadcastId: number,
   res: VercelResponse
 ) {
@@ -178,7 +178,7 @@ async function startBroadcast(
  * Process a batch of pending recipients
  */
 async function processBatch(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any, any>>,
   broadcastId: number,
   res: VercelResponse
 ) {
@@ -294,7 +294,7 @@ async function processBatch(
  * Check for scheduled broadcasts that need to start
  */
 async function checkScheduledBroadcasts(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any, any>>,
   res: VercelResponse
 ) {
   const now = new Date().toISOString()
@@ -362,7 +362,7 @@ async function checkScheduledBroadcasts(
  * Get audience users for a broadcast by ID
  */
 async function getAudienceUsersById(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any, any>>,
   broadcastId: number
 ): Promise<{ user_id: number; tg_user_id: number }[]> {
   const { data: broadcast } = await supabase
@@ -379,7 +379,7 @@ async function getAudienceUsersById(
  * Get users matching audience criteria
  */
 async function getAudienceUsers(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any, any>>,
   broadcast: Broadcast
 ): Promise<{ user_id: number; tg_user_id: number }[]> {
   const { audience_type, audience_config, exclude_banned } = broadcast
