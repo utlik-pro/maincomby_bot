@@ -261,7 +261,7 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                 </div>
             </section>
 
-            <Footer dict={dict.footer} />
+            <Footer dict={dict.footer} locale={locale} />
         </main>
     )
 }

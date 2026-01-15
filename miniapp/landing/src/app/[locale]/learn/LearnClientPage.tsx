@@ -261,7 +261,7 @@ export default function LearnClientPage({ dict, locale }: LearnClientPageProps) 
                 </div>
             </section>
 
-            <Footer dict={dict.footer} />
+            <Footer dict={dict.footer} locale={locale} />
         </main>
     )
 }

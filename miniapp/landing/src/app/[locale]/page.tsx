@@ -37,7 +37,7 @@ export default async function LocalePage({
             <IntegrationPricing dict={dict.integration} />
             <Learn dict={dict.learn} />
             <FAQ dict={dict.faq} />
-            <Footer dict={dict.footer} />
+            <Footer dict={dict.footer} locale={locale} />
         </main>
     )
 }

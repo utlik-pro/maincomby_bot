@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Send, Bot, Shield, Heart, FileText, Calendar } from 'lucide-react'
+import { Send, Bot, Shield, Heart, FileText, Calendar, GraduationCap } from 'lucide-react'
 import { APP_VERSION } from '@/lib/version'
 import { CalButton } from '../CalButton'
 
@@ -14,9 +14,10 @@ interface FooterProps {
         }
         copyright: string
     }
+    locale?: string
 }
 
-export function Footer({ dict }: FooterProps) {
+export function Footer({ dict, locale = 'ru' }: FooterProps) {
     return (
         <footer className="py-12 border-t border-white/5">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -86,6 +87,15 @@ export function Footer({ dict }: FooterProps) {
                                 >
                                     <FileText size={14} />
                                     Changelog
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href={`/${locale}/learn`}
+                                    className="text-gray-400 hover:text-white transition-colors text-sm inline-flex items-center gap-2"
+                                >
+                                    <GraduationCap size={14} />
+                                    {locale === 'ru' ? 'Курсы' : 'Courses'}
                                 </Link>
                             </li>
                         </ul>

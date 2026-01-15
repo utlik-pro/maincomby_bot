@@ -247,7 +247,7 @@ export default async function ChangelogPage({
                 )}
             </div>
 
-            <Footer dict={dict.footer} />
+            <Footer dict={dict.footer} locale={locale} />
         </main>
     )
 }
