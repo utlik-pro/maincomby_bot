@@ -8,7 +8,7 @@ import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Navigation } from '@/components/Navigation'
 import { Footer } from '@/components/sections/Footer'
-import { LessonHeader, ContentBlock, Quiz, SummaryCard, LessonNav } from '@/components/course'
+import { LessonHeader, ContentBlock, Quiz, SummaryCard, LessonNav, LessonSidebar } from '@/components/course'
 import { promptEngineeringCourse, getLessonById, getAdjacentLessons } from '@/data/lessons/prompt-engineering'
 import type { Lesson } from '@/components/course/types'
 
@@ -26,15 +26,16 @@ export default function LessonClient({ dict, locale, courseSlug, lessonId }: Les
 
     const [isCompleting, setIsCompleting] = useState(false)
     const [isCompleted, setIsCompleted] = useState(false)
+    const [completedLessons, setCompletedLessons] = useState<number[]>([])
 
     // Get lesson data
     const lesson = getLessonById(lessonId)
     const { prev, next } = getAdjacentLessons(lessonId)
     const totalLessons = promptEngineeringCourse.lessons.length
 
-    // Check if lesson is already completed
+    // Fetch all completed lessons for sidebar
     useEffect(() => {
-        const checkProgress = async () => {
+        const fetchProgress = async () => {
             if (!user?.id) return
 
             try {
@@ -43,16 +44,19 @@ export default function LessonClient({ dict, locale, courseSlug, lessonId }: Les
                 )
                 if (response.ok) {
                     const data = await response.json()
-                    if (data.success && data.completedLessons?.includes(lessonId)) {
-                        setIsCompleted(true)
+                    if (data.success && data.completedLessons) {
+                        setCompletedLessons(data.completedLessons)
+                        if (data.completedLessons.includes(lessonId)) {
+                            setIsCompleted(true)
+                        }
                     }
                 }
             } catch (error) {
-                console.error('Failed to check progress:', error)
+                console.error('Failed to fetch progress:', error)
             }
         }
 
-        checkProgress()
+        fetchProgress()
     }, [user?.id, courseSlug, lessonId])
 
     // Redirect if not authenticated
@@ -81,6 +85,10 @@ export default function LessonClient({ dict, locale, courseSlug, lessonId }: Les
 
             if (response.ok) {
                 setIsCompleted(true)
+                // Update sidebar progress
+                if (!completedLessons.includes(lessonId)) {
+                    setCompletedLessons([...completedLessons, lessonId])
+                }
                 // Navigate to next lesson if available
                 if (next) {
                     setTimeout(() => {
@@ -138,23 +146,24 @@ export default function LessonClient({ dict, locale, courseSlug, lessonId }: Les
         <main className="min-h-screen bg-[var(--background)]">
             <Navigation dict={dict.nav} locale={locale} />
 
-            <article className="pt-28 pb-16 px-4">
-                <div className="max-w-3xl mx-auto">
-                    {/* Breadcrumb */}
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-                        <Link
-                            href={`/${locale}/learn/${courseSlug}`}
-                            className="hover:text-[var(--accent)] transition-colors flex items-center gap-1"
-                        >
-                            <ArrowLeft size={14} />
-                            {isRussian
-                                ? promptEngineeringCourse.title
-                                : promptEngineeringCourse.titleEn
-                            }
-                        </Link>
-                    </div>
+            <div className="pt-28 pb-16 px-4">
+                <div className="max-w-6xl mx-auto flex gap-8">
+                    {/* Sidebar */}
+                    <LessonSidebar
+                        lessons={promptEngineeringCourse.lessons}
+                        currentLessonId={lessonId}
+                        completedLessons={completedLessons}
+                        courseSlug={courseSlug}
+                        courseTitle={isRussian ? promptEngineeringCourse.title : promptEngineeringCourse.titleEn}
+                        locale={locale}
+                        isRussian={isRussian}
+                    />
 
-                    {/* Lesson Header */}
+                    {/* Main content */}
+                    <article className="flex-1 min-w-0 max-w-3xl">
+                        {/* Mobile lesson selector is inside LessonSidebar */}
+
+                        {/* Lesson Header */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -266,8 +275,9 @@ export default function LessonClient({ dict, locale, courseSlug, lessonId }: Les
                         } : undefined}
                         isRussian={isRussian}
                     />
+                    </article>
                 </div>
-            </article>
+            </div>
 
             <Footer dict={dict.footer} locale={locale} />
         </main>
