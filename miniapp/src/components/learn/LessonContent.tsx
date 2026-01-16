@@ -290,7 +290,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           left: 0,
           right: 0,
           padding: '16px',
-          paddingBottom: '32px',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)',
           backgroundColor: '#0a0a0a',
           zIndex: 9999,
         }}
