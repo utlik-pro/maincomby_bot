@@ -71,18 +71,18 @@ export async function GET(req: NextRequest) {
             }, { headers: corsHeaders })
         }
 
-        // Get user data
+        // Get user data by tg_user_id (stored in user_id field)
         const { data: user, error: userError } = await supabase
             .from('bot_users')
             .select('id, tg_user_id, username, first_name, last_name, subscription_tier, created_at')
-            .eq('id', tokenData.user_id)
+            .eq('tg_user_id', tokenData.user_id)
             .single()
 
         if (userError || !user) {
-            console.error('User lookup failed:', { tokenUserId: tokenData.user_id, error: userError })
+            console.error('User lookup failed:', { storedTgUserId: tokenData.user_id, error: userError })
             return NextResponse.json({
                 error: 'User not found',
-                debug: { tokenUserId: tokenData.user_id }
+                debug: { storedTgUserId: tokenData.user_id }
             }, { status: 404, headers: corsHeaders })
         }
 
@@ -147,10 +147,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Код истёк' }, { status: 401, headers: corsHeaders })
         }
 
-        // Get internal user ID from Telegram user_id
+        // Verify user exists in bot_users
         const { data: user, error: userError } = await supabase
             .from('bot_users')
-            .select('id, tg_user_id')
+            .select('id, tg_user_id, username, first_name, last_name, subscription_tier')
             .eq('tg_user_id', tg_user_id)
             .single()
 
@@ -163,13 +163,13 @@ export async function POST(req: NextRequest) {
             }, { status: 404, headers: corsHeaders })
         }
 
-        // Update token with user_id (internal database ID)
+        // Store tg_user_id directly (not internal id) to avoid lookup issues
         const { error: updateError } = await supabase
             .from('auth_session_tokens')
-            .update({ user_id: user.id })
+            .update({ user_id: tg_user_id })
             .eq('short_code', code)
 
-        console.log('POST: Updated token with user_id:', user.id)
+        console.log('POST: Updated token with tg_user_id:', tg_user_id)
 
         if (updateError) {
             console.error('Error updating token:', updateError)
