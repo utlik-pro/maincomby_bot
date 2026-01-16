@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Clock, CheckCircle, Copy, Check, Lightbulb, HelpCircle } from 'lucide-react'
+import { Clock, CheckCircle, Copy, Check, Lightbulb, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui'
 import type { Lesson, LessonBlock } from '@/types'
 import { hapticFeedback } from '@/lib/telegram'
@@ -249,14 +249,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       {/* Header */}
       <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-bg-card">
         <div className="flex items-center gap-3 p-4">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={onBack}
-            className="p-2 rounded-full bg-bg-card"
-          >
-            <ArrowLeft size={20} />
-          </motion.button>
-
           <div className="flex-1 min-w-0">
             <h1 className="font-semibold text-white truncate">{lesson.title}</h1>
             <div className="flex items-center gap-1 text-xs text-gray-500">

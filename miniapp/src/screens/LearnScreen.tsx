@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { GraduationCap, Sparkles, ArrowLeft } from 'lucide-react'
+import { GraduationCap, Sparkles } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { Skeleton, EmptyState, Progress } from '@/components/ui'
 import { CourseCard, LessonCard, LessonContent } from '@/components/learn'
@@ -12,7 +11,7 @@ import {
   markLessonComplete,
   getCourseStats,
 } from '@/lib/supabase'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import type { Course, Lesson } from '@/types'
 
 type ViewState =
@@ -45,6 +44,27 @@ const LearnScreen: React.FC = () => {
       }
     }
   }, [deepLinkTarget, courses, setDeepLinkTarget])
+
+  // Handle Telegram BackButton
+  React.useEffect(() => {
+    if (viewState.type === 'lesson') {
+      backButton.show(() => {
+        hapticFeedback.selection()
+        setViewState({ type: 'lessons', course: viewState.course })
+      })
+    } else if (viewState.type === 'lessons') {
+      backButton.show(() => {
+        hapticFeedback.selection()
+        setViewState({ type: 'courses' })
+      })
+    } else {
+      backButton.hide()
+    }
+
+    return () => {
+      backButton.hide()
+    }
+  }, [viewState])
 
   // Fetch user progress
   const { data: userProgress = [] } = useQuery({
@@ -161,15 +181,6 @@ const LearnScreen: React.FC = () => {
       <div className="pb-24">
         {/* Header */}
         <div className="p-4">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={goBack}
-            className="flex items-center gap-2 text-gray-400 mb-4"
-          >
-            <ArrowLeft size={20} />
-            <span>Назад</span>
-          </motion.button>
-
           <div className="flex items-start gap-4">
             <div
               className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0"
