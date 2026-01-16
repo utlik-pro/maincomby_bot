@@ -50,6 +50,7 @@ class Settings:
     check_subscription_channel_url: str
 
     webapp_url: str | None  # URL Mini App для кнопки "Открыть приложение"
+    landing_url: str | None  # URL лендинга для auth callback
 
 
 
@@ -160,8 +161,7 @@ def load_settings() -> Settings:
     check_subscription_channel_url = os.getenv("CHECK_SUBSCRIPTION_CHANNEL_URL", "").strip()
 
     webapp_url = os.getenv("WEBAPP_URL", "").strip() or None
-
-
+    landing_url = os.getenv("LANDING_URL", "").strip() or None
 
     return Settings(
 
@@ -203,8 +203,8 @@ def load_settings() -> Settings:
 
 
         check_subscription_channel_url=check_subscription_channel_url,
-
         webapp_url=webapp_url,
+        landing_url=landing_url,
     )
 
 

@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Menu, X, Rocket, LogOut, User, Crown } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Menu, X, Rocket, LogOut, User, Crown, Loader2 } from 'lucide-react'
 import { LanguageSwitcher } from './LanguageSwitcher'
-import { TelegramLoginWidget, TelegramUser } from './TelegramLoginWidget'
 import { useAuth } from '@/context/AuthContext'
 
 interface NavigationProps {
@@ -29,8 +29,10 @@ const TIER_LABELS: Record<string, { ru: string; en: string; color: string }> = {
 export function Navigation({ dict, locale }: NavigationProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [showUserMenu, setShowUserMenu] = useState(false)
+    const [isLoggingIn, setIsLoggingIn] = useState(false)
     const isRussian = locale === 'ru'
-    const { user, login, logout, subscriptionTier, isLoading } = useAuth()
+    const router = useRouter()
+    const { user, logout, subscriptionTier, isLoading } = useAuth()
 
     const links = [
         { href: `/${locale}/learn`, label: dict.courses },
@@ -39,8 +41,31 @@ export function Navigation({ dict, locale }: NavigationProps) {
         { href: '/#faq', label: dict.faq },
     ]
 
-    const handleTelegramAuth = async (telegramUser: TelegramUser) => {
-        await login(telegramUser)
+    // Bot-based login flow
+    const handleLogin = async () => {
+        setIsLoggingIn(true)
+        try {
+            // Generate auth token
+            const response = await fetch('/api/auth/generate-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ return_url: window.location.pathname }),
+            })
+            const data = await response.json()
+
+            if (data.success && data.token && data.botLink) {
+                // Open bot in new tab
+                window.open(data.botLink, '_blank')
+                // Redirect to callback page
+                router.push(`/${locale}/auth/callback?token=${data.token}&return=${encodeURIComponent(window.location.pathname)}`)
+            } else {
+                console.error('Failed to generate token:', data.error)
+            }
+        } catch (error) {
+            console.error('Login error:', error)
+        } finally {
+            setIsLoggingIn(false)
+        }
     }
 
     const tierInfo = TIER_LABELS[subscriptionTier] || TIER_LABELS.free
@@ -132,13 +157,19 @@ export function Navigation({ dict, locale }: NavigationProps) {
                                 )}
                             </div>
                         ) : (
-                            /* Not logged in - show Telegram Login */
-                            <TelegramLoginWidget
-                                botUsername="maincomapp_bot"
-                                onAuth={handleTelegramAuth}
-                                buttonSize="medium"
-                                cornerRadius={20}
-                            />
+                            /* Not logged in - show login button */
+                            <button
+                                onClick={handleLogin}
+                                disabled={isLoggingIn}
+                                className="btn-shine bg-[var(--accent)] text-black px-5 py-2 rounded-full font-semibold text-sm flex items-center gap-2 hover:scale-105 transition-transform disabled:opacity-50"
+                            >
+                                {isLoggingIn ? (
+                                    <Loader2 size={16} className="animate-spin" />
+                                ) : (
+                                    <Rocket size={16} />
+                                )}
+                                {isRussian ? 'Войти' : 'Login'}
+                            </button>
                         )}
                     </div>
 
@@ -196,14 +227,18 @@ export function Navigation({ dict, locale }: NavigationProps) {
                                     </button>
                                 </>
                             ) : (
-                                <div className="w-full flex justify-center">
-                                    <TelegramLoginWidget
-                                        botUsername="maincomapp_bot"
-                                        onAuth={handleTelegramAuth}
-                                        buttonSize="large"
-                                        cornerRadius={12}
-                                    />
-                                </div>
+                                <button
+                                    onClick={() => { handleLogin(); setIsOpen(false); }}
+                                    disabled={isLoggingIn}
+                                    className="w-full btn-shine bg-[var(--accent)] text-black py-3 rounded-xl font-semibold text-center flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {isLoggingIn ? (
+                                        <Loader2 size={18} className="animate-spin" />
+                                    ) : (
+                                        <Rocket size={18} />
+                                    )}
+                                    {isRussian ? 'Войти через Telegram' : 'Login with Telegram'}
+                                </button>
                             )}
 
                             <div className="flex gap-2 w-full">

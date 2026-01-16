@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import httpx
 from aiogram import Router, F, Bot
 from aiogram.filters import Command, CommandStart, CommandObject
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
@@ -152,6 +153,62 @@ def format_event_message(event: Event, registered_count: int = 0) -> str:
     return message
 
 
+async def handle_landing_auth(message: Message, token: str):
+    """Обрабатывает авторизацию с лендинга через deep link."""
+    settings = load_settings()
+    user_id = message.from_user.id
+
+    if not settings.landing_url:
+        logger.error("LANDING_URL not configured")
+        await message.answer(
+            "❌ Ошибка конфигурации. Пожалуйста, попробуйте позже."
+        )
+        return
+
+    # Вызываем API лендинга для подтверждения токена
+    api_url = f"{settings.landing_url}/api/auth/validate-token"
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                api_url,
+                json={"token": token, "user_id": user_id}
+            )
+            data = response.json()
+
+            if response.status_code == 200 and data.get("success"):
+                logger.info(f"Landing auth confirmed for user {user_id}, token={token[:8]}...")
+                await message.answer(
+                    "✅ <b>Авторизация подтверждена!</b>\n\n"
+                    "Вернитесь на сайт — вход будет выполнен автоматически.",
+                    parse_mode="HTML"
+                )
+            elif response.status_code == 401:
+                error_msg = data.get("error", "Token error")
+                logger.warning(f"Landing auth failed for user {user_id}: {error_msg}")
+                await message.answer(
+                    "❌ <b>Ошибка авторизации</b>\n\n"
+                    f"Причина: {error_msg}\n\n"
+                    "Попробуйте войти снова на сайте.",
+                    parse_mode="HTML"
+                )
+            else:
+                logger.error(f"Landing auth API error: {response.status_code} - {data}")
+                await message.answer(
+                    "❌ Произошла ошибка. Попробуйте позже."
+                )
+    except httpx.TimeoutException:
+        logger.error(f"Landing auth timeout for user {user_id}")
+        await message.answer(
+            "❌ Сервер не отвечает. Попробуйте позже."
+        )
+    except Exception as e:
+        logger.error(f"Landing auth error for user {user_id}: {e}")
+        await message.answer(
+            "❌ Произошла ошибка. Попробуйте позже."
+        )
+
+
 @router.message(CommandStart())
 async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, state: FSMContext):
     """Обрабатывает команду /start (с параметрами и без)."""
@@ -171,6 +228,13 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
         logger.info(f"Subscription deep link от пользователя {message.from_user.id}")
         from app.handlers.payments import cmd_subscribe
         await cmd_subscribe(message)
+        return
+
+    # Deep link для авторизации на лендинге: /start auth_TOKEN
+    if deep_link.startswith("auth_"):
+        token = deep_link[5:]  # Убираем префикс "auth_"
+        logger.info(f"Landing auth deep link от пользователя {message.from_user.id}, token={token[:8]}...")
+        await handle_landing_auth(message, token)
         return
 
     async with get_session() as session:
