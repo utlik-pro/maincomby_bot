@@ -214,13 +214,13 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                                 {/* User has access to course */}
                                 {hasAccess ? (
-                                    <a
-                                        href={`/courses/${course.slug}/index.html`}
+                                    <Link
+                                        href={`/${locale}/learn/${course.slug}/1`}
                                         className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
                                     >
                                         <Play size={20} />
                                         {isRussian ? 'Начать курс' : 'Start Course'}
-                                    </a>
+                                    </Link>
                                 ) : (
                                     /* User doesn't have access */
                                     <>
@@ -339,16 +339,10 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                         {course.program.map((lesson, i) => {
                             const lessonNumber = i + 1
                             const isCompleted = completedLessons.includes(lessonNumber)
+                            const canAccess = hasAccess
 
-                            return (
-                                <div
-                                    key={i}
-                                    className={`group flex items-center justify-between p-5 rounded-xl border transition-colors ${
-                                        isCompleted
-                                            ? 'bg-[var(--accent)]/5 border-[var(--accent)]/30'
-                                            : 'bg-[#151515] border-white/5 hover:border-[var(--accent)]/30'
-                                    }`}
-                                >
+                            const lessonContent = (
+                                <>
                                     <div className="flex items-center gap-4">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                                             isCompleted
@@ -377,12 +371,32 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                                             <span className="text-xs text-[var(--accent)] font-medium">
                                                 {isRussian ? 'Пройдено' : 'Completed'}
                                             </span>
-                                        ) : course.price > 0 && i > 0 ? (
+                                        ) : !canAccess ? (
                                             <Lock size={16} className="text-gray-600" />
                                         ) : (
                                             <Play size={16} className="text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity" />
                                         )}
                                     </div>
+                                </>
+                            )
+
+                            const className = `group flex items-center justify-between p-5 rounded-xl border transition-colors ${
+                                isCompleted
+                                    ? 'bg-[var(--accent)]/5 border-[var(--accent)]/30'
+                                    : 'bg-[#151515] border-white/5 hover:border-[var(--accent)]/30'
+                            } ${canAccess ? 'cursor-pointer' : ''}`
+
+                            return canAccess ? (
+                                <Link
+                                    key={i}
+                                    href={`/${locale}/learn/${course.slug}/${lessonNumber}`}
+                                    className={className}
+                                >
+                                    {lessonContent}
+                                </Link>
+                            ) : (
+                                <div key={i} className={className}>
+                                    {lessonContent}
                                 </div>
                             )
                         })}
@@ -397,12 +411,12 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                         {isRussian ? 'Готовы начать?' : 'Ready to start?'}
                     </h2>
                     {hasAccess ? (
-                        <a
-                            href={`/courses/${course.slug}/index.html`}
+                        <Link
+                            href={`/${locale}/learn/${course.slug}/1`}
                             className="btn-shine inline-block bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
                         >
                             {isRussian ? 'Начать курс' : 'Start Course'}
-                        </a>
+                        </Link>
                     ) : (
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <button
