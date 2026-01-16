@@ -42,7 +42,6 @@ import {
   BookOpen,
   Share2,
   QrCode,
-  Globe,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { APP_VERSION } from '@/lib/version'
@@ -858,14 +857,14 @@ const ProfileScreen: React.FC = () => {
           {/* Web Login */}
           <Card className="mb-4">
             <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Globe size={18} className="text-blue-400" />
+              <QrCode size={18} className="text-blue-400" />
               Войти на сайт
             </h3>
             <p className="text-sm text-gray-400 mb-4">
               Подтвердите вход на maincombybot.vercel.app с помощью кода
             </p>
             <Button fullWidth variant="secondary" onClick={() => setShowWebLogin(true)}>
-              <Globe size={18} />
+              <QrCode size={16} />
               Ввести код
             </Button>
           </Card>
