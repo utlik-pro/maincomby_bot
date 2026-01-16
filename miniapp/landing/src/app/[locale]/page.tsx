@@ -35,7 +35,7 @@ export default async function LocalePage({
             <Monetization dict={dict.monetization} />
             <HowItWorks dict={dict.howItWorks} />
             <IntegrationPricing dict={dict.integration} />
-            <Learn dict={dict.learn} />
+            <Learn dict={dict.learn} locale={locale} />
             <FAQ dict={dict.faq} />
             <Footer dict={dict.footer} locale={locale} />
         </main>

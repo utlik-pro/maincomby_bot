@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { GraduationCap, BookOpen, Clock, Sparkles, ArrowRight } from 'lucide-react'
 import { GlassCard } from '../GlassCard'
 import { TiltCard } from '../TiltCard'
+import Link from 'next/link'
 
 interface LearnProps {
     dict: {
@@ -16,12 +17,10 @@ interface LearnProps {
         cta: string
         comingSoon: string
     }
+    locale: string
 }
 
-export function Learn({ dict }: LearnProps) {
-    const handleOpenBot = () => {
-        window.open('https://t.me/maincomapp_bot?startapp=learn', '_blank')
-    }
+export function Learn({ dict, locale }: LearnProps) {
 
     return (
         <section id="learn" className="py-24 relative overflow-hidden">
@@ -83,13 +82,13 @@ export function Learn({ dict }: LearnProps) {
                             <p className="text-gray-400 mb-6">
                                 {dict.courseDescription}
                             </p>
-                            <button
-                                onClick={handleOpenBot}
+                            <Link
+                                href={`/${locale}/learn`}
                                 className="w-full py-3 px-4 bg-[var(--accent)] text-black font-semibold rounded-xl flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(200,255,0,0.3)] transition-all duration-300"
                             >
                                 {dict.cta}
                                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                            </button>
+                            </Link>
                         </GlassCard>
                     </TiltCard>
 
