@@ -34,11 +34,11 @@ export async function GET(req: NextRequest) {
         const token = searchParams.get('token')
 
         if (!token) {
-            return NextResponse.json({ error: 'Token is required' }, { status: 400 })
+            return NextResponse.json({ error: 'Token is required' }, { status: 400, headers: corsHeaders })
         }
 
         if (!supabase) {
-            return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
+            return NextResponse.json({ error: 'Database not configured' }, { status: 500, headers: corsHeaders })
         }
 
         // Get token from database
@@ -49,17 +49,17 @@ export async function GET(req: NextRequest) {
             .single()
 
         if (tokenError || !tokenData) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+            return NextResponse.json({ error: 'Invalid token' }, { status: 401, headers: corsHeaders })
         }
 
         // Check if token is expired
         if (new Date(tokenData.expires_at) < new Date()) {
-            return NextResponse.json({ error: 'Token expired' }, { status: 401 })
+            return NextResponse.json({ error: 'Token expired' }, { status: 401, headers: corsHeaders })
         }
 
         // Check if token was already used
         if (tokenData.used_at) {
-            return NextResponse.json({ error: 'Token already used' }, { status: 401 })
+            return NextResponse.json({ error: 'Token already used' }, { status: 401, headers: corsHeaders })
         }
 
         // Check if user_id is set (bot has confirmed)
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
                 success: false,
                 pending: true,
                 message: 'Waiting for bot confirmation'
-            })
+            }, { headers: corsHeaders })
         }
 
         // Get user data
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({
                 error: 'User not found',
                 debug: { tokenUserId: tokenData.user_id }
-            }, { status: 404 })
+            }, { status: 404, headers: corsHeaders })
         }
 
         // Mark token as used
@@ -104,11 +104,11 @@ export async function GET(req: NextRequest) {
                 subscription_tier: user.subscription_tier,
                 created_at: user.created_at,
             }
-        })
+        }, { headers: corsHeaders })
 
     } catch (error) {
         console.error('Validate token error:', error)
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: corsHeaders })
     }
 }
 
