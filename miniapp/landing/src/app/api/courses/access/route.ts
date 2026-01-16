@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
         const { data: user, error: userError } = await supabase
             .from('bot_users')
             .select('id, subscription_tier')
-            .eq('user_id', userId)
+            .eq('tg_user_id', userId)
             .single()
 
         if (userError && userError.code !== 'PGRST116') {
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
         const { data: user, error: userError } = await supabase
             .from('bot_users')
             .select('id')
-            .eq('user_id', user_id)
+            .eq('tg_user_id', user_id)
             .single()
 
         if (userError || !user) {
