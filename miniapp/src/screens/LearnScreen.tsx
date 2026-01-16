@@ -8,6 +8,7 @@ import {
   getEnabledCourses,
   getCourseLessons,
   getUserLessonProgress,
+  getUserCourseProgress,
   markLessonComplete,
   getCourseStats,
 } from '@/lib/supabase'
@@ -77,6 +78,13 @@ const LearnScreen: React.FC = () => {
     enabled: !!user,
   })
 
+  // Fetch course progress (completed lessons count per course)
+  const { data: courseProgress = {} as Record<string, number> } = useQuery({
+    queryKey: ['courseProgress', user?.id],
+    queryFn: () => (user ? getUserCourseProgress(user.id) : ({} as Record<string, number>)),
+    enabled: !!user,
+  })
+
   // Fetch lessons when viewing a course
   const { data: lessons = [], isLoading: lessonsLoading } = useQuery({
     queryKey: ['courseLessons', viewState.type === 'lessons' || viewState.type === 'lesson' ? viewState.course.id : null],
@@ -110,6 +118,7 @@ const LearnScreen: React.FC = () => {
       hapticFeedback.success()
       addToast('Урок пройден! +50 XP', 'xp')
       queryClient.invalidateQueries({ queryKey: ['lessonProgress'] })
+      queryClient.invalidateQueries({ queryKey: ['courseProgress'] })
     },
     onError: (error) => {
       console.error('Failed to mark lesson complete:', error)
@@ -278,20 +287,13 @@ const LearnScreen: React.FC = () => {
                 enabledLessons: 0,
                 totalDuration: 0,
               }
-              // Count completed lessons for this course from userProgress
-              const completedForCourse = userProgress.filter(p => {
-                // We need to check if the lesson belongs to this course
-                // Since we don't have lessons loaded yet for all courses,
-                // we'll fetch them when the card is rendered
-                return false // Will be updated after lessons are fetched
-              }).length
 
               return (
                 <CourseCard
                   key={course.id}
                   course={course}
                   totalLessons={stats.enabledLessons}
-                  completedLessons={0} // Will update with actual progress
+                  completedLessons={courseProgress[course.id] || 0}
                   totalDuration={stats.totalDuration}
                   onClick={() => openCourse(course)}
                 />

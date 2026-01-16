@@ -3679,6 +3679,26 @@ export async function getUserLessonProgress(userId: number): Promise<UserLessonP
   return data || []
 }
 
+// Get completed lessons count by course for a user
+export async function getUserCourseProgress(userId: number): Promise<Record<string, number>> {
+  const { data, error } = await getSupabase()
+    .from('user_lesson_progress')
+    .select('lesson_id, lessons!inner(course_id)')
+    .eq('user_id', userId)
+
+  if (error) throw error
+
+  // Count completions per course
+  const courseProgress: Record<string, number> = {}
+  for (const item of data || []) {
+    const courseId = (item.lessons as any)?.course_id
+    if (courseId) {
+      courseProgress[courseId] = (courseProgress[courseId] || 0) + 1
+    }
+  }
+  return courseProgress
+}
+
 // Mark a lesson as completed
 export async function markLessonComplete(userId: number, lessonId: string): Promise<UserLessonProgress> {
   const { data, error } = await getSupabase()
