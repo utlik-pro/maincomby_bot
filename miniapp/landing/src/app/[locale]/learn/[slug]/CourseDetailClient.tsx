@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
     ChevronRight,
@@ -54,6 +54,34 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
     const accessInfo = checkCourseAccess(course.id)
     const hasAccess = accessInfo?.hasAccess || false
     const accessType = accessInfo?.accessType
+
+    // Course progress tracking
+    const [completedLessons, setCompletedLessons] = useState<number[]>([])
+
+    useEffect(() => {
+        // Fetch course progress from API
+        const fetchProgress = async () => {
+            if (!user?.id) return
+
+            try {
+                const response = await fetch(
+                    `/api/courses/progress?user_id=${user.id}&course_slug=${course.slug}`
+                )
+                if (response.ok) {
+                    const data = await response.json()
+                    if (data.success && data.completedLessons) {
+                        setCompletedLessons(data.completedLessons)
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch course progress:', error)
+            }
+        }
+
+        fetchProgress()
+    }, [user?.id, course.slug])
+
+    const progressPercentage = Math.round((completedLessons.length / course.lessonsCount) * 100)
 
     const handleUpgrade = () => {
         if (!user) {
@@ -287,36 +315,77 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
             {/* Curriculum */}
             <section id="curriculum" className="py-16 px-4">
                 <div className="max-w-4xl mx-auto">
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 text-center">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 text-center">
                         {isRussian ? 'Программа курса' : 'Course Curriculum'}
                     </h2>
 
-                    <div className="space-y-4">
-                        {course.program.map((lesson, i) => (
-                            <div
-                                key={i}
-                                className="group flex items-center justify-between p-5 rounded-xl bg-[#151515] border border-white/5 hover:border-[var(--accent)]/30 transition-colors"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-xs font-bold text-gray-500 group-hover:bg-[var(--accent)] group-hover:text-black transition-colors">
-                                        {i + 1}
-                                    </div>
-                                    <h3 className="font-medium text-gray-200 group-hover:text-white transition-colors">
-                                        {isRussian ? lesson.title : lesson.titleEn}
-                                    </h3>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-sm text-gray-500 hidden sm:block">
-                                        {lesson.duration}
-                                    </span>
-                                    {course.price > 0 && i > 0 ? (
-                                        <Lock size={16} className="text-gray-600" />
-                                    ) : (
-                                        <Play size={16} className="text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    )}
-                                </div>
+                    {/* Progress bar - only show if user has progress */}
+                    {user && completedLessons.length > 0 && (
+                        <div className="mb-8 max-w-md mx-auto">
+                            <div className="flex justify-between text-sm text-gray-400 mb-2">
+                                <span>{isRussian ? 'Ваш прогресс' : 'Your progress'}</span>
+                                <span>{completedLessons.length} / {course.lessonsCount} ({progressPercentage}%)</span>
                             </div>
-                        ))}
+                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-[var(--accent)] rounded-full transition-all duration-500"
+                                    style={{ width: `${progressPercentage}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-4">
+                        {course.program.map((lesson, i) => {
+                            const lessonNumber = i + 1
+                            const isCompleted = completedLessons.includes(lessonNumber)
+
+                            return (
+                                <div
+                                    key={i}
+                                    className={`group flex items-center justify-between p-5 rounded-xl border transition-colors ${
+                                        isCompleted
+                                            ? 'bg-[var(--accent)]/5 border-[var(--accent)]/30'
+                                            : 'bg-[#151515] border-white/5 hover:border-[var(--accent)]/30'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                                            isCompleted
+                                                ? 'bg-[var(--accent)] text-black'
+                                                : 'bg-white/5 text-gray-500 group-hover:bg-[var(--accent)] group-hover:text-black'
+                                        }`}>
+                                            {isCompleted ? (
+                                                <CheckCircle size={16} />
+                                            ) : (
+                                                lessonNumber
+                                            )}
+                                        </div>
+                                        <h3 className={`font-medium transition-colors ${
+                                            isCompleted
+                                                ? 'text-white'
+                                                : 'text-gray-200 group-hover:text-white'
+                                        }`}>
+                                            {isRussian ? lesson.title : lesson.titleEn}
+                                        </h3>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-sm text-gray-500 hidden sm:block">
+                                            {lesson.duration}
+                                        </span>
+                                        {isCompleted ? (
+                                            <span className="text-xs text-[var(--accent)] font-medium">
+                                                {isRussian ? 'Пройдено' : 'Completed'}
+                                            </span>
+                                        ) : course.price > 0 && i > 0 ? (
+                                            <Lock size={16} className="text-gray-600" />
+                                        ) : (
+                                            <Play size={16} className="text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
             </section>
