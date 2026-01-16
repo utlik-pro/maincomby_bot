@@ -1,14 +1,26 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { TelegramUser } from '@/components/TelegramLoginWidget'
+import { AccessTier } from '@/data/courses'
+
+export interface CourseAccessInfo {
+    courseId: string
+    hasAccess: boolean
+    accessType: 'subscription' | 'purchased' | 'gifted' | null
+    requiredTier: AccessTier
+}
 
 interface AuthContextType {
     user: TelegramUser | null
     isLoading: boolean
+    subscriptionTier: string
+    courseAccess: CourseAccessInfo[]
     login: (user: TelegramUser) => Promise<void>
     logout: () => void
     devLogin: () => void
+    checkCourseAccess: (courseId: string) => CourseAccessInfo | undefined
+    refreshCourseAccess: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -16,20 +28,55 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<TelegramUser | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [subscriptionTier, setSubscriptionTier] = useState<string>('free')
+    const [courseAccess, setCourseAccess] = useState<CourseAccessInfo[]>([])
+
+    // Fetch course access for a user
+    const fetchCourseAccess = useCallback(async (userId: number) => {
+        try {
+            const response = await fetch(`/api/courses/access?user_id=${userId}`)
+            if (response.ok) {
+                const data = await response.json()
+                if (data.success) {
+                    setSubscriptionTier(data.subscriptionTier || 'free')
+                    setCourseAccess(data.courses || [])
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch course access:', error)
+        }
+    }, [])
+
+    // Refresh course access for current user
+    const refreshCourseAccess = useCallback(async () => {
+        if (user?.id) {
+            await fetchCourseAccess(user.id)
+        }
+    }, [user?.id, fetchCourseAccess])
+
+    // Check access for a specific course
+    const checkCourseAccess = useCallback((courseId: string): CourseAccessInfo | undefined => {
+        return courseAccess.find(ca => ca.courseId === courseId)
+    }, [courseAccess])
 
     useEffect(() => {
         // Check local storage on mount
         const storedUser = localStorage.getItem('telegram_user')
         if (storedUser) {
             try {
-                setUser(JSON.parse(storedUser))
+                const parsedUser = JSON.parse(storedUser)
+                setUser(parsedUser)
+                // Fetch course access for stored user
+                if (parsedUser.id) {
+                    fetchCourseAccess(parsedUser.id)
+                }
             } catch (e) {
                 console.error('Failed to parse stored user', e)
                 localStorage.removeItem('telegram_user')
             }
         }
         setIsLoading(false)
-    }, [])
+    }, [fetchCourseAccess])
 
     const login = async (userData: TelegramUser) => {
         try {
@@ -60,6 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // Store verified and enriched user data
                 setUser(data.user)
                 localStorage.setItem('telegram_user', JSON.stringify(data.user))
+                // Fetch course access
+                if (data.user.id) {
+                    await fetchCourseAccess(data.user.id)
+                }
             } else {
                 throw new Error(`Invalid response: ${JSON.stringify(data)}`)
             }
@@ -71,6 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = () => {
         setUser(null)
+        setSubscriptionTier('free')
+        setCourseAccess([])
         localStorage.removeItem('telegram_user')
     }
 
@@ -89,7 +142,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, logout, devLogin }}>
+        <AuthContext.Provider value={{
+            user,
+            isLoading,
+            subscriptionTier,
+            courseAccess,
+            login,
+            logout,
+            devLogin,
+            checkCourseAccess,
+            refreshCourseAccess,
+        }}>
             {children}
         </AuthContext.Provider>
     )

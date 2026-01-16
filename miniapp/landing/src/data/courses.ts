@@ -1,5 +1,8 @@
 import { BookOpen, Bot, Brain, Code, Cpu, FileText, Globe, GraduationCap, Laptop, Link as LinkIcon, Lock, MessageSquare, Rocket, Sparkles, Star, Terminal, Video, Zap } from 'lucide-react'
 
+// Access tier determines which subscription level can access the course
+export type AccessTier = 'free' | 'light' | 'pro'
+
 export interface CourseData {
     id: string
     slug: string
@@ -19,6 +22,7 @@ export interface CourseData {
     tags: string[]
     tagsEn: string[]
     isPublic?: boolean // If true, content is viewable on landing without auth
+    accessTier: AccessTier // Minimum subscription tier required (can be purchased separately)
     learningOutcomes: string[]
     learningOutcomesEn: string[]
     program: {
@@ -48,6 +52,7 @@ export const coursesData: CourseData[] = [
         tags: ['Бесплатно', 'Открытый доступ'],
         tagsEn: ['Free', 'Open Access'],
         isPublic: true, // This course is publicly accessible on the landing page
+        accessTier: 'free',
         learningOutcomes: [
             'Структура эффективного промпта',
             'Ролевые модели и контекст',
@@ -91,6 +96,7 @@ export const coursesData: CourseData[] = [
         color: '#3b82f6',
         tags: ['Бесплатно', 'Популярное'],
         tagsEn: ['Free', 'Popular'],
+        accessTier: 'free',
         learningOutcomes: [
             'Настройка GitHub Copilot и Codeium',
             'Генерация бойлерплейта и тестов',
@@ -134,6 +140,7 @@ export const coursesData: CourseData[] = [
         color: '#f97316',
         tags: ['Автоматизация', 'No-Code'],
         tagsEn: ['Automation', 'No-Code'],
+        accessTier: 'pro',
         learningOutcomes: [
             'Установка N8N на свой сервер',
             'Работа с Webhooks и API',
@@ -178,6 +185,7 @@ export const coursesData: CourseData[] = [
         color: '#8b5cf6',
         tags: ['Dev Tools', 'AI First'],
         tagsEn: ['Dev Tools', 'AI First'],
+        accessTier: 'light',
         learningOutcomes: [
             'Миграция с VS Code',
             'Использование Composer (Ctrl+I)',
@@ -219,6 +227,7 @@ export const coursesData: CourseData[] = [
         color: '#10b981',
         tags: ['Prompting', 'ChatGPT'],
         tagsEn: ['Prompting', 'ChatGPT'],
+        accessTier: 'light',
         learningOutcomes: [
             'Структура идеального промпта',
             'Анализ данных в CSV/Excel',
@@ -263,6 +272,7 @@ export const coursesData: CourseData[] = [
         color: '#ec4899',
         tags: ['News', 'Real-time'],
         tagsEn: ['News', 'Real-time'],
+        accessTier: 'light',
         learningOutcomes: [
             'Доступ к Grok в X.com',
             'Поиск новостей в реальном времени',
@@ -303,6 +313,7 @@ export const coursesData: CourseData[] = [
         color: '#f43f5e',
         tags: ['Video', 'Creative'],
         tagsEn: ['Video', 'Creative'],
+        accessTier: 'pro',
         learningOutcomes: [
             'Физика и движение в Sora',
             'Управление камерой через промпт',
@@ -346,6 +357,7 @@ export const coursesData: CourseData[] = [
         color: '#0ea5e9',
         tags: ['Research', 'Study'],
         tagsEn: ['Research', 'Study'],
+        accessTier: 'free',
         learningOutcomes: [
             'Создание базы знаний',
             'Генерация аудио-подкастов (Audio Overview)',
@@ -386,6 +398,7 @@ export const coursesData: CourseData[] = [
         color: '#4285F4',
         tags: ['Google', 'Business'],
         tagsEn: ['Google', 'Business'],
+        accessTier: 'light',
         learningOutcomes: [
             'Gemini в Google Docs',
             'Анализ таблиц Sheets',
@@ -428,6 +441,7 @@ export const coursesData: CourseData[] = [
         color: '#FACC15',
         tags: ['Experimental', 'Exclusive'],
         tagsEn: ['Experimental', 'Exclusive'],
+        accessTier: 'pro',
         learningOutcomes: [
             'Взлом системных промптов',
             'Автономные AI-агенты',

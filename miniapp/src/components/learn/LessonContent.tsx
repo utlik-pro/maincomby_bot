@@ -283,7 +283,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       </div>
 
       {/* Bottom action */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 safe-area-bottom bg-gradient-to-t from-bg via-bg to-transparent z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 safe-area-bottom bg-bg z-[100]">
         <div className="max-w-lg mx-auto">
           {isCompleted ? (
             <Button

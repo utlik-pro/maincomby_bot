@@ -11,13 +11,16 @@ import {
     Zap,
     ArrowLeft,
     CheckCircle,
-    Lock
+    Lock,
+    Crown,
+    Sparkles
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { Footer } from '@/components/sections/Footer'
-import { coursesData } from '@/data/courses'
+import { coursesData, AccessTier } from '@/data/courses'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/context/AuthContext'
 
 interface CourseDetailClientProps {
     dict: any
@@ -25,17 +28,38 @@ interface CourseDetailClientProps {
     slug: string
 }
 
+// Map tier to display name
+const TIER_NAMES: Record<AccessTier, { ru: string; en: string }> = {
+    free: { ru: 'Бесплатно', en: 'Free' },
+    light: { ru: 'Light подписка', en: 'Light subscription' },
+    pro: { ru: 'Pro подписка', en: 'Pro subscription' },
+}
+
 export default function CourseDetailClient({ dict, locale, slug }: CourseDetailClientProps) {
     // Find course by slug
     const course = coursesData.find(c => c.slug === slug)
     const isRussian = locale === 'ru'
+    const { user, checkCourseAccess, subscriptionTier } = useAuth()
 
     if (!course) {
         notFound()
     }
 
+    // Get access info for this course
+    const accessInfo = checkCourseAccess(course.id)
+    const hasAccess = accessInfo?.hasAccess || course.isPublic || false
+    const accessType = accessInfo?.accessType
+
     const handleStart = () => {
         window.open(`https://t.me/maincomapp_bot?start=course_${course.id}`, '_blank')
+    }
+
+    const handleUpgrade = () => {
+        window.open('https://t.me/maincomapp_bot?start=subscribe', '_blank')
+    }
+
+    const handlePurchase = () => {
+        window.open(`https://t.me/maincomapp_bot?start=buy_${course.id}`, '_blank')
     }
 
     return (
@@ -71,6 +95,18 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                         >
                             {/* Badges */}
                             <div className="flex flex-wrap gap-3 mb-6">
+                                {/* Access tier badge */}
+                                {course.accessTier !== 'free' && (
+                                    <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1.5 ${
+                                        course.accessTier === 'pro'
+                                            ? 'bg-purple-500/10 border-purple-500/40 text-purple-400'
+                                            : 'bg-blue-500/10 border-blue-500/40 text-blue-400'
+                                    }`}>
+                                        <Crown size={14} />
+                                        {TIER_NAMES[course.accessTier][isRussian ? 'ru' : 'en']}
+                                    </span>
+                                )}
+                                {/* Price badge */}
                                 <span
                                     className="px-3 py-1 rounded-full text-sm font-bold border"
                                     style={{
@@ -83,9 +119,20 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                                         ? (isRussian ? 'Бесплатно' : 'Free')
                                         : `${course.price} ${course.currency}`}
                                 </span>
+                                {/* Difficulty badge */}
                                 <span className="px-3 py-1 rounded-full text-sm bg-white/5 border border-white/10 text-gray-300 uppercase">
                                     {course.difficulty}
                                 </span>
+                                {/* User access status */}
+                                {user && hasAccess && (
+                                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-500/10 border border-green-500/40 text-green-400 flex items-center gap-1.5">
+                                        <CheckCircle size={14} />
+                                        {accessType === 'purchased' || accessType === 'gifted'
+                                            ? (isRussian ? 'Куплено' : 'Purchased')
+                                            : (isRussian ? 'Доступно' : 'Available')
+                                        }
+                                    </span>
+                                )}
                             </div>
 
                             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
@@ -127,31 +174,62 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex items-center gap-4">
-                                {course.isPublic ? (
-                                    <a
-                                        href={`/courses/${course.slug}/index.html`}
-                                        className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
-                                    >
-                                        <Play size={20} />
-                                        {isRussian ? 'Начать курс' : 'Start Course'}
-                                    </a>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                                {/* User has access or course is public */}
+                                {(hasAccess || course.isPublic) ? (
+                                    course.isPublic ? (
+                                        <a
+                                            href={`/courses/${course.slug}/index.html`}
+                                            className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+                                        >
+                                            <Play size={20} />
+                                            {isRussian ? 'Начать курс' : 'Start Course'}
+                                        </a>
+                                    ) : (
+                                        <button
+                                            onClick={handleStart}
+                                            className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+                                        >
+                                            <Play size={20} />
+                                            {isRussian ? 'Начать курс' : 'Start Course'}
+                                        </button>
+                                    )
                                 ) : (
-                                    <button
-                                        onClick={handleStart}
-                                        className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
-                                    >
-                                        {course.price === 0 ? <Play size={20} /> : <Zap size={20} />}
-                                        {course.price === 0
-                                            ? (isRussian ? 'Начать бесплатно' : 'Start for Free')
-                                            : (isRussian ? `Купить за ${course.price} ${course.currency}` : `Buy for ${course.price} ${course.currency}`)}
-                                    </button>
+                                    /* User doesn't have access */
+                                    <>
+                                        {/* Upgrade subscription button */}
+                                        <button
+                                            onClick={handleUpgrade}
+                                            className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+                                        >
+                                            <Crown size={20} />
+                                            {isRussian
+                                                ? `Оформить ${TIER_NAMES[course.accessTier].ru}`
+                                                : `Get ${TIER_NAMES[course.accessTier].en}`
+                                            }
+                                        </button>
+                                        {/* Or buy separately */}
+                                        {course.price > 0 && (
+                                            <button
+                                                onClick={handlePurchase}
+                                                className="flex-1 sm:flex-none border border-white/20 text-white font-medium py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:bg-white/5 transition-colors"
+                                            >
+                                                <Sparkles size={18} />
+                                                {isRussian
+                                                    ? `Купить за ${course.price} ${course.currency}`
+                                                    : `Buy for ${course.price} ${course.currency}`
+                                                }
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                             <p className="mt-4 text-xs text-center sm:text-left text-gray-500">
-                                {course.isPublic
-                                    ? (isRussian ? 'Бесплатный курс — начните прямо сейчас' : 'Free course — start right now')
-                                    : (isRussian ? 'Доступ откроется в Telegram боте сразу после старта' : 'Access will open in Telegram bot immediately after start')
+                                {hasAccess || course.isPublic
+                                    ? (isRussian ? 'У вас есть доступ к этому курсу' : 'You have access to this course')
+                                    : !user
+                                        ? (isRussian ? 'Войдите через Telegram, чтобы проверить доступ' : 'Login with Telegram to check access')
+                                        : (isRussian ? 'Оформите подписку или купите курс отдельно' : 'Subscribe or purchase this course separately')
                                 }
                             </p>
                         </motion.div>
@@ -250,14 +328,48 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                     <h2 className="text-3xl font-bold text-white mb-6">
                         {isRussian ? 'Готовы начать?' : 'Ready to start?'}
                     </h2>
-                    <button
-                        onClick={handleStart}
-                        className="btn-shine bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
-                    >
-                        {course.price === 0
-                            ? (isRussian ? 'Учиться бесплатно' : 'Learn for Free')
-                            : (isRussian ? 'Купить курс' : 'Buy Course')}
-                    </button>
+                    {hasAccess || course.isPublic ? (
+                        course.isPublic ? (
+                            <a
+                                href={`/courses/${course.slug}/index.html`}
+                                className="btn-shine inline-block bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
+                            >
+                                {isRussian ? 'Начать курс' : 'Start Course'}
+                            </a>
+                        ) : (
+                            <button
+                                onClick={handleStart}
+                                className="btn-shine bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
+                            >
+                                {isRussian ? 'Начать курс' : 'Start Course'}
+                            </button>
+                        )
+                    ) : (
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <button
+                                onClick={handleUpgrade}
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg py-4 px-8 rounded-xl flex items-center gap-2 hover:scale-105 transition-transform"
+                            >
+                                <Crown size={20} />
+                                {isRussian
+                                    ? `Оформить ${TIER_NAMES[course.accessTier].ru}`
+                                    : `Get ${TIER_NAMES[course.accessTier].en}`
+                                }
+                            </button>
+                            {course.price > 0 && (
+                                <button
+                                    onClick={handlePurchase}
+                                    className="border border-white/20 text-white font-medium py-4 px-8 rounded-xl flex items-center gap-2 hover:bg-white/5 transition-colors"
+                                >
+                                    <Sparkles size={18} />
+                                    {isRussian
+                                        ? `Купить за ${course.price} ${course.currency}`
+                                        : `Buy for ${course.price} ${course.currency}`
+                                    }
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </section>
 

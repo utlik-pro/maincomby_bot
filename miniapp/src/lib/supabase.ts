@@ -4222,3 +4222,154 @@ export async function getDistinctCities(): Promise<string[]> {
   const cities = [...new Set((data || []).map(p => p.city).filter(Boolean))]
   return cities.sort()
 }
+
+// ============== Course Access Control ==============
+
+export type AccessTier = 'free' | 'light' | 'pro'
+
+export interface CourseAccessInfo {
+  courseId: string
+  hasAccess: boolean
+  accessType: 'subscription' | 'purchased' | 'gifted' | null
+  requiredTier: AccessTier
+}
+
+// Define which subscription tier can access which course tiers
+const TIER_ACCESS: Record<string, AccessTier[]> = {
+  free: ['free'],
+  light: ['free', 'light'],
+  pro: ['free', 'light', 'pro'],
+}
+
+// Course tier mapping (should match landing/src/data/courses.ts)
+const COURSE_TIERS: Record<string, AccessTier> = {
+  'prompt-engineering': 'free',
+  'code-code': 'free',
+  'notebooklm': 'free',
+  'cursor-ide': 'light',
+  'chatgpt-pro': 'light',
+  'grok-xai': 'light',
+  'gmini-3': 'light',
+  'n8n-automation': 'pro',
+  'sora-video': 'pro',
+  'nano-banano': 'pro',
+}
+
+interface UserCourseAccessRecord {
+  course_id: string
+  access_type: 'subscription' | 'purchased' | 'gifted'
+  expires_at: string | null
+}
+
+/**
+ * Get course access for a user (internal user ID)
+ */
+export async function getUserCourseAccess(userId: number): Promise<CourseAccessInfo[]> {
+  const supabase = getSupabase()
+
+  // Get user's subscription tier
+  const { data: user, error: userError } = await supabase
+    .from('bot_users')
+    .select('subscription_tier')
+    .eq('id', userId)
+    .single()
+
+  if (userError && userError.code !== 'PGRST116') {
+    console.error('Error fetching user for course access:', userError)
+  }
+
+  const subscriptionTier = user?.subscription_tier || 'free'
+
+  // Get user's purchased courses
+  const { data: courseAccess, error: accessError } = await supabase
+    .from('user_course_access')
+    .select('course_id, access_type, expires_at')
+    .eq('user_id', userId)
+
+  if (accessError) {
+    console.error('Error fetching course access:', accessError)
+  }
+
+  // Filter out expired access
+  const now = new Date()
+  const purchasedCourses = (courseAccess || []).filter((ca: UserCourseAccessRecord) =>
+    !ca.expires_at || new Date(ca.expires_at) > now
+  )
+
+  // Build access map for purchased/gifted courses
+  const purchasedMap = new Map<string, 'purchased' | 'gifted'>(
+    purchasedCourses.map(pc => [pc.course_id, pc.access_type as 'purchased' | 'gifted'])
+  )
+
+  // Get allowed tiers for subscription
+  const allowedTiers = TIER_ACCESS[subscriptionTier] || ['free']
+
+  // Calculate access for all courses
+  const courseAccessInfo: CourseAccessInfo[] = Object.entries(COURSE_TIERS).map(([courseId, tier]) => {
+    // Check if purchased/gifted
+    if (purchasedMap.has(courseId)) {
+      return {
+        courseId,
+        hasAccess: true,
+        accessType: purchasedMap.get(courseId)!,
+        requiredTier: tier,
+      }
+    }
+
+    // Check subscription access
+    const hasSubscriptionAccess = allowedTiers.includes(tier)
+
+    return {
+      courseId,
+      hasAccess: hasSubscriptionAccess,
+      accessType: hasSubscriptionAccess ? 'subscription' : null,
+      requiredTier: tier,
+    }
+  })
+
+  return courseAccessInfo
+}
+
+/**
+ * Check if user has access to a specific course
+ */
+export async function checkUserCourseAccess(
+  userId: number,
+  courseId: string
+): Promise<CourseAccessInfo | null> {
+  const allAccess = await getUserCourseAccess(userId)
+  return allAccess.find(a => a.courseId === courseId) || null
+}
+
+/**
+ * Grant course access to a user
+ */
+export async function grantCourseAccess(
+  userId: number,
+  courseId: string,
+  accessType: 'purchased' | 'gifted',
+  purchaseAmount?: number,
+  expiresAt?: string
+): Promise<boolean> {
+  const supabase = getSupabase()
+
+  const { error } = await supabase
+    .from('user_course_access')
+    .upsert({
+      user_id: userId,
+      course_id: courseId,
+      access_type: accessType,
+      purchase_amount: purchaseAmount || null,
+      expires_at: expiresAt || null,
+      granted_at: new Date().toISOString(),
+    }, {
+      onConflict: 'user_id,course_id'
+    })
+
+  if (error) {
+    console.error('Error granting course access:', error)
+    return false
+  }
+
+  return true
+}
