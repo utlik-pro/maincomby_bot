@@ -62,27 +62,27 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Token already used' }, { status: 401, headers: corsHeaders })
         }
 
-        // Check if user_id is set (bot has confirmed)
-        if (!tokenData.user_id) {
+        // Check if confirmed_tg_user_id is set (miniapp has confirmed)
+        if (!tokenData.confirmed_tg_user_id) {
             return NextResponse.json({
                 success: false,
                 pending: true,
-                message: 'Waiting for bot confirmation'
+                message: 'Waiting for confirmation'
             }, { headers: corsHeaders })
         }
 
-        // Get user data by tg_user_id (stored in user_id field)
+        // Get user data by tg_user_id
         const { data: user, error: userError } = await supabase
             .from('bot_users')
             .select('id, tg_user_id, username, first_name, last_name, subscription_tier, created_at')
-            .eq('tg_user_id', tokenData.user_id)
+            .eq('tg_user_id', tokenData.confirmed_tg_user_id)
             .single()
 
         if (userError || !user) {
-            console.error('User lookup failed:', { storedTgUserId: tokenData.user_id, error: userError })
+            console.error('User lookup failed:', { confirmed_tg_user_id: tokenData.confirmed_tg_user_id, error: userError })
             return NextResponse.json({
                 error: 'User not found',
-                debug: { storedTgUserId: tokenData.user_id }
+                debug: { confirmed_tg_user_id: tokenData.confirmed_tg_user_id }
             }, { status: 404, headers: corsHeaders })
         }
 
@@ -163,13 +163,13 @@ export async function POST(req: NextRequest) {
             }, { status: 404, headers: corsHeaders })
         }
 
-        // Store tg_user_id directly (not internal id) to avoid lookup issues
+        // Store confirmed_tg_user_id (no foreign key constraint)
         const { error: updateError } = await supabase
             .from('auth_session_tokens')
-            .update({ user_id: tg_user_id })
+            .update({ confirmed_tg_user_id: tg_user_id })
             .eq('short_code', code)
 
-        console.log('POST: Updated token with tg_user_id:', tg_user_id)
+        console.log('POST: Updated token with confirmed_tg_user_id:', tg_user_id)
 
         if (updateError) {
             console.error('Error updating token:', updateError)
