@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
         const { data: user, error: userError } = await supabase
             .from('bot_users')
             .select('id')
-            .eq('user_id', tg_user_id)
+            .eq('tg_user_id', tg_user_id)
             .single()
 
         if (userError || !user) {
