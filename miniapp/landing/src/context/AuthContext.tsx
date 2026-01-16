@@ -80,20 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = async (userData: TelegramUser) => {
         try {
-            // DEBUG: Verbose logging for user
-            alert(`Step 1: Callback Received for ${userData.first_name} (ID: ${userData.id})`)
-
-            // Validate with backend
-            alert('Step 2: Sending data to server...')
-            const payload = JSON.stringify(userData)
-
             const response = await fetch('/api/auth/telegram', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: payload,
+                body: JSON.stringify(userData),
             })
-
-            alert(`Step 3: Server status ${response.status}`)
 
             if (!response.ok) {
                 const errText = await response.text()
@@ -103,8 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json()
 
             if (data.success && data.user) {
-                alert('Step 4: Success! Storing session...')
-                // Store verified and enriched user data
                 setUser(data.user)
                 localStorage.setItem('telegram_user', JSON.stringify(data.user))
                 // Fetch course access
@@ -112,11 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     await fetchCourseAccess(data.user.id)
                 }
             } else {
-                throw new Error(`Invalid response: ${JSON.stringify(data)}`)
+                throw new Error('Invalid response from server')
             }
         } catch (error: any) {
             console.error('Login error:', error)
-            alert(`LOGIN ERROR: ${error.message || JSON.stringify(error)}`)
         }
     }
 
