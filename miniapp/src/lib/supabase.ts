@@ -2658,15 +2658,17 @@ export async function getEventAverageRating(eventId: number): Promise<{ average:
 export async function canUserReviewEvent(eventId: number, userId: number): Promise<boolean> {
   const supabase = getSupabase()
 
-  // Check if user attended the event
-  const { data: registration } = await supabase
+  // Check if user has ANY registration with 'attended' status
+  // (user may have multiple registrations - e.g. one cancelled, one attended)
+  const { data: registrations } = await supabase
     .from('bot_registrations')
     .select('status')
     .eq('event_id', eventId)
     .eq('user_id', userId)
-    .single()
+    .eq('status', 'attended')
+    .limit(1)
 
-  if (!registration || registration.status !== 'attended') {
+  if (!registrations || registrations.length === 0) {
     return false
   }
 
@@ -2676,7 +2678,7 @@ export async function canUserReviewEvent(eventId: number, userId: number): Promi
     .select('id')
     .eq('event_id', eventId)
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   return !existingReview
 }
@@ -2716,7 +2718,8 @@ export async function getPendingReviewEvents(userId: number): Promise<Event[]> {
     return []
   }
 
-  const eventIds = registrations.map(r => r.event_id)
+  // Get unique event IDs (user may have multiple registrations for same event)
+  const eventIds = [...new Set(registrations.map(r => r.event_id))]
 
   // Get existing reviews
   const { data: reviews } = await supabase
