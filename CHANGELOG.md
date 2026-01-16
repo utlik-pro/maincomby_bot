@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.7] - 2026-01-16
+
+[0;34mGenerating changelog from v1.1.6 to HEAD[0m
+### Added
+- Add Prompt Engineering course module
+- add trusted by partners marquee section
+- add click tracking for broadcast analytics
+- add A-100 Gas Stations case study
+- add second Dana Holdings case study (Meeting Transcription)
+- add Cases page with Dana Holdings case study
+- simplify course access - remove login widget, add public Prompt Engineering course
+
+### Fixed
+- show events for entire day instead of filtering by time
+- dark background for broadcast input fields
+- correct import path for getDictionary in cases page
+- resolve TypeScript errors in broadcast API
+
+### Changed
+- trigger redeploy for cases page
 ## [1.1.6] - 2026-01-15
 
 [0;34mGenerating changelog from v1.1.5 to HEAD[0m

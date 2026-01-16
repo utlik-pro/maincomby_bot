@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.6'
+export const APP_VERSION = '1.1.7'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 10
+export const CURRENT_APP_VERSION = 11
 
 export interface ReleaseHighlight {
   title: string
@@ -29,22 +29,23 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.6',
-  date: '2026-01-15',
-  summary: 'Исправления и улучшения v1.1.6',
+  version: '1.1.7',
+  date: '2026-01-16',
+  summary: 'Исправления и улучшения v1.1.7',
   highlights: [
-    { title: 'implement Telegram Login ...', description: 'Подробнее в changelog' },
-    { title: 'add learning module with ...', description: 'Подробнее в changelog' },
-    { title: 'add broadcast module for ...', description: 'Подробнее в changelog' },
+    { title: 'Add Prompt Engineering co...', description: 'Подробнее в changelog' },
+    { title: 'add trusted by partners m...', description: 'Подробнее в changelog' },
+    { title: 'add click tracking for br...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'implement Telegram Login and Fix Deep Links',
-    'add learning module with prompting basics course',
-    'add broadcast module for event notifications',
+    'Add Prompt Engineering course module',
+    'add trusted by partners marquee section',
+    'add click tracking for broadcast analytics',
   ],
   fixes: [
-    'refactor telegram widget callback to flat global function',
-    'resolve TypeScript errors in learning system',
+    'show events for entire day instead of filtering by time',
+    'dark background for broadcast input fields',
+    'correct import path for getDictionary in cases page',
   ],
 }
 
