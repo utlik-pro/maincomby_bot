@@ -283,35 +283,28 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       </div>
 
       {/* Bottom action */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '16px',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)',
-          backgroundColor: '#0a0a0a',
-          zIndex: 9999,
-        }}
-      >
-        <button
-          onClick={isCompleted ? onBack : onComplete}
-          disabled={isLoading}
-          style={{
-            width: '100%',
-            padding: '16px',
-            backgroundColor: isCompleted ? '#1a1a1a' : '#c8ff00',
-            color: isCompleted ? 'white' : 'black',
-            borderRadius: '12px',
-            fontWeight: 'bold',
-            fontSize: '16px',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          {isLoading ? 'Загрузка...' : (isCompleted ? 'Вернуться к курсу' : 'Урок пройден ✓')}
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-24 bg-bg z-[100]">
+        <div className="max-w-lg mx-auto">
+          {isCompleted ? (
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={onBack}
+            >
+              Вернуться к курсу
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={onComplete}
+              isLoading={isLoading}
+              icon={<CheckCircle size={18} />}
+            >
+              Урок пройден
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )
