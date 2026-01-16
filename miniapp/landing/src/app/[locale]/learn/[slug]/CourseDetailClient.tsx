@@ -55,14 +55,6 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
     const hasAccess = accessInfo?.hasAccess || false
     const accessType = accessInfo?.accessType
 
-    const handleStart = () => {
-        if (!user) {
-            redirectToLogin()
-            return
-        }
-        window.open(`https://t.me/maincomapp_bot?start=course_${course.id}`, '_blank')
-    }
-
     const handleUpgrade = () => {
         if (!user) {
             redirectToLogin()
@@ -194,13 +186,13 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                                 {/* User has access to course */}
                                 {hasAccess ? (
-                                    <button
-                                        onClick={handleStart}
+                                    <a
+                                        href={`/courses/${course.slug}/index.html`}
                                         className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
                                     >
                                         <Play size={20} />
                                         {isRussian ? 'Начать курс' : 'Start Course'}
-                                    </button>
+                                    </a>
                                 ) : (
                                     /* User doesn't have access */
                                     <>
@@ -336,12 +328,12 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                         {isRussian ? 'Готовы начать?' : 'Ready to start?'}
                     </h2>
                     {hasAccess ? (
-                        <button
-                            onClick={handleStart}
-                            className="btn-shine bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
+                        <a
+                            href={`/courses/${course.slug}/index.html`}
+                            className="btn-shine inline-block bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
                         >
                             {isRussian ? 'Начать курс' : 'Start Course'}
-                        </button>
+                        </a>
                     ) : (
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <button
