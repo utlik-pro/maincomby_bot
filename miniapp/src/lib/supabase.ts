@@ -2754,24 +2754,29 @@ export async function getPendingReviewEvents(userId: number): Promise<Event[]> {
 }
 
 /**
- * Create a new event review with optional speaker rating
+ * Create a new event review with optional multiple speaker ratings
  */
 export async function createEventReview(
   eventId: number,
   userId: number,
   rating: number,
   text?: string,
-  speakerId?: string,
-  speakerRating?: number
+  speakerRatings?: { speakerId: string; rating: number }[]
 ): Promise<EventReview | null> {
   const supabase = getSupabase()
 
-  // Validate ratings
+  // Validate event rating
   if (rating < 1 || rating > 5) {
     throw new Error('Rating must be between 1 and 5')
   }
-  if (speakerRating !== undefined && (speakerRating < 1 || speakerRating > 5)) {
-    throw new Error('Speaker rating must be between 1 and 5')
+
+  // Validate speaker ratings
+  if (speakerRatings) {
+    for (const sr of speakerRatings) {
+      if (sr.rating < 1 || sr.rating > 5) {
+        throw new Error('Speaker rating must be between 1 and 5')
+      }
+    }
   }
 
   // Check if user can review
@@ -2780,15 +2785,14 @@ export async function createEventReview(
     throw new Error('User cannot review this event')
   }
 
+  // Create the main review
   const { data, error } = await supabase
     .from('bot_event_reviews')
     .insert({
       event_id: eventId,
       user_id: userId,
       rating,
-      text: text?.trim() || null,
-      speaker_id: speakerId || null,
-      speaker_rating: speakerRating || null
+      text: text?.trim() || null
     })
     .select()
     .single()
@@ -2796,6 +2800,24 @@ export async function createEventReview(
   if (error) {
     console.error('[createEventReview] Error:', error)
     throw error
+  }
+
+  // Insert speaker ratings into separate table
+  if (speakerRatings && speakerRatings.length > 0 && data) {
+    const speakerRatingsData = speakerRatings.map(sr => ({
+      review_id: data.id,
+      speaker_id: sr.speakerId,
+      rating: sr.rating
+    }))
+
+    const { error: speakerError } = await supabase
+      .from('speaker_ratings')
+      .insert(speakerRatingsData)
+
+    if (speakerError) {
+      console.warn('[createEventReview] Failed to save speaker ratings:', speakerError)
+      // Don't throw - the main review was saved successfully
+    }
   }
 
   // Award XP for leaving a review (+20 XP)

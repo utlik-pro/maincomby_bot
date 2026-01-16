@@ -978,7 +978,12 @@ interface SpeakerRecord {
   photo_url: string | null
 }
 
-interface SpeakerReviewRecord {
+interface SpeakerRatingRecord {
+  speaker_id: string
+  rating: number
+}
+
+interface LegacySpeakerReviewRecord {
   speaker_id: string | null
   speaker_rating: number | null
 }
@@ -987,7 +992,7 @@ interface EventSpeakerRecord {
   speaker_id: string
 }
 
-// Get all speakers with their ratings
+// Get all speakers with their ratings (from new speaker_ratings table)
 export async function getSpeakerAnalytics(): Promise<SpeakerAnalytics> {
   const supabase = getSupabase()
 
@@ -1002,14 +1007,30 @@ export async function getSpeakerAnalytics(): Promise<SpeakerAnalytics> {
     return { speakers: [], totalReviews: 0, averageRating: 0 }
   }
 
-  // Get all speaker reviews
-  const { data: reviewsData } = await supabase
+  // Get ratings from new speaker_ratings table
+  const { data: newRatingsData } = await supabase
+    .from('speaker_ratings')
+    .select('speaker_id, rating')
+
+  const newRatings = (newRatingsData || []) as SpeakerRatingRecord[]
+
+  // Also get legacy ratings from bot_event_reviews (for backwards compatibility)
+  const { data: legacyRatingsData } = await supabase
     .from('bot_event_reviews')
     .select('speaker_id, speaker_rating')
     .not('speaker_id', 'is', null)
     .not('speaker_rating', 'is', null)
 
-  const reviews = (reviewsData || []) as SpeakerReviewRecord[]
+  const legacyReviews = (legacyRatingsData || []) as LegacySpeakerReviewRecord[]
+  const legacyRatings = legacyReviews
+    .filter(r => r.speaker_id && r.speaker_rating)
+    .map(r => ({
+      speaker_id: r.speaker_id!,
+      rating: r.speaker_rating!
+    }))
+
+  // Combine ratings (new table takes precedence but include legacy for old data)
+  const allRatings = [...newRatings, ...legacyRatings]
 
   // Get event counts per speaker
   const { data: eventSpeakersData } = await supabase
@@ -1019,7 +1040,7 @@ export async function getSpeakerAnalytics(): Promise<SpeakerAnalytics> {
   const eventSpeakers = (eventSpeakersData || []) as EventSpeakerRecord[]
 
   // Aggregate ratings per speaker
-  const speakerRatings: Record<string, { total: number; count: number }> = {}
+  const speakerRatingsMap: Record<string, { total: number; count: number }> = {}
   const speakerEventCount: Record<string, number> = {}
 
   // Count events per speaker
@@ -1028,19 +1049,19 @@ export async function getSpeakerAnalytics(): Promise<SpeakerAnalytics> {
   })
 
   // Sum ratings per speaker
-  reviews.forEach(r => {
-    if (r.speaker_id && r.speaker_rating) {
-      if (!speakerRatings[r.speaker_id]) {
-        speakerRatings[r.speaker_id] = { total: 0, count: 0 }
+  allRatings.forEach(r => {
+    if (r.speaker_id && r.rating) {
+      if (!speakerRatingsMap[r.speaker_id]) {
+        speakerRatingsMap[r.speaker_id] = { total: 0, count: 0 }
       }
-      speakerRatings[r.speaker_id].total += r.speaker_rating
-      speakerRatings[r.speaker_id].count += 1
+      speakerRatingsMap[r.speaker_id].total += r.rating
+      speakerRatingsMap[r.speaker_id].count += 1
     }
   })
 
   // Build speaker stats
   const speakerStats: SpeakerStats[] = speakers.map(s => {
-    const ratings = speakerRatings[s.id] || { total: 0, count: 0 }
+    const ratings = speakerRatingsMap[s.id] || { total: 0, count: 0 }
     return {
       id: s.id,
       name: s.name,
@@ -1057,10 +1078,9 @@ export async function getSpeakerAnalytics(): Promise<SpeakerAnalytics> {
   })
 
   // Calculate totals
-  const totalReviews = reviews.length
-  const allRatings = reviews.map(r => r.speaker_rating).filter((r): r is number => r !== null)
+  const totalReviews = allRatings.length
   const averageRating = allRatings.length > 0
-    ? Math.round((allRatings.reduce((a, b) => a + b, 0) / allRatings.length) * 10) / 10
+    ? Math.round((allRatings.reduce((a, b) => a + b.rating, 0) / allRatings.length) * 10) / 10
     : 0
 
   return {

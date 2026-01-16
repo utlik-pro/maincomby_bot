@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { Send, Calendar, MapPin, Mic, ChevronDown } from 'lucide-react'
+import { Send, Calendar, MapPin, Mic } from 'lucide-react'
 import { BottomSheet } from './BottomSheet'
 import { StarRating } from './StarRating'
 import { Button } from './ui'
@@ -30,11 +30,9 @@ export const ReviewBottomSheet: React.FC<ReviewBottomSheetProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { addToast } = useToastStore()
 
-  // Speaker rating state
+  // Speaker ratings state - map of speakerId to rating
   const [speakers, setSpeakers] = useState<EventSpeaker[]>([])
-  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null)
-  const [speakerRating, setSpeakerRating] = useState(0)
-  const [showSpeakerSelect, setShowSpeakerSelect] = useState(false)
+  const [speakerRatings, setSpeakerRatings] = useState<Record<string, number>>({})
 
   // Fetch speakers when event changes
   useEffect(() => {
@@ -46,23 +44,37 @@ export const ReviewBottomSheet: React.FC<ReviewBottomSheetProps> = ({
     }
     if (isOpen && event) {
       loadSpeakers()
+      // Reset form when opening
+      setRating(0)
+      setReviewText('')
+      setSpeakerRatings({})
     }
   }, [isOpen, event])
 
-  const selectedSpeaker = speakers.find(s => s.speaker_id === selectedSpeakerId)
+  const handleSpeakerRating = (speakerId: string, newRating: number) => {
+    setSpeakerRatings(prev => ({
+      ...prev,
+      [speakerId]: newRating
+    }))
+    hapticFeedback.light()
+  }
 
   const handleSubmit = async () => {
     if (!event || rating === 0) return
 
     setIsSubmitting(true)
     try {
+      // Convert speakerRatings object to array format
+      const speakerRatingsArray = Object.entries(speakerRatings)
+        .filter(([_, r]) => r > 0)
+        .map(([speakerId, r]) => ({ speakerId, rating: r }))
+
       await createEventReview(
         event.id,
         userId,
         rating,
         reviewText,
-        selectedSpeakerId || undefined,
-        speakerRating > 0 ? speakerRating : undefined
+        speakerRatingsArray.length > 0 ? speakerRatingsArray : undefined
       )
       hapticFeedback.success()
       addToast('Спасибо за отзыв! +20 XP', 'success')
@@ -71,8 +83,7 @@ export const ReviewBottomSheet: React.FC<ReviewBottomSheetProps> = ({
       // Reset form
       setRating(0)
       setReviewText('')
-      setSelectedSpeakerId(null)
-      setSpeakerRating(0)
+      setSpeakerRatings({})
     } catch (error: any) {
       hapticFeedback.error()
       if (error?.message?.includes('cannot review')) {
@@ -141,85 +152,51 @@ export const ReviewBottomSheet: React.FC<ReviewBottomSheetProps> = ({
           </div>
         </div>
 
-        {/* Speaker rating (if speakers exist) */}
+        {/* All speakers ratings */}
         {speakers.length > 0 && (
           <div className="bg-bg rounded-xl p-4 mb-4">
             <div className="flex items-center gap-2 mb-3">
               <Mic size={16} className="text-purple-500" />
-              <span className="text-sm font-medium">Оцените спикера</span>
+              <span className="text-sm font-medium">Оцените спикеров</span>
               <span className="text-xs text-gray-500">(необязательно)</span>
             </div>
 
-            {/* Speaker selector */}
-            <div className="relative mb-3">
-              <button
-                onClick={() => setShowSpeakerSelect(!showSpeakerSelect)}
-                className="w-full flex items-center justify-between p-3 bg-bg-card rounded-xl border border-border"
-              >
-                {selectedSpeaker ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden">
-                      {selectedSpeaker.speaker.photo_url ? (
-                        <img src={selectedSpeaker.speaker.photo_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Mic size={12} className="text-purple-500" />
-                      )}
-                    </div>
-                    <span className="text-sm">{selectedSpeaker.speaker.name}</span>
+            {/* List of all speakers with individual ratings */}
+            <div className="space-y-3">
+              {speakers.map((s) => (
+                <div
+                  key={s.speaker_id}
+                  className="flex items-center gap-3 p-3 bg-bg-card rounded-xl border border-border/50"
+                >
+                  {/* Speaker avatar */}
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {s.speaker.photo_url ? (
+                      <img src={s.speaker.photo_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Mic size={16} className="text-purple-500" />
+                    )}
                   </div>
-                ) : (
-                  <span className="text-gray-500 text-sm">Выберите спикера...</span>
-                )}
-                <ChevronDown size={16} className={`text-gray-400 transition-transform ${showSpeakerSelect ? 'rotate-180' : ''}`} />
-              </button>
 
-              {showSpeakerSelect && (
-                <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg-card rounded-xl border border-border shadow-xl max-h-48 overflow-y-auto">
-                  {speakers.map((s) => (
-                    <button
-                      key={s.speaker_id}
-                      onClick={() => {
-                        setSelectedSpeakerId(s.speaker_id)
-                        setShowSpeakerSelect(false)
-                        hapticFeedback.light()
-                      }}
-                      className={`w-full flex items-center gap-3 p-3 hover:bg-bg transition-colors border-b border-border/50 last:border-0 ${
-                        selectedSpeakerId === s.speaker_id ? 'bg-purple-500/10' : ''
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {s.speaker.photo_url ? (
-                          <img src={s.speaker.photo_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <Mic size={14} className="text-purple-500" />
-                        )}
-                      </div>
-                      <div className="text-left">
-                        <div className="text-sm font-medium">{s.speaker.name}</div>
-                        {s.speaker.title && (
-                          <div className="text-xs text-gray-500">{s.speaker.title}</div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                  {/* Speaker info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{s.speaker.name}</div>
+                    {s.speaker.title && (
+                      <div className="text-xs text-gray-500 truncate">{s.speaker.title}</div>
+                    )}
+                  </div>
+
+                  {/* Star rating for this speaker */}
+                  <div className="flex-shrink-0">
+                    <StarRating
+                      rating={speakerRatings[s.speaker_id] || 0}
+                      size="sm"
+                      interactive
+                      onChange={(r) => handleSpeakerRating(s.speaker_id, r)}
+                    />
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
-
-            {/* Speaker star rating */}
-            {selectedSpeakerId && (
-              <div className="flex justify-center">
-                <StarRating
-                  rating={speakerRating}
-                  size="md"
-                  interactive
-                  onChange={(r) => {
-                    setSpeakerRating(r)
-                    hapticFeedback.light()
-                  }}
-                />
-              </div>
-            )}
           </div>
         )}
 
