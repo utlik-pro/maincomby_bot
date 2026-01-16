@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, Send } from 'lucide-react'
 
 function AuthCallbackContent() {
     const searchParams = useSearchParams()
@@ -14,6 +14,7 @@ function AuthCallbackContent() {
 
     const token = searchParams.get('token')
     const returnUrl = searchParams.get('return') || '/'
+    const botLink = `https://t.me/maincomapp_bot?start=auth_${token}`
 
     useEffect(() => {
         if (!token) {
@@ -90,9 +91,20 @@ function AuthCallbackContent() {
                             <h1 className="text-2xl font-bold text-white mb-2">
                                 Авторизация
                             </h1>
-                            <p className="text-gray-400 mb-6">{message}</p>
+                            <p className="text-gray-400 mb-4">{message}</p>
+
+                            <a
+                                href={botLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 bg-[#0088cc] text-white px-6 py-3 rounded-xl hover:bg-[#0077b5] transition-colors mb-4"
+                            >
+                                <Send size={20} />
+                                Открыть Telegram
+                            </a>
+
                             <div className="text-sm text-gray-500">
-                                Откройте Telegram и подтвердите вход в боте @maincomapp_bot
+                                Нажмите кнопку выше и подтвердите вход в боте
                             </div>
                         </>
                     )}
