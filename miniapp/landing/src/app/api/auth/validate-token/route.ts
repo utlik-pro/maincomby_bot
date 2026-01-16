@@ -98,68 +98,64 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/auth/validate-token
- * Called by the bot to confirm a token with user_id
- * Body: { token, user_id (telegram id) }
+ * Called by miniapp to confirm a token with 6-digit code
+ * Body: { code (6-digit), tg_user_id (telegram id) }
  */
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
-        const { token, user_id } = body
+        const { code, tg_user_id } = body
 
-        if (!token || !user_id) {
-            return NextResponse.json({ error: 'Token and user_id are required' }, { status: 400 })
+        if (!code || !tg_user_id) {
+            return NextResponse.json({ error: 'Code and tg_user_id are required' }, { status: 400 })
         }
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
         }
 
-        // Get token from database
+        // Find token by short_code
         const { data: tokenData, error: tokenError } = await supabase
             .from('auth_session_tokens')
             .select('*')
-            .eq('token', token)
+            .eq('short_code', code)
+            .is('used_at', null)
             .single()
 
         if (tokenError || !tokenData) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+            return NextResponse.json({ error: 'Неверный код' }, { status: 401 })
         }
 
         // Check if token is expired
         if (new Date(tokenData.expires_at) < new Date()) {
-            return NextResponse.json({ error: 'Token expired' }, { status: 401 })
-        }
-
-        // Check if already used
-        if (tokenData.used_at) {
-            return NextResponse.json({ error: 'Token already used' }, { status: 401 })
+            return NextResponse.json({ error: 'Код истёк' }, { status: 401 })
         }
 
         // Get internal user ID from Telegram user_id
         const { data: user, error: userError } = await supabase
             .from('bot_users')
             .select('id')
-            .eq('user_id', user_id)
+            .eq('user_id', tg_user_id)
             .single()
 
         if (userError || !user) {
-            return NextResponse.json({ error: 'User not found in database' }, { status: 404 })
+            return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 })
         }
 
         // Update token with user_id
         const { error: updateError } = await supabase
             .from('auth_session_tokens')
             .update({ user_id: user.id })
-            .eq('token', token)
+            .eq('short_code', code)
 
         if (updateError) {
             console.error('Error updating token:', updateError)
-            return NextResponse.json({ error: 'Failed to update token' }, { status: 500 })
+            return NextResponse.json({ error: 'Ошибка подтверждения' }, { status: 500 })
         }
 
         return NextResponse.json({
             success: true,
-            message: 'Token confirmed'
+            message: 'Вход подтверждён!'
         })
 
     } catch (error) {

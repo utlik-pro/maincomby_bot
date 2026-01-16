@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Rocket, LogOut, User, Crown, Loader2 } from 'lucide-react'
+import { Menu, X, Rocket, LogOut, User, Crown } from 'lucide-react'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { useAuth } from '@/context/AuthContext'
 
@@ -29,7 +29,6 @@ const TIER_LABELS: Record<string, { ru: string; en: string; color: string }> = {
 export function Navigation({ dict, locale }: NavigationProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [showUserMenu, setShowUserMenu] = useState(false)
-    const [isLoggingIn, setIsLoggingIn] = useState(false)
     const isRussian = locale === 'ru'
     const router = useRouter()
     const { user, logout, subscriptionTier, isLoading } = useAuth()
@@ -41,31 +40,9 @@ export function Navigation({ dict, locale }: NavigationProps) {
         { href: '/#faq', label: dict.faq },
     ]
 
-    // Bot-based login flow
-    const handleLogin = async () => {
-        setIsLoggingIn(true)
-        try {
-            // Generate auth token
-            const response = await fetch('/api/auth/generate-token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ return_url: window.location.pathname }),
-            })
-            const data = await response.json()
-
-            if (data.success && data.token && data.botLink) {
-                // Open bot in new tab
-                window.open(data.botLink, '_blank')
-                // Redirect to callback page
-                router.push(`/${locale}/auth/callback?token=${data.token}&return=${encodeURIComponent(window.location.pathname)}`)
-            } else {
-                console.error('Failed to generate token:', data.error)
-            }
-        } catch (error) {
-            console.error('Login error:', error)
-        } finally {
-            setIsLoggingIn(false)
-        }
+    // Redirect to login page with QR code
+    const handleLogin = () => {
+        router.push(`/${locale}/auth/callback?return=${encodeURIComponent(window.location.pathname)}`)
     }
 
     const tierInfo = TIER_LABELS[subscriptionTier] || TIER_LABELS.free
@@ -160,14 +137,9 @@ export function Navigation({ dict, locale }: NavigationProps) {
                             /* Not logged in - show login button */
                             <button
                                 onClick={handleLogin}
-                                disabled={isLoggingIn}
-                                className="btn-shine bg-[var(--accent)] text-black px-5 py-2 rounded-full font-semibold text-sm flex items-center gap-2 hover:scale-105 transition-transform disabled:opacity-50"
+                                className="btn-shine bg-[var(--accent)] text-black px-5 py-2 rounded-full font-semibold text-sm flex items-center gap-2 hover:scale-105 transition-transform"
                             >
-                                {isLoggingIn ? (
-                                    <Loader2 size={16} className="animate-spin" />
-                                ) : (
-                                    <Rocket size={16} />
-                                )}
+                                <Rocket size={16} />
                                 {isRussian ? 'Войти' : 'Login'}
                             </button>
                         )}
@@ -229,15 +201,10 @@ export function Navigation({ dict, locale }: NavigationProps) {
                             ) : (
                                 <button
                                     onClick={() => { handleLogin(); setIsOpen(false); }}
-                                    disabled={isLoggingIn}
-                                    className="w-full btn-shine bg-[var(--accent)] text-black py-3 rounded-xl font-semibold text-center flex items-center justify-center gap-2 disabled:opacity-50"
+                                    className="w-full btn-shine bg-[var(--accent)] text-black py-3 rounded-xl font-semibold text-center flex items-center justify-center gap-2"
                                 >
-                                    {isLoggingIn ? (
-                                        <Loader2 size={18} className="animate-spin" />
-                                    ) : (
-                                        <Rocket size={18} />
-                                    )}
-                                    {isRussian ? 'Войти через Telegram' : 'Login with Telegram'}
+                                    <Rocket size={18} />
+                                    {isRussian ? 'Войти' : 'Login'}
                                 </button>
                             )}
 

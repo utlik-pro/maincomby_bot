@@ -3,28 +3,59 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { Loader2, CheckCircle, XCircle, Send } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, RefreshCw, Smartphone } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 
 function AuthCallbackContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const { login } = useAuth()
-    const [status, setStatus] = useState<'pending' | 'success' | 'error'>('pending')
-    const [message, setMessage] = useState('Ожидаем подтверждение в Telegram...')
+    const [status, setStatus] = useState<'loading' | 'pending' | 'success' | 'error'>('loading')
+    const [message, setMessage] = useState('')
+    const [token, setToken] = useState<string | null>(null)
+    const [shortCode, setShortCode] = useState<string | null>(null)
+    const [expiresAt, setExpiresAt] = useState<Date | null>(null)
 
-    const token = searchParams.get('token')
     const returnUrl = searchParams.get('return') || '/'
-    const botLink = `https://t.me/maincomapp_bot?start=auth_${token}`
 
+    // Generate token on mount
     useEffect(() => {
-        if (!token) {
+        generateToken()
+    }, [])
+
+    const generateToken = async () => {
+        setStatus('loading')
+        try {
+            const response = await fetch('/api/auth/generate-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ return_url: returnUrl }),
+            })
+            const data = await response.json()
+
+            if (data.success && data.token && data.shortCode) {
+                setToken(data.token)
+                setShortCode(data.shortCode)
+                setExpiresAt(new Date(data.expiresAt))
+                setStatus('pending')
+                setMessage('Введите код в приложении MAIN')
+            } else {
+                setStatus('error')
+                setMessage(data.error || 'Ошибка генерации кода')
+            }
+        } catch (error) {
+            console.error('Generate token error:', error)
             setStatus('error')
-            setMessage('Токен не найден')
-            return
+            setMessage('Ошибка соединения')
         }
+    }
+
+    // Poll for confirmation
+    useEffect(() => {
+        if (!token || status !== 'pending') return
 
         let attempts = 0
-        const maxAttempts = 60 // 60 attempts * 2 seconds = 2 minutes timeout
+        const maxAttempts = 150 // 150 * 2s = 5 minutes
 
         const checkToken = async () => {
             try {
@@ -32,79 +63,98 @@ function AuthCallbackContent() {
                 const data = await response.json()
 
                 if (data.success && data.user) {
-                    // User confirmed! Log them in
                     setStatus('success')
                     setMessage('Успешно! Перенаправляем...')
-
-                    // Store user in auth context
                     await login(data.user)
-
-                    // Redirect after short delay
-                    setTimeout(() => {
-                        router.push(returnUrl)
-                    }, 1000)
+                    setTimeout(() => router.push(returnUrl), 1000)
                     return true
                 } else if (data.pending) {
-                    // Still waiting for bot confirmation
                     attempts++
                     if (attempts >= maxAttempts) {
                         setStatus('error')
-                        setMessage('Время ожидания истекло. Попробуйте снова.')
+                        setMessage('Время ожидания истекло')
                         return true
                     }
                     return false
                 } else {
-                    // Error
                     setStatus('error')
                     setMessage(data.error || 'Ошибка авторизации')
                     return true
                 }
             } catch (error) {
                 console.error('Token check error:', error)
-                setStatus('error')
-                setMessage('Ошибка соединения')
-                return true
+                return false
             }
         }
 
-        // Poll every 2 seconds
         const interval = setInterval(async () => {
             const done = await checkToken()
-            if (done) {
-                clearInterval(interval)
-            }
+            if (done) clearInterval(interval)
         }, 2000)
 
-        // Initial check
         checkToken()
-
         return () => clearInterval(interval)
-    }, [token, returnUrl, login, router])
+    }, [token, status, returnUrl, login, router])
+
+    // Format code with space for readability: 847 293
+    const formattedCode = shortCode ? `${shortCode.slice(0, 3)} ${shortCode.slice(3)}` : ''
 
     return (
         <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
             <div className="max-w-md w-full text-center">
                 <div className="bg-[#151515] border border-white/10 rounded-2xl p-8">
-                    {status === 'pending' && (
+
+                    {status === 'loading' && (
                         <>
                             <Loader2 className="w-16 h-16 text-[var(--accent)] mx-auto mb-6 animate-spin" />
                             <h1 className="text-2xl font-bold text-white mb-2">
-                                Авторизация
+                                Подготовка...
                             </h1>
+                        </>
+                    )}
+
+                    {status === 'pending' && shortCode && (
+                        <>
+                            {/* QR Code */}
+                            <div className="bg-white p-4 rounded-xl inline-block mb-6">
+                                <QRCodeSVG
+                                    value={shortCode}
+                                    size={180}
+                                    level="M"
+                                />
+                            </div>
+
+                            <h1 className="text-2xl font-bold text-white mb-2">
+                                Войти на сайт
+                            </h1>
+
                             <p className="text-gray-400 mb-4">{message}</p>
 
-                            <a
-                                href={botLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 bg-[#0088cc] text-white px-6 py-3 rounded-xl hover:bg-[#0077b5] transition-colors mb-4"
-                            >
-                                <Send size={20} />
-                                Открыть Telegram
-                            </a>
+                            {/* Short code display */}
+                            <div className="bg-black/30 border border-white/10 rounded-xl p-4 mb-6">
+                                <div className="text-sm text-gray-500 mb-2">Код для входа:</div>
+                                <div className="text-4xl font-mono font-bold text-[var(--accent)] tracking-widest">
+                                    {formattedCode}
+                                </div>
+                            </div>
 
-                            <div className="text-sm text-gray-500">
-                                Нажмите кнопку выше и подтвердите вход в боте
+                            {/* Instructions */}
+                            <div className="flex items-start gap-3 text-left bg-white/5 rounded-xl p-4 mb-4">
+                                <Smartphone className="w-6 h-6 text-[var(--accent)] flex-shrink-0 mt-0.5" />
+                                <div className="text-sm text-gray-400">
+                                    <p className="font-medium text-white mb-1">Как войти:</p>
+                                    <ol className="list-decimal list-inside space-y-1">
+                                        <li>Откройте приложение MAIN в Telegram</li>
+                                        <li>Нажмите «Войти на сайт»</li>
+                                        <li>Введите код выше</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            {/* Spinner */}
+                            <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Ожидаем подтверждение...
                             </div>
                         </>
                     )}
@@ -126,12 +176,21 @@ function AuthCallbackContent() {
                                 Ошибка
                             </h1>
                             <p className="text-gray-400 mb-6">{message}</p>
-                            <button
-                                onClick={() => router.push('/')}
-                                className="bg-white/10 text-white px-6 py-3 rounded-xl hover:bg-white/20 transition-colors"
-                            >
-                                Вернуться на главную
-                            </button>
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={generateToken}
+                                    className="flex items-center gap-2 bg-[var(--accent)] text-black px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
+                                >
+                                    <RefreshCw size={18} />
+                                    Попробовать снова
+                                </button>
+                                <button
+                                    onClick={() => router.push('/')}
+                                    className="bg-white/10 text-white px-6 py-3 rounded-xl hover:bg-white/20 transition-colors"
+                                >
+                                    На главную
+                                </button>
+                            </div>
                         </>
                     )}
                 </div>
@@ -140,7 +199,6 @@ function AuthCallbackContent() {
     )
 }
 
-// Loading fallback
 function AuthCallbackLoading() {
     return (
         <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">

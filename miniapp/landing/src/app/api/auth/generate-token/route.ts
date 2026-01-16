@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
         // Generate random token
         const token = crypto.randomBytes(32).toString('hex')
 
+        // Generate 6-digit short code for QR/manual entry
+        const shortCode = Math.floor(100000 + Math.random() * 900000).toString()
+
         // Token expires in 5 minutes
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
 
@@ -33,12 +36,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
         }
 
-        // Store token (without user_id yet - will be set when bot confirms)
+        // Store token with short_code (user_id will be set when miniapp confirms)
         const { error } = await supabase
             .from('auth_session_tokens')
             .insert({
                 token,
-                user_id: null, // Will be set when bot confirms
+                short_code: shortCode,
+                user_id: null, // Will be set when miniapp confirms
                 expires_at: expiresAt,
                 platform: 'landing',
             })
@@ -48,13 +52,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Failed to create token' }, { status: 500 })
         }
 
-        // Build bot deep link
-        const botLink = `https://t.me/maincomapp_bot?start=auth_${token}`
-
         return NextResponse.json({
             success: true,
             token,
-            botLink,
+            shortCode,
             expiresAt,
         })
 

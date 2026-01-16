@@ -42,6 +42,7 @@ import {
   BookOpen,
   Share2,
   QrCode,
+  Globe,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { APP_VERSION } from '@/lib/version'
@@ -65,6 +66,7 @@ import type { ProfilePhoto } from '@/types'
 import { RANK_LABELS, SUBSCRIPTION_LIMITS, SubscriptionTier, UserRank, TEAM_BADGES, TeamRole, UserBadge, AvatarSkin, UserAvatarSkin, XP_REWARDS } from '@/types'
 import { useTapEasterEgg, useSecretCode } from '@/lib/easterEggs'
 import NotificationsScreen from './NotificationsScreen'
+import WebLoginScreen from './WebLoginScreen'
 import { ChangelogSheet } from '@/components/ChangelogSheet'
 import { ProfilePreviewCard } from '@/components/ProfilePreviewCard'
 
@@ -180,6 +182,7 @@ const ProfileScreen: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showTeamSection, setShowTeamSection] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showWebLogin, setShowWebLogin] = useState(false)
   const [showSkinSelector, setShowSkinSelector] = useState(false)
   const [showSkinAdmin, setShowSkinAdmin] = useState(false)
   const [showAdminPanel, setShowAdminPanel] = useState(false)
@@ -198,6 +201,7 @@ const ProfileScreen: React.FC = () => {
   const activeSubScreen = showNotifications ? 'notifications' :
     showTeamSection ? 'team' :
     showSettings ? 'settings' :
+    showWebLogin ? 'weblogin' :
     showSkinSelector ? 'skin' :
     showSkinAdmin ? 'skinAdmin' :
     showAdminPanel ? 'admin' :
@@ -210,13 +214,14 @@ const ProfileScreen: React.FC = () => {
     if (showNotifications) setShowNotifications(false)
     else if (showTeamSection) setShowTeamSection(false)
     else if (showSettings) setShowSettings(false)
+    else if (showWebLogin) setShowWebLogin(false)
     else if (showSkinSelector) setShowSkinSelector(false)
     else if (showSkinAdmin) setShowSkinAdmin(false)
     else if (showAdminPanel) setShowAdminPanel(false)
     else if (showNetworkingGuide) setShowNetworkingGuide(false)
     else if (showDebug) setShowDebug(false)
     else if (isEditing) setIsEditing(false)
-  }, [showNotifications, showTeamSection, showSettings, showSkinSelector, showSkinAdmin, showAdminPanel, showNetworkingGuide, showDebug, isEditing])
+  }, [showNotifications, showTeamSection, showSettings, showWebLogin, showSkinSelector, showSkinAdmin, showAdminPanel, showNetworkingGuide, showDebug, isEditing])
 
   useEffect(() => {
     if (activeSubScreen) {
@@ -671,6 +676,11 @@ const ProfileScreen: React.FC = () => {
     return <NotificationsScreen onClose={() => setShowNotifications(false)} />
   }
 
+  // Web Login Screen
+  if (showWebLogin) {
+    return <WebLoginScreen onBack={() => setShowWebLogin(false)} />
+  }
+
   // Settings Screen
   // Networking Guide
   if (showNetworkingGuide) {
@@ -843,6 +853,21 @@ const ProfileScreen: React.FC = () => {
               </div>
               <ChevronRight size={18} className="text-gray-500" />
             </button>
+          </Card>
+
+          {/* Web Login */}
+          <Card className="mb-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Globe size={18} className="text-blue-400" />
+              Войти на сайт
+            </h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Подтвердите вход на maincombybot.vercel.app с помощью кода
+            </p>
+            <Button fullWidth variant="secondary" onClick={() => setShowWebLogin(true)}>
+              <Globe size={18} />
+              Ввести код
+            </Button>
           </Card>
 
           {/* Add to Home Screen */}
