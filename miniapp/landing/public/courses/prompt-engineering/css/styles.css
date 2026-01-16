@@ -238,9 +238,9 @@ a:hover {
   gap: 1rem;
 }
 
-/* Teacher Mode Toggle */
+/* Teacher Mode Toggle - Hidden for students */
 .mode-toggle {
-  display: flex;
+  display: none; /* Hidden - teacher mode disabled */
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;

@@ -92,13 +92,17 @@ export function Navigation({ dict, locale }: NavigationProps) {
                                     onClick={() => setShowUserMenu(!showUserMenu)}
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                                 >
-                                    {user.photo_url ? (
-                                        <img src={user.photo_url} alt="" className="w-7 h-7 rounded-full" />
-                                    ) : (
-                                        <div className="w-7 h-7 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
-                                            <User size={14} className="text-[var(--accent)]" />
-                                        </div>
-                                    )}
+                                    <div className="relative">
+                                        {user.photo_url ? (
+                                            <img src={user.photo_url} alt="" className="w-7 h-7 rounded-full" />
+                                        ) : (
+                                            <div className="w-7 h-7 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
+                                                <User size={14} className="text-[var(--accent)]" />
+                                            </div>
+                                        )}
+                                        {/* Online indicator */}
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#1a1a1a]" />
+                                    </div>
                                     <span className="text-sm font-medium text-white max-w-[100px] truncate">
                                         {user.first_name}
                                     </span>
@@ -175,15 +179,22 @@ export function Navigation({ dict, locale }: NavigationProps) {
                             {user ? (
                                 <>
                                     <div className="w-full flex items-center gap-3 px-3 py-2 bg-white/5 rounded-xl">
-                                        {user.photo_url ? (
-                                            <img src={user.photo_url} alt="" className="w-10 h-10 rounded-full" />
-                                        ) : (
-                                            <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
-                                                <User size={20} className="text-[var(--accent)]" />
-                                            </div>
-                                        )}
+                                        <div className="relative">
+                                            {user.photo_url ? (
+                                                <img src={user.photo_url} alt="" className="w-10 h-10 rounded-full" />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
+                                                    <User size={20} className="text-[var(--accent)]" />
+                                                </div>
+                                            )}
+                                            {/* Online indicator */}
+                                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1a1a1a]" />
+                                        </div>
                                         <div className="flex-1">
-                                            <div className="text-white font-medium">{user.first_name}</div>
+                                            <div className="text-white font-medium flex items-center gap-2">
+                                                {user.first_name}
+                                                <span className="text-xs text-green-400">{isRussian ? 'онлайн' : 'online'}</span>
+                                            </div>
                                             <div className={`text-xs ${tierInfo.color} flex items-center gap-1`}>
                                                 {subscriptionTier !== 'free' && <Crown size={12} />}
                                                 {tierInfo[isRussian ? 'ru' : 'en']}

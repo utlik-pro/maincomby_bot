@@ -52,7 +52,7 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
 
     // Get access info for this course (only available when logged in)
     const accessInfo = checkCourseAccess(course.id)
-    const hasAccess = accessInfo?.hasAccess || course.isPublic || false
+    const hasAccess = accessInfo?.hasAccess || false
     const accessType = accessInfo?.accessType
 
     const handleStart = () => {
@@ -192,25 +192,15 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
 
                             {/* Action Buttons */}
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                                {/* User has access or course is public */}
-                                {(hasAccess || course.isPublic) ? (
-                                    course.isPublic ? (
-                                        <a
-                                            href={`/courses/${course.slug}/index.html`}
-                                            className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
-                                        >
-                                            <Play size={20} />
-                                            {isRussian ? 'Начать курс' : 'Start Course'}
-                                        </a>
-                                    ) : (
-                                        <button
-                                            onClick={handleStart}
-                                            className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
-                                        >
-                                            <Play size={20} />
-                                            {isRussian ? 'Начать курс' : 'Start Course'}
-                                        </button>
-                                    )
+                                {/* User has access to course */}
+                                {hasAccess ? (
+                                    <button
+                                        onClick={handleStart}
+                                        className="btn-shine flex-1 bg-[var(--accent)] text-black font-bold text-lg py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+                                    >
+                                        <Play size={20} />
+                                        {isRussian ? 'Начать курс' : 'Start Course'}
+                                    </button>
                                 ) : (
                                     /* User doesn't have access */
                                     <>
@@ -242,10 +232,10 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                                 )}
                             </div>
                             <p className="mt-4 text-xs text-center sm:text-left text-gray-500">
-                                {hasAccess || course.isPublic
+                                {hasAccess
                                     ? (isRussian ? 'У вас есть доступ к этому курсу' : 'You have access to this course')
                                     : !user
-                                        ? (isRussian ? 'Войдите через Telegram, чтобы проверить доступ' : 'Login with Telegram to check access')
+                                        ? (isRussian ? 'Войдите через Telegram, чтобы получить доступ' : 'Login with Telegram to get access')
                                         : (isRussian ? 'Оформите подписку или купите курс отдельно' : 'Subscribe or purchase this course separately')
                                 }
                             </p>
@@ -345,22 +335,13 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
                     <h2 className="text-3xl font-bold text-white mb-6">
                         {isRussian ? 'Готовы начать?' : 'Ready to start?'}
                     </h2>
-                    {hasAccess || course.isPublic ? (
-                        course.isPublic ? (
-                            <a
-                                href={`/courses/${course.slug}/index.html`}
-                                className="btn-shine inline-block bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
-                            >
-                                {isRussian ? 'Начать курс' : 'Start Course'}
-                            </a>
-                        ) : (
-                            <button
-                                onClick={handleStart}
-                                className="btn-shine bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
-                            >
-                                {isRussian ? 'Начать курс' : 'Start Course'}
-                            </button>
-                        )
+                    {hasAccess ? (
+                        <button
+                            onClick={handleStart}
+                            className="btn-shine bg-[var(--accent)] text-black font-bold text-lg py-4 px-12 rounded-xl hover:scale-105 transition-transform"
+                        >
+                            {isRussian ? 'Начать курс' : 'Start Course'}
+                        </button>
                     ) : (
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <button

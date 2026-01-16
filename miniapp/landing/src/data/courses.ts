@@ -49,9 +49,9 @@ export const coursesData: CourseData[] = [
         lessonsCount: 6,
         icon: Sparkles,
         color: '#c8ff00',
-        tags: ['Бесплатно', 'Открытый доступ'],
-        tagsEn: ['Free', 'Open Access'],
-        isPublic: true, // This course is publicly accessible on the landing page
+        tags: ['Бесплатно'],
+        tagsEn: ['Free'],
+        isPublic: false, // Requires auth like other courses
         accessTier: 'free',
         learningOutcomes: [
             'Структура эффективного промпта',
