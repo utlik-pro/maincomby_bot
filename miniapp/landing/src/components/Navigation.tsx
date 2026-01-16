@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Menu, X, Rocket } from 'lucide-react'
+import { Menu, X, Rocket, LogOut, User, Crown } from 'lucide-react'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { TelegramLoginWidget, TelegramUser } from './TelegramLoginWidget'
+import { useAuth } from '@/context/AuthContext'
 
 interface NavigationProps {
     dict: {
@@ -17,9 +19,18 @@ interface NavigationProps {
     locale: string
 }
 
+// Subscription tier display names
+const TIER_LABELS: Record<string, { ru: string; en: string; color: string }> = {
+    free: { ru: 'Free', en: 'Free', color: 'text-gray-400' },
+    light: { ru: 'Light', en: 'Light', color: 'text-blue-400' },
+    pro: { ru: 'Pro', en: 'Pro', color: 'text-purple-400' },
+}
+
 export function Navigation({ dict, locale }: NavigationProps) {
     const [isOpen, setIsOpen] = useState(false)
+    const [showUserMenu, setShowUserMenu] = useState(false)
     const isRussian = locale === 'ru'
+    const { user, login, logout, subscriptionTier, isLoading } = useAuth()
 
     const links = [
         { href: `/${locale}/learn`, label: dict.courses },
@@ -27,6 +38,12 @@ export function Navigation({ dict, locale }: NavigationProps) {
         { href: '/#pricing', label: dict.pricing },
         { href: '/#faq', label: dict.faq },
     ]
+
+    const handleTelegramAuth = async (telegramUser: TelegramUser) => {
+        await login(telegramUser)
+    }
+
+    const tierInfo = TIER_LABELS[subscriptionTier] || TIER_LABELS.free
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50">
@@ -60,19 +77,69 @@ export function Navigation({ dict, locale }: NavigationProps) {
                         ))}
                     </div>
 
-                    {/* Right Side: Language & CTA */}
+                    {/* Right Side: Language & Auth */}
                     <div className="hidden md:flex items-center gap-4">
                         <LanguageSwitcher locale={locale} />
 
-                        <a
-                            href="https://t.me/maincomapp_bot"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-shine bg-[var(--accent)] text-black px-5 py-2 rounded-full font-semibold text-sm flex items-center gap-2 hover:scale-105 transition-transform"
-                        >
-                            <Rocket size={16} />
-                            {isRussian ? 'Войти через Telegram' : 'Enter via Telegram'}
-                        </a>
+                        {isLoading ? (
+                            <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
+                        ) : user ? (
+                            /* Logged in - show user menu */
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowUserMenu(!showUserMenu)}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                                >
+                                    {user.photo_url ? (
+                                        <img src={user.photo_url} alt="" className="w-7 h-7 rounded-full" />
+                                    ) : (
+                                        <div className="w-7 h-7 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
+                                            <User size={14} className="text-[var(--accent)]" />
+                                        </div>
+                                    )}
+                                    <span className="text-sm font-medium text-white max-w-[100px] truncate">
+                                        {user.first_name}
+                                    </span>
+                                    <span className={`text-xs font-medium ${tierInfo.color} flex items-center gap-1`}>
+                                        {subscriptionTier !== 'free' && <Crown size={12} />}
+                                        {tierInfo[isRussian ? 'ru' : 'en']}
+                                    </span>
+                                </button>
+
+                                {/* Dropdown menu */}
+                                {showUserMenu && (
+                                    <div className="absolute right-0 top-full mt-2 w-48 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl">
+                                        <a
+                                            href="https://t.me/maincomapp_bot"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors"
+                                        >
+                                            <Rocket size={16} />
+                                            {isRussian ? 'Открыть Mini App' : 'Open Mini App'}
+                                        </a>
+                                        <button
+                                            onClick={() => {
+                                                logout()
+                                                setShowUserMenu(false)
+                                            }}
+                                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-white/5 transition-colors"
+                                        >
+                                            <LogOut size={16} />
+                                            {isRussian ? 'Выйти' : 'Logout'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* Not logged in - show Telegram Login */
+                            <TelegramLoginWidget
+                                botUsername="maincomapp_bot"
+                                onAuth={handleTelegramAuth}
+                                buttonSize="medium"
+                                cornerRadius={20}
+                            />
+                        )}
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -102,16 +169,42 @@ export function Navigation({ dict, locale }: NavigationProps) {
                         ))}
 
                         <div className="pt-4 mt-2 border-t border-white/10 flex flex-col gap-4 items-center">
-                            <a
-                                href="https://t.me/maincomapp_bot"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full btn-shine bg-[var(--accent)] text-black py-3 rounded-xl font-semibold text-center flex items-center justify-center gap-2"
-                                onClick={() => setIsOpen(false)}
-                            >
-                                <Rocket size={18} />
-                                {isRussian ? 'Войти через Telegram' : 'Enter via Telegram'}
-                            </a>
+                            {user ? (
+                                <>
+                                    <div className="w-full flex items-center gap-3 px-3 py-2 bg-white/5 rounded-xl">
+                                        {user.photo_url ? (
+                                            <img src={user.photo_url} alt="" className="w-10 h-10 rounded-full" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
+                                                <User size={20} className="text-[var(--accent)]" />
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <div className="text-white font-medium">{user.first_name}</div>
+                                            <div className={`text-xs ${tierInfo.color} flex items-center gap-1`}>
+                                                {subscriptionTier !== 'free' && <Crown size={12} />}
+                                                {tierInfo[isRussian ? 'ru' : 'en']}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => { logout(); setIsOpen(false); }}
+                                        className="w-full py-2 text-red-400 text-sm flex items-center justify-center gap-2"
+                                    >
+                                        <LogOut size={16} />
+                                        {isRussian ? 'Выйти' : 'Logout'}
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="w-full flex justify-center">
+                                    <TelegramLoginWidget
+                                        botUsername="maincomapp_bot"
+                                        onAuth={handleTelegramAuth}
+                                        buttonSize="large"
+                                        cornerRadius={12}
+                                    />
+                                </div>
+                            )}
 
                             <div className="flex gap-2 w-full">
                                 <Link
