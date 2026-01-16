@@ -5,6 +5,7 @@ import { BackToTop } from "@/components/BackToTop";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Particles } from "@/components/Particles";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
     title: "MAIN Platform - Запустите своё приложение для сообщества",
@@ -69,12 +70,14 @@ export default async function LocaleLayout({
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
             </head>
             <body className="antialiased">
-                <LoadingScreen />
-                <ScrollProgress />
-                <Particles />
-                <UpdateBanner />
-                {children}
-                <BackToTop />
+                <AuthProvider>
+                    <LoadingScreen />
+                    <ScrollProgress />
+                    <Particles />
+                    <UpdateBanner />
+                    {children}
+                    <BackToTop />
+                </AuthProvider>
             </body>
         </html>
     );
