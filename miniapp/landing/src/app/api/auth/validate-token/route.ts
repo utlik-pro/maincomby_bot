@@ -111,9 +111,9 @@ export async function GET(req: NextRequest) {
             .update({ used_at: new Date().toISOString() })
             .eq('token', token)
 
-        // Create a web session for tracking (30 days expiry)
+        // Create a web session for tracking (24 hours expiry)
         const sessionExpiry = new Date()
-        sessionExpiry.setDate(sessionExpiry.getDate() + 30)
+        sessionExpiry.setTime(sessionExpiry.getTime() + 24 * 60 * 60 * 1000)
 
         const { data: session, error: sessionError } = await supabase
             .from('web_sessions')
