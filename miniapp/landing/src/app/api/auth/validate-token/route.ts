@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
         // Get user data
         const { data: user, error: userError } = await supabase
             .from('bot_users')
-            .select('id, user_id, username, first_name, last_name, subscription_tier, created_at')
+            .select('id, tg_user_id, username, first_name, last_name, subscription_tier, created_at')
             .eq('id', tokenData.user_id)
             .single()
 
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             success: true,
             user: {
-                id: user.user_id, // Telegram user ID
+                id: user.tg_user_id, // Telegram user ID
                 first_name: user.first_name,
                 last_name: user.last_name,
                 username: user.username,
