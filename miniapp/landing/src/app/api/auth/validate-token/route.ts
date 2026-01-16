@@ -7,7 +7,12 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 let supabase: any = null
 
 if (supabaseUrl && supabaseServiceKey) {
-    supabase = createClient(supabaseUrl, supabaseServiceKey)
+    supabase = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    })
 }
 
 export const runtime = 'nodejs'
@@ -72,17 +77,31 @@ export async function GET(req: NextRequest) {
         }
 
         // Get user data by tg_user_id
+        console.log('GET: Looking up user with tg_user_id:', tokenData.confirmed_tg_user_id)
+
         const { data: user, error: userError } = await supabase
             .from('bot_users')
             .select('id, tg_user_id, username, first_name, last_name, subscription_tier, created_at')
             .eq('tg_user_id', tokenData.confirmed_tg_user_id)
             .single()
 
+        console.log('GET: User lookup result:', { user, error: userError?.message, code: userError?.code })
+
         if (userError || !user) {
-            console.error('User lookup failed:', { confirmed_tg_user_id: tokenData.confirmed_tg_user_id, error: userError })
+            console.error('User lookup failed:', {
+                confirmed_tg_user_id: tokenData.confirmed_tg_user_id,
+                errorMessage: userError?.message,
+                errorCode: userError?.code,
+                errorDetails: userError?.details,
+                errorHint: userError?.hint
+            })
             return NextResponse.json({
                 error: 'User not found',
-                debug: { confirmed_tg_user_id: tokenData.confirmed_tg_user_id }
+                debug: {
+                    confirmed_tg_user_id: tokenData.confirmed_tg_user_id,
+                    errorMessage: userError?.message,
+                    errorCode: userError?.code
+                }
             }, { status: 404, headers: corsHeaders })
         }
 
