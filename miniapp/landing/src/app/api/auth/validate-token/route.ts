@@ -12,6 +12,18 @@ if (supabaseUrl && supabaseServiceKey) {
 
 export const runtime = 'nodejs'
 
+// CORS headers for cross-origin requests from miniapp
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+    return NextResponse.json({}, { headers: corsHeaders })
+}
+
 /**
  * GET /api/auth/validate-token?token=xxx
  * Validates a token and returns user data if valid
@@ -107,11 +119,11 @@ export async function POST(req: NextRequest) {
         const { code, tg_user_id } = body
 
         if (!code || !tg_user_id) {
-            return NextResponse.json({ error: 'Code and tg_user_id are required' }, { status: 400 })
+            return NextResponse.json({ error: 'Code and tg_user_id are required' }, { status: 400, headers: corsHeaders })
         }
 
         if (!supabase) {
-            return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
+            return NextResponse.json({ error: 'Database not configured' }, { status: 500, headers: corsHeaders })
         }
 
         // Find token by short_code
@@ -123,12 +135,12 @@ export async function POST(req: NextRequest) {
             .single()
 
         if (tokenError || !tokenData) {
-            return NextResponse.json({ error: 'Неверный код' }, { status: 401 })
+            return NextResponse.json({ error: 'Неверный код' }, { status: 401, headers: corsHeaders })
         }
 
         // Check if token is expired
         if (new Date(tokenData.expires_at) < new Date()) {
-            return NextResponse.json({ error: 'Код истёк' }, { status: 401 })
+            return NextResponse.json({ error: 'Код истёк' }, { status: 401, headers: corsHeaders })
         }
 
         // Get internal user ID from Telegram user_id
@@ -139,7 +151,7 @@ export async function POST(req: NextRequest) {
             .single()
 
         if (userError || !user) {
-            return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 })
+            return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404, headers: corsHeaders })
         }
 
         // Update token with user_id
@@ -150,16 +162,16 @@ export async function POST(req: NextRequest) {
 
         if (updateError) {
             console.error('Error updating token:', updateError)
-            return NextResponse.json({ error: 'Ошибка подтверждения' }, { status: 500 })
+            return NextResponse.json({ error: 'Ошибка подтверждения' }, { status: 500, headers: corsHeaders })
         }
 
         return NextResponse.json({
             success: true,
             message: 'Вход подтверждён!'
-        })
+        }, { headers: corsHeaders })
 
     } catch (error) {
         console.error('Confirm token error:', error)
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: corsHeaders })
     }
 }

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Globe, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { ArrowLeft, QrCode, Loader2, CheckCircle, XCircle, Keyboard, Camera } from 'lucide-react'
+import { Html5Qrcode } from 'html5-qrcode'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
 import { Button, Input } from '@/components/ui'
@@ -15,9 +16,82 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
   const [code, setCode] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [mode, setMode] = useState<'manual' | 'scanner'>('manual')
+  const [scannerReady, setScannerReady] = useState(false)
+  const scannerRef = useRef<Html5Qrcode | null>(null)
+  const scannerContainerId = 'qr-reader'
 
-  const handleSubmit = async () => {
-    if (!code || code.replace(/\s/g, '').length !== 6) {
+  // Cleanup scanner on unmount
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {})
+      }
+    }
+  }, [])
+
+  // Start/stop scanner when mode changes
+  useEffect(() => {
+    if (mode === 'scanner' && status === 'idle') {
+      startScanner()
+    } else {
+      stopScanner()
+    }
+  }, [mode, status])
+
+  const startScanner = async () => {
+    try {
+      // Wait for container to be rendered
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const container = document.getElementById(scannerContainerId)
+      if (!container) return
+
+      scannerRef.current = new Html5Qrcode(scannerContainerId)
+
+      await scannerRef.current.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          // Extract 6-digit code from QR
+          const codeMatch = decodedText.match(/\d{6}/)
+          if (codeMatch) {
+            hapticFeedback.success()
+            setCode(codeMatch[0])
+            stopScanner()
+            setMode('manual')
+            // Auto-submit
+            handleSubmitWithCode(codeMatch[0])
+          }
+        },
+        () => {} // Ignore scan failures
+      )
+
+      setScannerReady(true)
+    } catch (error) {
+      console.error('Scanner error:', error)
+      addToast('Не удалось запустить камеру', 'error')
+      setMode('manual')
+    }
+  }
+
+  const stopScanner = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop()
+        scannerRef.current = null
+      } catch (e) {
+        // Ignore
+      }
+    }
+    setScannerReady(false)
+  }
+
+  const handleSubmitWithCode = async (submitCode: string) => {
+    if (!submitCode || submitCode.replace(/\s/g, '').length !== 6) {
       hapticFeedback.error()
       addToast('Введите 6-значный код', 'error')
       return
@@ -37,7 +111,7 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          code: code.replace(/\s/g, ''), // Remove spaces
+          code: submitCode.replace(/\s/g, ''),
           tg_user_id: user.tg_user_id,
         }),
       })
@@ -49,7 +123,6 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
         hapticFeedback.success()
         addToast('Вход на сайт подтверждён!', 'success')
 
-        // Auto close after success
         setTimeout(() => {
           onBack()
         }, 2000)
@@ -66,10 +139,10 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
     }
   }
 
+  const handleSubmit = () => handleSubmitWithCode(code)
+
   const handleCodeChange = (value: string) => {
-    // Only allow digits, max 6
     const digits = value.replace(/\D/g, '').slice(0, 6)
-    // Format with space: 123 456
     if (digits.length > 3) {
       setCode(`${digits.slice(0, 3)} ${digits.slice(3)}`)
     } else {
@@ -81,6 +154,11 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
     setCode('')
     setStatus('idle')
     setErrorMessage('')
+  }
+
+  const toggleMode = () => {
+    hapticFeedback.light()
+    setMode(mode === 'manual' ? 'scanner' : 'manual')
   }
 
   return (
@@ -112,7 +190,7 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
             ) : status === 'error' ? (
               <XCircle size={40} className="text-red-500" />
             ) : (
-              <Globe size={40} className="text-accent" />
+              <QrCode size={40} className="text-accent" />
             )}
           </div>
         </div>
@@ -123,53 +201,99 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
             ? 'Вход подтверждён!'
             : status === 'error'
             ? 'Ошибка'
+            : mode === 'scanner'
+            ? 'Сканируйте QR-код'
             : 'Подтвердите вход на сайт'}
         </h2>
 
-        <p className="text-gray-400 text-center mb-8">
+        <p className="text-gray-400 text-center mb-6">
           {status === 'success'
             ? 'Вы успешно вошли на сайт maincombybot.vercel.app'
             : status === 'error'
             ? errorMessage
-            : 'Введите 6-значный код, отображаемый на сайте'}
+            : mode === 'scanner'
+            ? 'Наведите камеру на QR-код с экрана сайта'
+            : 'Введите или отсканируйте код с сайта'}
         </p>
 
         {status === 'idle' || status === 'loading' ? (
           <>
-            {/* Code Input */}
-            <div className="mb-6">
-              <Input
-                value={code}
-                onChange={(e) => handleCodeChange(e.target.value)}
-                placeholder="000 000"
-                className="text-center text-3xl font-mono tracking-widest h-16"
-                maxLength={7} // 6 digits + 1 space
-                inputMode="numeric"
-                autoFocus
-              />
+            {/* Mode Toggle */}
+            <div className="flex gap-2 mb-6">
+              <button
+                onClick={() => { setMode('manual'); hapticFeedback.light() }}
+                className={`flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                  mode === 'manual'
+                    ? 'bg-accent text-black font-semibold'
+                    : 'bg-white/5 text-gray-400'
+                }`}
+              >
+                <Keyboard size={18} />
+                Ввести код
+              </button>
+              <button
+                onClick={() => { setMode('scanner'); hapticFeedback.light() }}
+                className={`flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                  mode === 'scanner'
+                    ? 'bg-accent text-black font-semibold'
+                    : 'bg-white/5 text-gray-400'
+                }`}
+              >
+                <Camera size={18} />
+                Сканер
+              </button>
             </div>
 
-            {/* Submit Button */}
-            <Button
-              onClick={handleSubmit}
-              disabled={code.replace(/\s/g, '').length !== 6 || status === 'loading'}
-              className="w-full"
-              size="lg"
-            >
-              {status === 'loading' ? (
-                <Loader2 size={20} className="animate-spin" />
-              ) : (
-                'Подтвердить'
-              )}
-            </Button>
+            {mode === 'manual' ? (
+              <>
+                {/* Code Input */}
+                <div className="mb-6">
+                  <Input
+                    value={code}
+                    onChange={(e) => handleCodeChange(e.target.value)}
+                    placeholder="000 000"
+                    className="text-center text-3xl font-mono tracking-widest h-16"
+                    maxLength={7}
+                    inputMode="numeric"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={code.replace(/\s/g, '').length !== 6 || status === 'loading'}
+                  className="w-full"
+                  size="lg"
+                >
+                  {status === 'loading' ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    'Подтвердить'
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* QR Scanner */}
+                <div className="mb-6 rounded-xl overflow-hidden bg-black aspect-square relative">
+                  <div id={scannerContainerId} className="w-full h-full" />
+                  {!scannerReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black">
+                      <Loader2 size={32} className="animate-spin text-accent" />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Instructions */}
-            <div className="mt-8 p-4 bg-white/5 rounded-xl">
+            <div className="mt-6 p-4 bg-white/5 rounded-xl">
               <p className="text-sm text-gray-400">
                 <span className="font-medium text-white block mb-2">Как это работает:</span>
                 1. Откройте сайт maincombybot.vercel.app<br />
                 2. Нажмите «Войти»<br />
-                3. Введите код с экрана сюда<br />
+                3. {mode === 'scanner' ? 'Отсканируйте QR-код' : 'Введите код с экрана сюда'}<br />
                 4. Вы автоматически войдёте на сайт
               </p>
             </div>
