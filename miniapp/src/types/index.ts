@@ -321,6 +321,24 @@ export interface EventReview {
   }
   // Joined speaker data
   speaker?: Speaker | null
+  // Multiple speaker ratings (from speaker_ratings table)
+  speakerRatings?: SpeakerRatingRecord[]
+}
+
+// Input for creating speaker ratings
+export interface SpeakerRatingInput {
+  speakerId: string
+  rating: number
+}
+
+// Database record for speaker rating
+export interface SpeakerRatingRecord {
+  id: number
+  review_id: number
+  speaker_id: string
+  rating: number
+  created_at: string
+  speaker?: Speaker
 }
 
 export interface Match {
@@ -789,13 +807,15 @@ export interface EventProgramItem {
 // Learning System (Courses & Lessons)
 // ============================================
 
-export type LessonBlockType = 'text' | 'heading' | 'example' | 'tip' | 'list'
+export type LessonBlockType = 'text' | 'heading' | 'example' | 'tip' | 'list' | 'quiz'
 
 export interface LessonBlock {
   type: LessonBlockType
   content: string
-  items?: string[]    // For 'list' type
-  good?: boolean      // For 'example' type (good/bad example)
+  items?: string[]       // For 'list' type
+  good?: boolean         // For 'example' type (good/bad example)
+  options?: string[]     // For 'quiz' type - answer options
+  correctIndex?: number  // For 'quiz' type - index of correct answer (0-based)
 }
 
 export interface Course {

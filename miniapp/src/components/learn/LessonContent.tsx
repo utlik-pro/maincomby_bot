@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Clock, CheckCircle, Copy, Check, Lightbulb, X } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Copy, Check, Lightbulb, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui'
 import type { Lesson, LessonBlock } from '@/types'
 import { hapticFeedback } from '@/lib/telegram'
@@ -11,6 +11,130 @@ interface LessonContentProps {
   onBack: () => void
   onComplete: () => void
   isLoading?: boolean
+}
+
+// Quiz block component with its own state
+const QuizBlock: React.FC<{ block: LessonBlock }> = ({ block }) => {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [isChecked, setIsChecked] = useState(false)
+
+  const isCorrect = selectedIndex === block.correctIndex
+
+  const handleSelect = (index: number) => {
+    if (isChecked) return
+    hapticFeedback.selection()
+    setSelectedIndex(index)
+  }
+
+  const handleCheck = () => {
+    if (selectedIndex === null) return
+    setIsChecked(true)
+    if (isCorrect) {
+      hapticFeedback.success()
+    } else {
+      hapticFeedback.error()
+    }
+  }
+
+  const handleRetry = () => {
+    setSelectedIndex(null)
+    setIsChecked(false)
+  }
+
+  return (
+    <div className="bg-bg-card rounded-xl p-4 mb-4 border border-bg-card">
+      {/* Question header */}
+      <div className="flex items-start gap-3 mb-4">
+        <div className="p-2 rounded-lg bg-accent/20">
+          <HelpCircle size={18} className="text-accent" />
+        </div>
+        <p className="text-white font-medium flex-1">{block.content}</p>
+      </div>
+
+      {/* Options */}
+      <div className="space-y-2 mb-4">
+        {block.options?.map((option, index) => {
+          const isSelected = selectedIndex === index
+          const isCorrectOption = index === block.correctIndex
+
+          let optionStyle = 'bg-bg border-bg hover:border-gray-600'
+          if (isChecked) {
+            if (isCorrectOption) {
+              optionStyle = 'bg-success/20 border-success'
+            } else if (isSelected && !isCorrectOption) {
+              optionStyle = 'bg-danger/20 border-danger'
+            }
+          } else if (isSelected) {
+            optionStyle = 'bg-accent/20 border-accent'
+          }
+
+          return (
+            <motion.button
+              key={index}
+              whileTap={!isChecked ? { scale: 0.98 } : undefined}
+              onClick={() => handleSelect(index)}
+              disabled={isChecked}
+              className={`
+                w-full text-left p-3 rounded-xl border transition-all
+                ${optionStyle}
+                ${isChecked ? 'cursor-default' : 'cursor-pointer'}
+              `}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`
+                  w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0
+                  ${isChecked && isCorrectOption ? 'border-success bg-success' : ''}
+                  ${isChecked && isSelected && !isCorrectOption ? 'border-danger bg-danger' : ''}
+                  ${!isChecked && isSelected ? 'border-accent bg-accent' : ''}
+                  ${!isChecked && !isSelected ? 'border-gray-500' : ''}
+                `}>
+                  {isChecked && isCorrectOption && <Check size={14} className="text-bg" />}
+                  {isChecked && isSelected && !isCorrectOption && <span className="text-white text-xs">✕</span>}
+                  {!isChecked && isSelected && <div className="w-2 h-2 rounded-full bg-bg" />}
+                </div>
+                <span className={`text-sm ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                  {option}
+                </span>
+              </div>
+            </motion.button>
+          )
+        })}
+      </div>
+
+      {/* Action button */}
+      {!isChecked ? (
+        <Button
+          variant="primary"
+          fullWidth
+          onClick={handleCheck}
+          disabled={selectedIndex === null}
+        >
+          Проверить
+        </Button>
+      ) : (
+        <div className="space-y-3">
+          {/* Feedback */}
+          <div className={`
+            p-3 rounded-xl text-center text-sm font-medium
+            ${isCorrect ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}
+          `}>
+            {isCorrect ? 'Правильно!' : 'Неправильно. Попробуйте ещё раз.'}
+          </div>
+
+          {/* Retry button if wrong */}
+          {!isCorrect && (
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={handleRetry}
+            >
+              Попробовать снова
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // Block renderer component
@@ -104,6 +228,9 @@ const BlockRenderer: React.FC<{ block: LessonBlock }> = ({ block }) => {
           </ul>
         </div>
       )
+
+    case 'quiz':
+      return <QuizBlock block={block} />
 
     default:
       return null
