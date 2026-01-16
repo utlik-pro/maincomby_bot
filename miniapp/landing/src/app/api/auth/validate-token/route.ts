@@ -150,19 +150,26 @@ export async function POST(req: NextRequest) {
         // Get internal user ID from Telegram user_id
         const { data: user, error: userError } = await supabase
             .from('bot_users')
-            .select('id')
+            .select('id, tg_user_id')
             .eq('tg_user_id', tg_user_id)
             .single()
 
+        console.log('POST: Found user:', { user, tg_user_id, userError })
+
         if (userError || !user) {
-            return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404, headers: corsHeaders })
+            return NextResponse.json({
+                error: 'Пользователь не найден',
+                debug: { tg_user_id, userError: userError?.message }
+            }, { status: 404, headers: corsHeaders })
         }
 
-        // Update token with user_id
+        // Update token with user_id (internal database ID)
         const { error: updateError } = await supabase
             .from('auth_session_tokens')
             .update({ user_id: user.id })
             .eq('short_code', code)
+
+        console.log('POST: Updated token with user_id:', user.id)
 
         if (updateError) {
             console.error('Error updating token:', updateError)
@@ -171,7 +178,8 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: 'Вход подтверждён!'
+            message: 'Вход подтверждён!',
+            debug: { storedUserId: user.id, tg_user_id: user.tg_user_id }
         }, { headers: corsHeaders })
 
     } catch (error) {
