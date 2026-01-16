@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
 
         const { data: user, error: userError } = await supabase
             .from('bot_users')
-            .select('id, tg_user_id, username, first_name, last_name, subscription_tier, created_at')
+            .select('id, tg_user_id, username, first_name, last_name, subscription_tier, first_seen_at')
             .eq('tg_user_id', tokenData.confirmed_tg_user_id)
             .single()
 
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
                 username: user.username,
                 photo_url: null, // We don't have this in bot_users
                 subscription_tier: user.subscription_tier,
-                created_at: user.created_at,
+                created_at: user.first_seen_at,
             }
         }, { headers: corsHeaders })
 
