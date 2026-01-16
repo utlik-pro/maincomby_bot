@@ -16,7 +16,7 @@ if (!supabaseAnonKey) {
 // Lazy initialization - only create client when needed and key is available
 let _supabase: SupabaseClient | null = null
 
-function getSupabase(): SupabaseClient {
+export function getSupabase(): SupabaseClient {
   if (!_supabase) {
     if (!supabaseAnonKey) {
       throw new Error('Supabase not configured - running in dev mode')
@@ -24,6 +24,14 @@ function getSupabase(): SupabaseClient {
     _supabase = createClient(supabaseUrl, supabaseAnonKey)
   }
   return _supabase
+}
+
+// Export supabase client for direct access (use getSupabase() for lazy init)
+export const supabase = {
+  from: (table: string) => getSupabase().from(table),
+  rpc: (fn: string, params?: Record<string, unknown>) => getSupabase().rpc(fn, params),
+  auth: getSupabase().auth,
+  storage: getSupabase().storage,
 }
 
 // Helper functions for common operations
