@@ -79,7 +79,11 @@ export async function GET(req: NextRequest) {
             .single()
 
         if (userError || !user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 })
+            console.error('User lookup failed:', { tokenUserId: tokenData.user_id, error: userError })
+            return NextResponse.json({
+                error: 'User not found',
+                debug: { tokenUserId: tokenData.user_id }
+            }, { status: 404 })
         }
 
         // Mark token as used
