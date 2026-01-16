@@ -13,12 +13,14 @@ import {
     CheckCircle,
     Lock,
     Crown,
-    Sparkles
+    Sparkles,
+    Rocket,
+    Loader2
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { Footer } from '@/components/sections/Footer'
 import { coursesData, AccessTier } from '@/data/courses'
-import { notFound } from 'next/navigation'
+import { notFound, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 
@@ -39,10 +41,63 @@ export default function CourseDetailClient({ dict, locale, slug }: CourseDetailC
     // Find course by slug
     const course = coursesData.find(c => c.slug === slug)
     const isRussian = locale === 'ru'
-    const { user, checkCourseAccess, subscriptionTier } = useAuth()
+    const router = useRouter()
+    const { user, isLoading, checkCourseAccess, subscriptionTier } = useAuth()
 
     if (!course) {
         notFound()
+    }
+
+    const handleLogin = () => {
+        router.push(`/${locale}/auth/callback?return=${encodeURIComponent(`/${locale}/learn/${slug}`)}`)
+    }
+
+    // Show loading state
+    if (isLoading) {
+        return (
+            <main className="min-h-screen bg-[var(--background)]">
+                <Navigation dict={dict.nav} locale={locale} />
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
+                </div>
+            </main>
+        )
+    }
+
+    // Show login required if not authenticated
+    if (!user) {
+        return (
+            <main className="min-h-screen bg-[var(--background)]">
+                <Navigation dict={dict.nav} locale={locale} />
+                <div className="flex items-center justify-center min-h-[60vh] px-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="max-w-md w-full text-center"
+                    >
+                        <div className="w-20 h-20 rounded-full bg-[var(--accent)]/10 flex items-center justify-center mx-auto mb-6">
+                            <Lock className="w-10 h-10 text-[var(--accent)]" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-4">
+                            {isRussian ? 'Требуется авторизация' : 'Login Required'}
+                        </h2>
+                        <p className="text-gray-400 mb-8">
+                            {isRussian
+                                ? `Войдите через Telegram, чтобы получить доступ к курсу "${course.title}"`
+                                : `Log in via Telegram to access the course "${course.titleEn}"`}
+                        </p>
+                        <button
+                            onClick={handleLogin}
+                            className="btn-shine flex items-center justify-center gap-2 bg-[var(--accent)] text-black font-semibold px-8 py-4 rounded-xl text-lg mx-auto"
+                        >
+                            <Rocket size={20} />
+                            {isRussian ? 'Войти' : 'Log In'}
+                        </button>
+                    </motion.div>
+                </div>
+                <Footer dict={dict.footer} locale={locale} />
+            </main>
+        )
     }
 
     // Get access info for this course

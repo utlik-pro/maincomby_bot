@@ -9,12 +9,16 @@ import {
     Lightbulb,
     Rocket,
     GraduationCap,
-    Play
+    Play,
+    Lock,
+    Loader2
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { Footer } from '@/components/sections/Footer'
 import { coursesData } from '@/data/courses'
 import { CourseCard } from '@/components/CourseCard'
+import { useAuth } from '@/context/AuthContext'
+import { useRouter } from 'next/navigation'
 
 // Feature card for benefits section
 const FeatureCard: React.FC<{
@@ -45,6 +49,60 @@ interface LearnClientPageProps {
 
 export default function LearnClientPage({ dict, locale }: LearnClientPageProps) {
     const isRussian = locale === 'ru'
+    const router = useRouter()
+    const { user, isLoading } = useAuth()
+
+    const handleLogin = () => {
+        router.push(`/${locale}/auth/callback?return=${encodeURIComponent(`/${locale}/learn`)}`)
+    }
+
+    // Show loading state
+    if (isLoading) {
+        return (
+            <main className="min-h-screen bg-[var(--background)]">
+                <Navigation dict={dict.nav} locale={locale} />
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
+                </div>
+            </main>
+        )
+    }
+
+    // Show login required if not authenticated
+    if (!user) {
+        return (
+            <main className="min-h-screen bg-[var(--background)]">
+                <Navigation dict={dict.nav} locale={locale} />
+                <div className="flex items-center justify-center min-h-[60vh] px-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="max-w-md w-full text-center"
+                    >
+                        <div className="w-20 h-20 rounded-full bg-[var(--accent)]/10 flex items-center justify-center mx-auto mb-6">
+                            <Lock className="w-10 h-10 text-[var(--accent)]" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-4">
+                            {isRussian ? 'Требуется авторизация' : 'Login Required'}
+                        </h2>
+                        <p className="text-gray-400 mb-8">
+                            {isRussian
+                                ? 'Войдите через Telegram, чтобы получить доступ к курсам'
+                                : 'Log in via Telegram to access courses'}
+                        </p>
+                        <button
+                            onClick={handleLogin}
+                            className="btn-shine flex items-center justify-center gap-2 bg-[var(--accent)] text-black font-semibold px-8 py-4 rounded-xl text-lg mx-auto"
+                        >
+                            <Rocket size={20} />
+                            {isRussian ? 'Войти' : 'Log In'}
+                        </button>
+                    </motion.div>
+                </div>
+                <Footer dict={dict.footer} locale={locale} />
+            </main>
+        )
+    }
 
     const benefits = isRussian
         ? [

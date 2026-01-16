@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { QrCode, Loader2, CheckCircle, XCircle, Keyboard, Camera } from 'lucide-react'
+import { QrCode, Loader2, CheckCircle, XCircle, Keyboard, Camera, Globe, LogOut } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback, backButton, showQrScanner, isQrScannerSupported } from '@/lib/telegram'
 import { Button, Input } from '@/components/ui'
@@ -9,13 +9,24 @@ interface WebLoginScreenProps {
   onBack: () => void
 }
 
+interface WebSession {
+  id: string
+  created_at: string
+  expires_at: string
+  user_agent?: string
+}
+
 const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
   const { user } = useAppStore()
   const { addToast } = useToastStore()
   const [code, setCode] = useState('')
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [status, setStatus] = useState<'checking' | 'idle' | 'loading' | 'success' | 'error'>('checking')
   const [errorMessage, setErrorMessage] = useState('')
   const [qrSupported] = useState(isQrScannerSupported())
+
+  // Sessions state
+  const [sessions, setSessions] = useState<WebSession[]>([])
+  const [isRevokingSession, setIsRevokingSession] = useState(false)
 
   // Setup Telegram back button
   useEffect(() => {
@@ -24,6 +35,67 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
       backButton.hide()
     }
   }, [onBack])
+
+  // Check for active sessions on mount
+  useEffect(() => {
+    checkActiveSessions()
+  }, [user?.tg_user_id])
+
+  const checkActiveSessions = async () => {
+    if (!user?.tg_user_id) {
+      setStatus('idle')
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `https://maincombybot.vercel.app/api/auth/sessions?tg_user_id=${user.tg_user_id}`
+      )
+      const data = await response.json()
+
+      if (data.success && data.sessions && data.sessions.length > 0) {
+        setSessions(data.sessions)
+        setStatus('idle')
+      } else {
+        setSessions([])
+        setStatus('idle')
+      }
+    } catch (error) {
+      console.error('Error checking sessions:', error)
+      setStatus('idle')
+    }
+  }
+
+  const revokeSession = async (sessionId: string) => {
+    if (!user?.tg_user_id) return
+
+    setIsRevokingSession(true)
+    hapticFeedback.light()
+
+    try {
+      const response = await fetch(
+        `https://maincombybot.vercel.app/api/auth/sessions?session_id=${sessionId}&tg_user_id=${user.tg_user_id}`,
+        { method: 'DELETE' }
+      )
+      const data = await response.json()
+
+      if (data.success) {
+        hapticFeedback.success()
+        addToast('Сессия завершена', 'success')
+        // Remove session from list
+        setSessions(prev => prev.filter(s => s.id !== sessionId))
+      } else {
+        hapticFeedback.error()
+        addToast(data.error || 'Ошибка завершения сессии', 'error')
+      }
+    } catch (error) {
+      console.error('Error revoking session:', error)
+      hapticFeedback.error()
+      addToast('Ошибка соединения', 'error')
+    } finally {
+      setIsRevokingSession(false)
+    }
+  }
 
   const handleScanQr = async () => {
     hapticFeedback.light()
@@ -80,9 +152,10 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
         hapticFeedback.success()
         addToast('Вход на сайт подтверждён!', 'success')
 
+        // Refresh sessions after successful login
         setTimeout(() => {
-          onBack()
-        }, 2000)
+          checkActiveSessions()
+        }, 1500)
       } else {
         setStatus('error')
         setErrorMessage(data.error || 'Ошибка подтверждения')
@@ -111,6 +184,112 @@ const WebLoginScreen: React.FC<WebLoginScreenProps> = ({ onBack }) => {
     setCode('')
     setStatus('idle')
     setErrorMessage('')
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Show loading while checking sessions
+  if (status === 'checking') {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="min-h-screen pb-24 pt-4 flex items-center justify-center"
+      >
+        <Loader2 size={32} className="animate-spin text-accent" />
+      </motion.div>
+    )
+  }
+
+  // Show active sessions if any
+  if (sessions.length > 0 && status !== 'success') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        className="min-h-screen pb-24 pt-4"
+      >
+        <div className="px-4 py-6">
+          {/* Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center">
+              <Globe size={40} className="text-green-500" />
+            </div>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-xl font-bold text-center mb-2">
+            Сессия активна
+          </h2>
+
+          <p className="text-gray-400 text-center mb-6">
+            Вы авторизованы на сайте maincombybot.vercel.app
+          </p>
+
+          {/* Sessions list */}
+          <div className="space-y-3 mb-6">
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                className="p-4 bg-white/5 rounded-xl border border-white/10"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-green-400 text-sm font-medium mb-1">
+                      <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                      Онлайн
+                    </div>
+                    <div className="text-gray-400 text-xs">
+                      Вход: {formatDate(session.created_at)}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => revokeSession(session.id)}
+                    disabled={isRevokingSession}
+                    variant="secondary"
+                    size="sm"
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    {isRevokingSession ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <>
+                        <LogOut size={16} />
+                        Выйти
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* New login button */}
+          <div className="p-4 bg-white/5 rounded-xl">
+            <p className="text-sm text-gray-400 mb-3">
+              Хотите войти на другом устройстве?
+            </p>
+            <Button
+              onClick={() => setSessions([])}
+              variant="secondary"
+              className="w-full"
+            >
+              <QrCode size={18} />
+              Войти ещё раз
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    )
   }
 
   return (

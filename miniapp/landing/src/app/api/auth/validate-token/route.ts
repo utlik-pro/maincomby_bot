@@ -111,6 +111,25 @@ export async function GET(req: NextRequest) {
             .update({ used_at: new Date().toISOString() })
             .eq('token', token)
 
+        // Create a web session for tracking (30 days expiry)
+        const sessionExpiry = new Date()
+        sessionExpiry.setDate(sessionExpiry.getDate() + 30)
+
+        const { data: session, error: sessionError } = await supabase
+            .from('web_sessions')
+            .insert({
+                tg_user_id: user.tg_user_id,
+                expires_at: sessionExpiry.toISOString(),
+                user_agent: req.headers.get('user-agent') || null
+            })
+            .select('id')
+            .single()
+
+        if (sessionError) {
+            console.error('Error creating session:', sessionError)
+            // Continue anyway - session tracking is not critical
+        }
+
         // Return user data in the format expected by the frontend
         // Generate photo_url from username if available (Telegram CDN)
         const photo_url = user.username
@@ -119,6 +138,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
+            session_id: session?.id || null,
             user: {
                 id: user.tg_user_id, // Telegram user ID
                 first_name: user.first_name,

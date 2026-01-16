@@ -86,7 +86,7 @@ function AuthCallbackContent() {
                 if (data.success && data.user) {
                     setStatus('success')
                     setMessage('Успешно! Перенаправляем...')
-                    await loginFromToken(data.user)
+                    await loginFromToken(data.user, data.session_id)
                     setTimeout(() => router.push(returnUrl), 1000)
                     return true
                 } else if (data.pending) {

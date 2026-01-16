@@ -13,11 +13,12 @@ export interface CourseAccessInfo {
 
 interface AuthContextType {
     user: TelegramUser | null
+    sessionId: string | null
     isLoading: boolean
     subscriptionTier: string
     courseAccess: CourseAccessInfo[]
     login: (user: TelegramUser) => Promise<void>
-    loginFromToken: (user: TelegramUser) => Promise<void> // For token-based auth (no hash verification)
+    loginFromToken: (user: TelegramUser, sessionId?: string | null) => Promise<void> // For token-based auth (no hash verification)
     logout: () => void
     devLogin: () => void
     checkCourseAccess: (courseId: string) => CourseAccessInfo | undefined
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<TelegramUser | null>(null)
+    const [sessionId, setSessionId] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [subscriptionTier, setSubscriptionTier] = useState<string>('free')
     const [courseAccess, setCourseAccess] = useState<CourseAccessInfo[]>([])
@@ -63,10 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         // Check local storage on mount
         const storedUser = localStorage.getItem('telegram_user')
+        const storedSessionId = localStorage.getItem('web_session_id')
+
         if (storedUser) {
             try {
                 const parsedUser = JSON.parse(storedUser)
                 setUser(parsedUser)
+                setSessionId(storedSessionId)
                 // Fetch course access for stored user
                 if (parsedUser.id) {
                     fetchCourseAccess(parsedUser.id)
@@ -74,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } catch (e) {
                 console.error('Failed to parse stored user', e)
                 localStorage.removeItem('telegram_user')
+                localStorage.removeItem('web_session_id')
             }
         }
         setIsLoading(false)
@@ -110,12 +116,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Login from token-based auth (already verified by validate-token endpoint)
-    const loginFromToken = async (userData: TelegramUser) => {
+    const loginFromToken = async (userData: TelegramUser, newSessionId?: string | null) => {
         try {
             // User is already verified by token, just save and fetch course access
             setUser(userData)
             setSubscriptionTier(userData.subscription_tier || 'free')
             localStorage.setItem('telegram_user', JSON.stringify(userData))
+
+            // Save session ID if provided
+            if (newSessionId) {
+                setSessionId(newSessionId)
+                localStorage.setItem('web_session_id', newSessionId)
+            }
 
             // Fetch course access
             if (userData.id) {
@@ -128,9 +140,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = () => {
         setUser(null)
+        setSessionId(null)
         setSubscriptionTier('free')
         setCourseAccess([])
         localStorage.removeItem('telegram_user')
+        localStorage.removeItem('web_session_id')
     }
 
     const devLogin = () => {
@@ -150,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (
         <AuthContext.Provider value={{
             user,
+            sessionId,
             isLoading,
             subscriptionTier,
             courseAccess,
