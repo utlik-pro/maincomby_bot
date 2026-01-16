@@ -20,7 +20,7 @@ type ViewState =
   | { type: 'lesson'; course: Course; lesson: Lesson }
 
 const LearnScreen: React.FC = () => {
-  const { user, deepLinkTarget, setDeepLinkTarget } = useAppStore()
+  const { user, deepLinkTarget, setDeepLinkTarget, setHideNavigation } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
 
@@ -45,26 +45,30 @@ const LearnScreen: React.FC = () => {
     }
   }, [deepLinkTarget, courses, setDeepLinkTarget])
 
-  // Handle Telegram BackButton
+  // Handle Telegram BackButton and Navigation visibility
   React.useEffect(() => {
     if (viewState.type === 'lesson') {
+      setHideNavigation(true)
       backButton.show(() => {
         hapticFeedback.selection()
         setViewState({ type: 'lessons', course: viewState.course })
       })
     } else if (viewState.type === 'lessons') {
+      setHideNavigation(false)
       backButton.show(() => {
         hapticFeedback.selection()
         setViewState({ type: 'courses' })
       })
     } else {
+      setHideNavigation(false)
       backButton.hide()
     }
 
     return () => {
+      setHideNavigation(false)
       backButton.hide()
     }
-  }, [viewState])
+  }, [viewState, setHideNavigation])
 
   // Fetch user progress
   const { data: userProgress = [] } = useQuery({

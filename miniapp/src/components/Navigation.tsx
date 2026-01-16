@@ -18,7 +18,7 @@ const tabs = [
 ]
 
 export const Navigation: React.FC = () => {
-  const { activeTab, setActiveTab, lastSeenEventId, setLastSeenEventId } = useAppStore()
+  const { activeTab, setActiveTab, lastSeenEventId, setLastSeenEventId, hideNavigation } = useAppStore()
   const isProcessingRef = useRef(false)
 
   // Double tap on profile tab = easter egg
@@ -56,6 +56,11 @@ export const Navigation: React.FC = () => {
         isProcessingRef.current = false
       }
     }
+  }
+
+  // Hide navigation when viewing lesson content
+  if (hideNavigation) {
+    return null
   }
 
   return (
