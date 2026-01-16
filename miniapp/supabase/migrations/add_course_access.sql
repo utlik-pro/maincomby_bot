@@ -36,7 +36,7 @@ USING (true);
 -- Table to store auth session tokens for cross-platform sync
 CREATE TABLE IF NOT EXISTS auth_session_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id BIGINT NOT NULL REFERENCES bot_users(id) ON DELETE CASCADE,
+  user_id BIGINT REFERENCES bot_users(id) ON DELETE CASCADE, -- NULL until bot confirms
   token TEXT NOT NULL UNIQUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,

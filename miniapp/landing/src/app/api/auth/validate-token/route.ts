@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Check if user_id is set (bot has confirmed)
-        if (!tokenData.user_id || tokenData.user_id === 0) {
+        if (!tokenData.user_id) {
             return NextResponse.json({
                 success: false,
                 pending: true,

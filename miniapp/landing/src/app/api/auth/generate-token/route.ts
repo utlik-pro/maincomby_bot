@@ -34,12 +34,11 @@ export async function POST(req: NextRequest) {
         }
 
         // Store token (without user_id yet - will be set when bot confirms)
-        // We use a temporary placeholder user_id that will be updated
         const { error } = await supabase
             .from('auth_session_tokens')
             .insert({
                 token,
-                user_id: 0, // Placeholder, will be updated by bot
+                user_id: null, // Will be set when bot confirms
                 expires_at: expiresAt,
                 platform: 'landing',
             })
