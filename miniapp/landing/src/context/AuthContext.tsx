@@ -17,6 +17,7 @@ interface AuthContextType {
     subscriptionTier: string
     courseAccess: CourseAccessInfo[]
     login: (user: TelegramUser) => Promise<void>
+    loginFromToken: (user: TelegramUser) => Promise<void> // For token-based auth (no hash verification)
     logout: () => void
     devLogin: () => void
     checkCourseAccess: (courseId: string) => CourseAccessInfo | undefined
@@ -108,6 +109,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    // Login from token-based auth (already verified by validate-token endpoint)
+    const loginFromToken = async (userData: TelegramUser) => {
+        try {
+            // User is already verified by token, just save and fetch course access
+            setUser(userData)
+            setSubscriptionTier(userData.subscription_tier || 'free')
+            localStorage.setItem('telegram_user', JSON.stringify(userData))
+
+            // Fetch course access
+            if (userData.id) {
+                await fetchCourseAccess(userData.id)
+            }
+        } catch (error: any) {
+            console.error('Login from token error:', error)
+        }
+    }
+
     const logout = () => {
         setUser(null)
         setSubscriptionTier('free')
@@ -136,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             subscriptionTier,
             courseAccess,
             login,
+            loginFromToken,
             logout,
             devLogin,
             checkCourseAccess,

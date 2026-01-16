@@ -112,6 +112,11 @@ export async function GET(req: NextRequest) {
             .eq('token', token)
 
         // Return user data in the format expected by the frontend
+        // Generate photo_url from username if available (Telegram CDN)
+        const photo_url = user.username
+            ? `https://t.me/i/userpic/320/${user.username}.jpg`
+            : null
+
         return NextResponse.json({
             success: true,
             user: {
@@ -119,7 +124,7 @@ export async function GET(req: NextRequest) {
                 first_name: user.first_name,
                 last_name: user.last_name,
                 username: user.username,
-                photo_url: null, // We don't have this in bot_users
+                photo_url,
                 subscription_tier: user.subscription_tier,
                 created_at: user.first_seen_at,
             }

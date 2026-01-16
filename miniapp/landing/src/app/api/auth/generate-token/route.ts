@@ -29,12 +29,20 @@ export async function POST(req: NextRequest) {
         // Generate 6-digit short code for QR/manual entry
         const shortCode = Math.floor(100000 + Math.random() * 900000).toString()
 
-        // Token expires in 5 minutes
-        const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+        // Token expires in 30 seconds (like Google Authenticator)
+        const TOKEN_TTL_SECONDS = 30
+        const expiresAt = new Date(Date.now() + TOKEN_TTL_SECONDS * 1000).toISOString()
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
         }
+
+        // Clean up old unused tokens (expired and not used)
+        await supabase
+            .from('auth_session_tokens')
+            .delete()
+            .is('used_at', null)
+            .lt('expires_at', new Date().toISOString())
 
         // Store token with short_code (user_id will be set when miniapp confirms)
         const { error } = await supabase
@@ -57,6 +65,7 @@ export async function POST(req: NextRequest) {
             token,
             shortCode,
             expiresAt,
+            ttl: TOKEN_TTL_SECONDS, // For countdown display
         })
 
     } catch (error) {

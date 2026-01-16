@@ -9,12 +9,14 @@ import { QRCodeSVG } from 'qrcode.react'
 function AuthCallbackContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const { login } = useAuth()
+    const { loginFromToken } = useAuth()
     const [status, setStatus] = useState<'loading' | 'pending' | 'success' | 'error'>('loading')
     const [message, setMessage] = useState('')
     const [token, setToken] = useState<string | null>(null)
     const [shortCode, setShortCode] = useState<string | null>(null)
     const [expiresAt, setExpiresAt] = useState<Date | null>(null)
+    const [timeLeft, setTimeLeft] = useState(30) // Countdown in seconds
+    const [ttl, setTtl] = useState(30) // Total time to live
 
     const returnUrl = searchParams.get('return') || '/'
 
@@ -22,6 +24,24 @@ function AuthCallbackContent() {
     useEffect(() => {
         generateToken()
     }, [])
+
+    // Countdown timer with auto-refresh
+    useEffect(() => {
+        if (status !== 'pending') return
+
+        const timer = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    // Auto-regenerate token when countdown reaches 0
+                    generateToken()
+                    return ttl
+                }
+                return prev - 1
+            })
+        }, 1000)
+
+        return () => clearInterval(timer)
+    }, [status, ttl])
 
     const generateToken = async () => {
         setStatus('loading')
@@ -37,6 +57,10 @@ function AuthCallbackContent() {
                 setToken(data.token)
                 setShortCode(data.shortCode)
                 setExpiresAt(new Date(data.expiresAt))
+                // Set countdown from API response
+                const tokenTtl = data.ttl || 30
+                setTtl(tokenTtl)
+                setTimeLeft(tokenTtl)
                 setStatus('pending')
                 setMessage('Введите код в приложении MAIN')
             } else {
@@ -50,12 +74,9 @@ function AuthCallbackContent() {
         }
     }
 
-    // Poll for confirmation
+    // Poll for confirmation (faster polling since token is short-lived)
     useEffect(() => {
         if (!token || status !== 'pending') return
-
-        let attempts = 0
-        const maxAttempts = 150 // 150 * 2s = 5 minutes
 
         const checkToken = async () => {
             try {
@@ -65,16 +86,14 @@ function AuthCallbackContent() {
                 if (data.success && data.user) {
                     setStatus('success')
                     setMessage('Успешно! Перенаправляем...')
-                    await login(data.user)
+                    await loginFromToken(data.user)
                     setTimeout(() => router.push(returnUrl), 1000)
                     return true
                 } else if (data.pending) {
-                    attempts++
-                    if (attempts >= maxAttempts) {
-                        setStatus('error')
-                        setMessage('Время ожидания истекло')
-                        return true
-                    }
+                    // Continue polling, token will auto-refresh when expired
+                    return false
+                } else if (data.error === 'Token expired') {
+                    // Token expired, will be refreshed by countdown timer
                     return false
                 } else {
                     setStatus('error')
@@ -87,14 +106,15 @@ function AuthCallbackContent() {
             }
         }
 
+        // Poll every 1 second for faster response
         const interval = setInterval(async () => {
             const done = await checkToken()
             if (done) clearInterval(interval)
-        }, 2000)
+        }, 1000)
 
         checkToken()
         return () => clearInterval(interval)
-    }, [token, status, returnUrl, login, router])
+    }, [token, status, returnUrl, loginFromToken, router])
 
     // Format code with space for readability: 847 293
     const formattedCode = shortCode ? `${shortCode.slice(0, 3)} ${shortCode.slice(3)}` : ''
@@ -130,11 +150,43 @@ function AuthCallbackContent() {
 
                             <p className="text-gray-400 mb-4">{message}</p>
 
-                            {/* Short code display */}
+                            {/* Short code display with countdown */}
                             <div className="bg-black/30 border border-white/10 rounded-xl p-4 mb-6">
                                 <div className="text-sm text-gray-500 mb-2">Код для входа:</div>
-                                <div className="text-4xl font-mono font-bold text-[var(--accent)] tracking-widest">
-                                    {formattedCode}
+                                <div className="flex items-center justify-center gap-4">
+                                    <div className="text-4xl font-mono font-bold text-[var(--accent)] tracking-widest">
+                                        {formattedCode}
+                                    </div>
+                                    {/* Circular countdown timer */}
+                                    <div className="relative w-12 h-12 flex-shrink-0">
+                                        <svg className="w-12 h-12 transform -rotate-90">
+                                            <circle
+                                                cx="24"
+                                                cy="24"
+                                                r="20"
+                                                fill="none"
+                                                stroke="rgba(255,255,255,0.1)"
+                                                strokeWidth="4"
+                                            />
+                                            <circle
+                                                cx="24"
+                                                cy="24"
+                                                r="20"
+                                                fill="none"
+                                                stroke={timeLeft <= 5 ? '#ef4444' : 'var(--accent)'}
+                                                strokeWidth="4"
+                                                strokeLinecap="round"
+                                                strokeDasharray={`${(timeLeft / ttl) * 125.6} 125.6`}
+                                                className="transition-all duration-1000"
+                                            />
+                                        </svg>
+                                        <div className={`absolute inset-0 flex items-center justify-center text-sm font-bold ${timeLeft <= 5 ? 'text-red-400' : 'text-white'}`}>
+                                            {timeLeft}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-2">
+                                    Код обновится автоматически
                                 </div>
                             </div>
 
