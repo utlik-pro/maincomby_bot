@@ -326,25 +326,103 @@ update_releases_json() {
 
     echo -e "${YELLOW}Updating releases.json...${NC}"
 
-    # This is a simplified update - in production you might want to use jq
-    # For now, we'll create a Python script to do the JSON manipulation
+    # Get commit messages since last tag
+    local last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+    local range=""
+    if [ -n "$last_tag" ]; then
+        range="$last_tag..HEAD"
+    fi
+
+    # Parse features with scopes: feat(scope): message or feat: message
+    local features_raw=$(git log $range --pretty=format:"%s" --grep="^feat" 2>/dev/null | head -20)
+
+    # Parse fixes with scopes
+    local fixes_raw=$(git log $range --pretty=format:"%s" --grep="^fix" 2>/dev/null | head -20)
+
+    # Parse improvements (refactor, perf, chore)
+    local improvements_raw=$(git log $range --pretty=format:"%s" --grep="^refactor\|^perf\|^chore" 2>/dev/null | head -10)
+
+    # Generate summary based on bump type
+    local summary=""
+    case $bump_type in
+        major) summary="Мажорное обновление v$new_version" ;;
+        minor) summary="Новые возможности в v$new_version" ;;
+        patch) summary="Исправления и улучшения v$new_version" ;;
+    esac
 
     python3 << EOF
 import json
+import re
 from pathlib import Path
 
 releases_file = Path("$RELEASES_FILE")
 data = json.loads(releases_file.read_text())
 
+version = "$new_version"
+date = "$today"
+bump_type = "$bump_type"
+summary = "$summary"
+
+features_raw = """$features_raw"""
+fixes_raw = """$fixes_raw"""
+improvements_raw = """$improvements_raw"""
+
+def parse_commit(line):
+    """Parse conventional commit: type(scope): message"""
+    if not line.strip():
+        return None
+
+    # Pattern: type(scope): message or type: message
+    match = re.match(r'^(feat|fix|refactor|perf|chore)(?:\(([^)]+)\))?:\s*(.+)$', line.strip())
+    if match:
+        commit_type, scope, message = match.groups()
+        # Map scope to our schema
+        scope_map = {
+            'miniapp': 'miniapp',
+            'bot': 'bot',
+            'landing': 'landing',
+            'app': 'miniapp',
+            'webapp': 'miniapp',
+        }
+        mapped_scope = scope_map.get(scope, 'all') if scope else 'all'
+        return {
+            "description": message.strip(),
+            "scope": mapped_scope
+        }
+    else:
+        # Fallback: just use the whole line as description
+        clean = re.sub(r'^(feat|fix|refactor|perf|chore)[:(][^)]*[)]?:\s*', '', line.strip())
+        if clean:
+            return {"description": clean, "scope": "all"}
+    return None
+
+# Parse all commits
+features = [c for c in (parse_commit(l) for l in features_raw.split('\n')) if c]
+fixes = [c for c in (parse_commit(l) for l in fixes_raw.split('\n')) if c]
+improvements = [c for c in (parse_commit(l) for l in improvements_raw.split('\n')) if c]
+
+# Generate highlights from first 5 features (just descriptions as strings)
+highlights = [f["description"][:50] + ('...' if len(f["description"]) > 50 else '') for f in features[:5]]
+
+# If no highlights from features, use generic ones
+if not highlights:
+    if fixes:
+        highlights = ["Исправления ошибок"]
+    elif improvements:
+        highlights = ["Улучшения системы"]
+    else:
+        highlights = ["Обновление системы"]
+
 new_release = {
-    "version": "$new_version",
-    "date": "$today",
-    "tag": "v$new_version",
-    "type": "$bump_type",
-    "summary": "Release v$new_version",
-    "highlights": [],
-    "features": [],
-    "fixes": [],
+    "version": version,
+    "date": date,
+    "tag": f"v{version}",
+    "type": bump_type,
+    "summary": summary if summary else f"Release v{version}",
+    "highlights": highlights,
+    "features": features,
+    "fixes": fixes,
+    "improvements": improvements,
     "breaking": []
 }
 
@@ -353,6 +431,7 @@ data["releases"].insert(0, new_release)
 
 releases_file.write_text(json.dumps(data, indent=2))
 print("  \033[32m✓\033[0m releases/releases.json updated")
+print(f"      - {len(features)} features, {len(fixes)} fixes, {len(improvements)} improvements")
 EOF
 
     # Sync to landing folder

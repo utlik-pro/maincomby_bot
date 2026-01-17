@@ -20,10 +20,62 @@
       "date": "2026-01-16",
       "tag": "v1.1.7",
       "type": "patch",
-      "summary": "Release v1.1.7",
-      "highlights": [],
-      "features": [],
-      "fixes": [],
+      "summary": "Исправления и улучшения v1.1.7",
+      "highlights": [
+        "Add Prompt Engineering course module",
+        "add trusted by partners marquee section",
+        "add click tracking for broadcast analytics",
+        "add A-100 Gas Stations case study",
+        "add second Dana Holdings case study (Meeting Transcription)"
+      ],
+      "features": [
+        {
+          "description": "Add Prompt Engineering course module",
+          "scope": "all"
+        },
+        {
+          "description": "add trusted by partners marquee section",
+          "scope": "all"
+        },
+        {
+          "description": "add click tracking for broadcast analytics",
+          "scope": "all"
+        },
+        {
+          "description": "add A-100 Gas Stations case study",
+          "scope": "all"
+        },
+        {
+          "description": "add second Dana Holdings case study (Meeting Transcription)",
+          "scope": "all"
+        },
+        {
+          "description": "add Cases page with Dana Holdings case study",
+          "scope": "all"
+        },
+        {
+          "description": "simplify course access - remove login widget, add public Prompt Engineering course",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "show events for entire day instead of filtering by time",
+          "scope": "all"
+        },
+        {
+          "description": "dark background for broadcast input fields",
+          "scope": "all"
+        },
+        {
+          "description": "correct import path for getDictionary in cases page",
+          "scope": "all"
+        },
+        {
+          "description": "resolve TypeScript errors in broadcast API",
+          "scope": "all"
+        }
+      ],
       "breaking": []
     },
     {
@@ -31,10 +83,36 @@
       "date": "2026-01-15",
       "tag": "v1.1.6",
       "type": "patch",
-      "summary": "Release v1.1.6",
-      "highlights": [],
-      "features": [],
-      "fixes": [],
+      "summary": "Исправления и улучшения v1.1.6",
+      "highlights": [
+        "implement Telegram Login and Fix Deep Links",
+        "add learning module with prompting basics course",
+        "add broadcast module for event notifications"
+      ],
+      "features": [
+        {
+          "description": "implement Telegram Login and Fix Deep Links",
+          "scope": "all"
+        },
+        {
+          "description": "add learning module with prompting basics course",
+          "scope": "all"
+        },
+        {
+          "description": "add broadcast module for event notifications",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "refactor telegram widget callback to flat global function",
+          "scope": "all"
+        },
+        {
+          "description": "resolve TypeScript errors in learning system",
+          "scope": "all"
+        }
+      ],
       "breaking": []
     },
     {
@@ -42,10 +120,70 @@
       "date": "2026-01-13",
       "tag": "v1.1.5",
       "type": "patch",
-      "summary": "Release v1.1.5",
-      "highlights": [],
-      "features": [],
-      "fixes": [],
+      "summary": "Исправления и улучшения v1.1.5",
+      "highlights": [
+        "add event funnel stats for team + leads/checkins modals",
+        "add speaker ratings and analytics",
+        "add event funnel analytics (registered, today, checked-in, c",
+        "superadmin events analytics with dropdown selector",
+        "UI improvements - matches profile view & streak dots"
+      ],
+      "features": [
+        {
+          "description": "add event funnel stats for team + leads/checkins modals",
+          "scope": "miniapp"
+        },
+        {
+          "description": "add speaker ratings and analytics",
+          "scope": "all"
+        },
+        {
+          "description": "add event funnel analytics (registered, today, checked-in, cancelled)",
+          "scope": "all"
+        },
+        {
+          "description": "superadmin events analytics with dropdown selector",
+          "scope": "all"
+        },
+        {
+          "description": "UI improvements - matches profile view & streak dots",
+          "scope": "all"
+        },
+        {
+          "description": "replace M badge with subscription status crown icon",
+          "scope": "all"
+        },
+        {
+          "description": "add QR code sharing for events and profiles with analytics",
+          "scope": "all"
+        },
+        {
+          "description": "add expandable Speakers & Program sections",
+          "scope": "miniapp"
+        },
+        {
+          "description": "add Cal.com integration, Testimonials & SEO",
+          "scope": "landing"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "store funnel visibility setting in database for all users",
+          "scope": "all"
+        },
+        {
+          "description": "hide leads/checkins tabs when toggle is off, add analytics tab",
+          "scope": "miniapp"
+        },
+        {
+          "description": "reset daily swipes counter on new day",
+          "scope": "all"
+        },
+        {
+          "description": "English labels (Free/Light/Pro)",
+          "scope": "all"
+        }
+      ],
       "breaking": []
     },
     {
@@ -53,10 +191,32 @@
       "date": "2026-01-12",
       "tag": "v1.1.4",
       "type": "patch",
-      "summary": "Release v1.1.4",
-      "highlights": [],
-      "features": [],
-      "fixes": [],
+      "summary": "Исправления и улучшения v1.1.4",
+      "highlights": [
+        "add session tracking and analytics for super admin",
+        "add streak progress UI card on HomeScreen",
+        "add streak rewards + profile completion XP"
+      ],
+      "features": [
+        {
+          "description": "add session tracking and analytics for super admin",
+          "scope": "all"
+        },
+        {
+          "description": "add streak progress UI card on HomeScreen",
+          "scope": "all"
+        },
+        {
+          "description": "add streak rewards + profile completion XP",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "daily streak shows on day 1 + disable XP notification spam",
+          "scope": "all"
+        }
+      ],
       "breaking": []
     },
     {
@@ -64,10 +224,17 @@
       "date": "2026-01-11",
       "tag": "v1.1.3",
       "type": "patch",
-      "summary": "Release v1.1.3",
-      "highlights": [],
+      "summary": "Исправления и улучшения v1.1.3",
+      "highlights": [
+        "Исправления и улучшения"
+      ],
       "features": [],
-      "fixes": [],
+      "fixes": [
+        {
+          "description": "improve LATEST_RELEASE update reliability",
+          "scope": "all"
+        }
+      ],
       "breaking": []
     },
     {
@@ -75,10 +242,26 @@
       "date": "2026-01-11",
       "tag": "v1.1.2",
       "type": "patch",
-      "summary": "Release v1.1.2",
-      "highlights": [],
-      "features": [],
-      "fixes": [],
+      "summary": "Исправления и улучшения v1.1.2",
+      "highlights": [
+        "auto-update LATEST_RELEASE in version.ts on release"
+      ],
+      "features": [
+        {
+          "description": "auto-update LATEST_RELEASE in version.ts on release",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "update LATEST_RELEASE to 1.1.1 with proper date and content",
+          "scope": "all"
+        },
+        {
+          "description": "add RLS migration for xp_transactions insert",
+          "scope": "all"
+        }
+      ],
       "breaking": []
     },
     {
@@ -86,29 +269,29 @@
       "date": "2026-01-11",
       "tag": "v1.1.1",
       "type": "patch",
-      "summary": "\u0415\u0436\u0435\u0434\u043d\u0435\u0432\u043d\u044b\u0435 \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0440\u0435\u043b\u0438\u0437\u044b",
+      "summary": "Ежедневные автоматические релизы",
       "highlights": [
-        "\u0410\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0440\u0435\u043b\u0438\u0437\u044b \u043a\u0430\u0436\u0434\u044b\u0439 \u0434\u0435\u043d\u044c \u0432 23:59",
-        "\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0430 \u0441\u0438\u0441\u0442\u0435\u043c\u0430 \u043d\u0430\u0447\u0438\u0441\u043b\u0435\u043d\u0438\u044f XP",
-        "\u0421\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u0432\u0435\u0440\u0441\u0438\u0439 \u0432\u043e \u0432\u0441\u0435\u0445 \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442\u0430\u0445"
+        "Автоматические релизы каждый день в 23:59",
+        "Исправлена система начисления XP",
+        "Синхронизация версий во всех компонентах"
       ],
       "features": [
         {
-          "description": "GitHub Actions \u0434\u043b\u044f \u0435\u0436\u0435\u0434\u043d\u0435\u0432\u043d\u044b\u0445 \u0440\u0435\u043b\u0438\u0437\u043e\u0432",
+          "description": "GitHub Actions для ежедневных релизов",
           "scope": "all"
         },
         {
-          "description": "\u0410\u0432\u0442\u043e\u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u044f releases.json \u0432 landing",
+          "description": "Автосинхронизация releases.json в landing",
           "scope": "landing"
         }
       ],
       "fixes": [
         {
-          "description": "\u041f\u0440\u0430\u0432\u0430 \u043d\u0430 RPC \u0444\u0443\u043d\u043a\u0446\u0438\u0438 \u0434\u043b\u044f XP \u0442\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0438\u0439",
+          "description": "Права на RPC функции для XP транзакций",
           "scope": "miniapp"
         },
         {
-          "description": "CURRENT_APP_VERSION \u0442\u0440\u0438\u0433\u0433\u0435\u0440 \u0434\u043b\u044f \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0439",
+          "description": "CURRENT_APP_VERSION триггер для уведомлений",
           "scope": "miniapp"
         }
       ],
@@ -119,42 +302,42 @@
       "date": "2026-01-10",
       "tag": "v1.1.0",
       "type": "minor",
-      "summary": "\u041e\u0442\u0437\u044b\u0432\u044b \u043e \u0441\u043e\u0431\u044b\u0442\u0438\u044f\u0445 \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u043d\u044b\u0439 \u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441",
+      "summary": "Отзывы о событиях и улучшенный интерфейс",
       "highlights": [
-        "\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043e\u0442\u0437\u044b\u0432\u043e\u0432 \u043e \u0441\u043e\u0431\u044b\u0442\u0438\u044f\u0445 \u0441 XP \u043d\u0430\u0433\u0440\u0430\u0434\u043e\u0439",
-        "\u0415\u0434\u0438\u043d\u044b\u0439 \u0441\u0442\u0438\u043b\u044c \u043c\u043e\u0434\u0430\u043b\u044c\u043d\u044b\u0445 \u043e\u043a\u043e\u043d (Bottom Sheet)",
-        "Push-\u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f \u0434\u043b\u044f \u043e\u0442\u0437\u044b\u0432\u043e\u0432 \u0432 22:30"
+        "Система отзывов о событиях с XP наградой",
+        "Единый стиль модальных окон (Bottom Sheet)",
+        "Push-уведомления для отзывов в 22:30"
       ],
       "features": [
         {
-          "description": "\u041e\u0442\u0437\u044b\u0432\u044b \u043e \u0441\u043e\u0431\u044b\u0442\u0438\u044f\u0445 (1-5 \u0437\u0432\u0451\u0437\u0434 + \u0442\u0435\u043a\u0441\u0442)",
+          "description": "Отзывы о событиях (1-5 звёзд + текст)",
           "scope": "miniapp"
         },
         {
-          "description": "\u0410\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0437\u0430\u043f\u0440\u043e\u0441 \u043e\u0442\u0437\u044b\u0432\u0430 \u043f\u0440\u0438 \u043e\u0442\u043a\u0440\u044b\u0442\u0438\u0438",
+          "description": "Автоматический запрос отзыва при открытии",
           "scope": "miniapp"
         },
         {
-          "description": "Push-\u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f \u0434\u043b\u044f \u0441\u0431\u043e\u0440\u0430 \u043e\u0442\u0437\u044b\u0432\u043e\u0432",
+          "description": "Push-уведомления для сбора отзывов",
           "scope": "bot"
         },
         {
-          "description": "SubscriptionBottomSheet - \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0430 \u043a\u0430\u043a \u043c\u043e\u0434\u0430\u043b\u043a\u0430",
+          "description": "SubscriptionBottomSheet - подписка как модалка",
           "scope": "miniapp"
         },
         {
-          "description": "Deep links \u0434\u043b\u044f \u043e\u0442\u0437\u044b\u0432\u043e\u0432 \u0438\u0437 \u0431\u043e\u0442\u0430",
+          "description": "Deep links для отзывов из бота",
           "scope": "all"
         },
         {
-          "description": "XP \u0431\u043e\u043d\u0443\u0441 \u0437\u0430 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0444\u0438\u043b\u044f",
+          "description": "XP бонус за заполнение профиля",
           "scope": "miniapp"
         }
       ],
       "fixes": [],
       "improvements": [
         {
-          "description": "\u0411\u0438\u043b\u0435\u0442\u044b \u0432 \u0441\u0442\u0438\u043b\u0435 \u0442\u0438\u043a\u0435\u0442\u043e\u0432 \u043d\u0430 \u0432\u043a\u043b\u0430\u0434\u043a\u0435 '\u041c\u043e\u0438 \u0431\u0438\u043b\u0435\u0442\u044b'",
+          "description": "Билеты в стиле тикетов на вкладке 'Мои билеты'",
           "scope": "miniapp"
         }
       ],
