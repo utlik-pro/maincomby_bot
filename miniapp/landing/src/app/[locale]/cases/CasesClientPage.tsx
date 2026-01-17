@@ -156,8 +156,8 @@ const casesData: CaseStudy[] = [
         descriptionEn: 'Corporate AI assistant with company knowledge base for automating access to documentation',
         challenge: 'Сотрудники тратят 15-30 минут на поиск информации, эксперты перегружены однотипными вопросами, знания разбросаны по разным системам',
         challengeEn: 'Employees spend 15-30 minutes searching for information, experts overwhelmed with repetitive questions, knowledge scattered across systems',
-        solution: 'AI-чатбот со знанием всей документации компании, специализация по отделам (HR, бухгалтерия, IT), точные ответы со ссылками на источники',
-        solutionEn: 'AI chatbot with full company documentation knowledge, department specialization (HR, accounting, IT), precise answers with source references',
+        solution: 'AI-система в закрытом контуре компании с загруженной документацией. Через специальный интерфейс находит нужную информацию со ссылками на источники и проверкой актуальности',
+        solutionEn: 'AI system in company\'s closed environment with loaded documentation. Finds information through a special interface with source links and relevance verification',
         results: [
             { metric: 'Скорость ответа', metricEn: 'Response speed', value: '60x' },
             { metric: 'Обращений к экспертам', metricEn: 'Expert requests', value: '-70%' },
@@ -165,8 +165,8 @@ const casesData: CaseStudy[] = [
         ],
         launchDate: 'Сентябрь 2025',
         launchDateEn: 'September 2025',
-        testimonial: 'Раньше новички неделями искали нужные документы и дёргали коллег. Теперь ответ на любой вопрос — за секунды, с точной ссылкой на регламент.',
-        testimonialEn: 'New employees used to spend weeks searching for documents and bothering colleagues. Now any question is answered in seconds, with exact reference to regulations.',
+        testimonial: 'Раньше любой сотрудник мог тратить до нескольких часов на поиск нужного документа. Теперь система находит информацию за секунды, даёт ссылку на источник и проверяет актуальность.',
+        testimonialEn: 'Any employee used to spend hours searching for the right document. Now the system finds information in seconds, provides source links and verifies relevance.',
         color: '#8b5cf6' // Purple for enterprise/tech
     }
 ]
