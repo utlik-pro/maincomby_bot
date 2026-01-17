@@ -130,19 +130,19 @@ const casesData: CaseStudy[] = [
         industryEn: 'Tourism',
         description: 'CRM-система для туроператора с автоматизацией заказов и управления гидами',
         descriptionEn: 'CRM system for tour operators with automated order processing and guide management',
-        challenge: 'Ручная обработка 50+ заказов в месяц, хаос в коммуникации с гидами и туристами',
-        challengeEn: 'Manual processing of 50+ orders per month, chaotic communication with guides and tourists',
-        solution: 'TourBot CRM с автосинхронизацией Tripster, WhatsApp-уведомлениями и AI-ответами на типовые вопросы',
-        solutionEn: 'TourBot CRM with Tripster auto-sync, WhatsApp notifications, and AI responses to common questions',
+        challenge: '10 сотрудников обрабатывали 150+ заказов в день вручную в Google-таблицах, хаос в коммуникации с гидами и туристами',
+        challengeEn: '10 employees manually processed 150+ orders per day in Google Sheets, chaotic communication with guides and tourists',
+        solution: 'AI-агенты полностью автоматизировали бизнес-процесс: синхронизация с Tripster, WhatsApp-уведомления, ответы на вопросы. Осталось 2 оператора для мониторинга',
+        solutionEn: 'AI agents fully automated the business process: Tripster sync, WhatsApp notifications, answering questions. Only 2 operators left for monitoring',
         results: [
-            { metric: 'Время на рутину', metricEn: 'Time on routine', value: '15 мин' },
-            { metric: 'Экономия времени', metricEn: 'Time saved', value: '-90%' },
-            { metric: 'Потерянных заказов', metricEn: 'Lost orders', value: '0' },
+            { metric: 'Было сотрудников', metricEn: 'Staff before', value: '10' },
+            { metric: 'Осталось операторов', metricEn: 'Operators now', value: '2' },
+            { metric: 'Заказов в день', metricEn: 'Orders per day', value: '150+' },
         ],
         launchDate: 'Декабрь 2024',
         launchDateEn: 'December 2024',
-        testimonial: 'Раньше я тратил половину дня на то, чтобы просто разобраться с заказами. Сейчас всё на одном экране — я вижу что происходит и могу сосредоточиться на развитии бизнеса.',
-        testimonialEn: 'I used to spend half the day just sorting through orders. Now everything is on one screen — I can see what\'s happening and focus on growing the business.',
+        testimonial: 'Раньше у меня работало 10 человек на обработке заказов. Теперь AI-агенты делают всё сами, а 2 оператора только следят за процессом. Весь бизнес работает на автомате.',
+        testimonialEn: 'I used to have 10 people processing orders. Now AI agents do everything automatically, and just 2 operators monitor the process. The entire business runs on autopilot.',
         color: '#0ea5e9' // Sky blue for tourism
     }
 ]
