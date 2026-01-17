@@ -1,16 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import crypto from 'crypto'
+import { setCorsHeaders } from './_lib/cors'
+import { applyRateLimit, RATE_LIMITS } from './_lib/rate-limiter'
 
 const BOT_TOKEN = process.env.BOT_TOKEN || ''
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  // CORS headers - restricted to Telegram domains
+  const origin = req.headers.origin as string | undefined
+  setCorsHeaders(res, origin)
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end()
+  }
+
+  // Rate limiting: 30 requests per minute
+  if (applyRateLimit(req, res, RATE_LIMITS.validateInitData)) {
+    return // Response already sent by rate limiter
   }
 
   if (req.method !== 'POST') {
@@ -61,10 +67,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ valid: false, error: 'Invalid signature' })
     }
 
-    // Check auth_date is not older than 24 hours
+    // Check auth_date - 5 min in production, 1 hour in development
     const authDate = parseInt(params.get('auth_date') || '0')
     const now = Math.floor(Date.now() / 1000)
-    const maxAge = 86400 // 24 hours in seconds
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+    // Rollback flag: if SECURITY_MAX_AGE_STRICT is 'false', use 24 hours
+    const maxAge = process.env.SECURITY_MAX_AGE_STRICT === 'false'
+      ? 86400 // 24 hours (rollback)
+      : isProduction ? 300 : 3600 // 5 min prod, 1 hour dev
 
     if (now - authDate > maxAge) {
       return res.status(401).json({ valid: false, error: 'initData expired' })

@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { setCorsHeaders } from './_lib/cors'
+import { applyRateLimit, RATE_LIMITS } from './_lib/rate-limiter'
 
 const BOT_TOKEN = process.env.BOT_TOKEN || ''
 
@@ -10,13 +12,17 @@ interface DeepLink {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  // CORS headers - restricted to Telegram domains
+  const origin = req.headers.origin as string | undefined
+  setCorsHeaders(res, origin)
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end()
+  }
+
+  // Rate limiting: 10 requests per minute
+  if (applyRateLimit(req, res, RATE_LIMITS.sendNotification)) {
+    return // Response already sent by rate limiter
   }
 
   if (req.method !== 'POST') {
