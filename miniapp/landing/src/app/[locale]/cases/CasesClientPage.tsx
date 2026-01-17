@@ -13,7 +13,10 @@ import {
     ArrowRight,
     CheckCircle,
     Bot,
-    MapPin
+    MapPin,
+    Truck,
+    Factory,
+    ShoppingCart
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { Footer } from '@/components/sections/Footer'
@@ -168,6 +171,78 @@ const casesData: CaseStudy[] = [
         testimonial: 'Раньше любой сотрудник мог тратить до нескольких часов на поиск нужного документа. Теперь система находит информацию за секунды, даёт ссылку на источник и проверяет актуальность.',
         testimonialEn: 'Any employee used to spend hours searching for the right document. Now the system finds information in seconds, provides source links and verifies relevance.',
         color: '#8b5cf6' // Purple for enterprise/tech
+    },
+    {
+        id: 'logistics-1c',
+        company: 'Логистическая компания',
+        companyEn: 'Logistics Company',
+        logo: '',
+        industry: 'Логистика / Грузоперевозки',
+        industryEn: 'Logistics / Freight',
+        description: 'Автоматизация документооборота ТТН и накладных с интеграцией 1С',
+        descriptionEn: 'Automation of waybills and invoices with 1C integration',
+        challenge: 'Менеджеры вручную оформляли 200+ ТТН в день, ошибки при переносе данных, долгое согласование с водителями',
+        challengeEn: 'Managers manually processed 200+ waybills daily, data transfer errors, slow coordination with drivers',
+        solution: 'AI-система интегрирована с 1С:Предприятие. Автоматическое формирование ТТН из заявок, мгновенная отправка документов водителям в Telegram',
+        solutionEn: 'AI system integrated with 1C:Enterprise. Automatic waybill generation from orders, instant document delivery to drivers via Telegram',
+        results: [
+            { metric: 'Документов в день', metricEn: 'Documents per day', value: '200+' },
+            { metric: 'Время на документ', metricEn: 'Time per document', value: '30 сек' },
+            { metric: 'Ошибок', metricEn: 'Errors', value: '-95%' },
+        ],
+        launchDate: 'Август 2025',
+        launchDateEn: 'August 2025',
+        testimonial: 'Раньше бухгалтерия сидела до ночи, оформляя накладные. Теперь система сама формирует документы из 1С и отправляет водителям — мы только проверяем.',
+        testimonialEn: 'Accounting used to work late into the night processing invoices. Now the system generates documents from 1C and sends them to drivers — we just verify.',
+        color: '#f59e0b' // Orange for logistics
+    },
+    {
+        id: 'manufacturing-bitrix',
+        company: 'Производственная компания',
+        companyEn: 'Manufacturing Company',
+        logo: '',
+        industry: 'Производство / B2B',
+        industryEn: 'Manufacturing / B2B',
+        description: 'Автоматизация обработки заявок с интеграцией Bitrix24',
+        descriptionEn: 'Order processing automation with Bitrix24 integration',
+        challenge: 'Заявки терялись между отделами, нет единой системы отслеживания, производство узнавало о срочных заказах в последний момент',
+        challengeEn: 'Orders got lost between departments, no unified tracking system, production learned about urgent orders at the last moment',
+        solution: 'AI-система интегрирована с Bitrix24. Автоматическая маршрутизация заявок по отделам, уведомления производству с приоритетами',
+        solutionEn: 'AI system integrated with Bitrix24. Automatic order routing to departments, priority notifications to production',
+        results: [
+            { metric: 'Потерянных заявок', metricEn: 'Lost orders', value: '0' },
+            { metric: 'Время реакции', metricEn: 'Response time', value: '2 часа' },
+            { metric: 'Выполнение в срок', metricEn: 'On-time delivery', value: '+40%' },
+        ],
+        launchDate: 'Июль 2025',
+        launchDateEn: 'July 2025',
+        testimonial: 'Bitrix24 у нас был, но никто им толком не пользовался. Теперь AI автоматически распределяет заявки, и каждый отдел видит свои задачи в реальном времени.',
+        testimonialEn: 'We had Bitrix24, but nobody really used it. Now AI automatically distributes orders, and each department sees their tasks in real-time.',
+        color: '#ef4444' // Red for manufacturing
+    },
+    {
+        id: 'retail-docs',
+        company: 'Розничная сеть',
+        companyEn: 'Retail Chain',
+        logo: '',
+        industry: 'Ритейл / Розничная торговля',
+        industryEn: 'Retail / Commerce',
+        description: 'AI-система распознавания и сверки документов от поставщиков',
+        descriptionEn: 'AI system for supplier document recognition and reconciliation',
+        challenge: '50+ поставщиков с разными форматами документов, ручная сверка накладных с заказами, частые ошибки в приёмке',
+        challengeEn: '50+ suppliers with different document formats, manual invoice reconciliation, frequent receiving errors',
+        solution: 'AI-система распознаёт документы любых форматов (PDF, Excel, сканы), автоматическая сверка с заказами, мгновенные уведомления о расхождениях',
+        solutionEn: 'AI system recognizes documents in any format (PDF, Excel, scans), automatic order reconciliation, instant discrepancy alerts',
+        results: [
+            { metric: 'Поставщиков', metricEn: 'Suppliers', value: '50+' },
+            { metric: 'Время сверки', metricEn: 'Reconciliation time', value: '1 мин' },
+            { metric: 'Ошибок в приёмке', metricEn: 'Receiving errors', value: '-80%' },
+        ],
+        launchDate: 'Ноябрь 2025',
+        launchDateEn: 'November 2025',
+        testimonial: 'У каждого поставщика свои накладные — PDF, Excel, сканы. Система всё распознаёт и сразу показывает, если что-то не сходится с заказом.',
+        testimonialEn: 'Every supplier has their own invoices — PDF, Excel, scans. The system recognizes everything and immediately shows if something doesn\'t match the order.',
+        color: '#10b981' // Green for retail
     }
 ]
 
@@ -302,7 +377,12 @@ export default function CasesClientPage({ dict, locale }: CasesClientPageProps) 
                                                 className="object-contain"
                                             />
                                         ) : (
-                                            <MapPin size={40} className="text-white" />
+                                            <>
+                                                {caseStudy.id === 'tourbot-crm' && <MapPin size={40} className="text-white" />}
+                                                {caseStudy.id === 'logistics-1c' && <Truck size={40} className="text-white" />}
+                                                {caseStudy.id === 'manufacturing-bitrix' && <Factory size={40} className="text-white" />}
+                                                {caseStudy.id === 'retail-docs' && <ShoppingCart size={40} className="text-white" />}
+                                            </>
                                         )}
                                     </div>
                                     <div className="flex-1">
