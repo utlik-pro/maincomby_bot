@@ -222,9 +222,9 @@ const casesData: CaseStudy[] = [
     },
     {
         id: 'retail-docs',
-        company: 'Розничная сеть',
-        companyEn: 'Retail Chain',
-        logo: '',
+        company: 'Евроторг',
+        companyEn: 'Eurotorg',
+        logo: '/cases/eurotorg.png',
         industry: 'Ритейл / Розничная торговля',
         industryEn: 'Retail / Commerce',
         description: 'AI-система распознавания и сверки документов от поставщиков',
