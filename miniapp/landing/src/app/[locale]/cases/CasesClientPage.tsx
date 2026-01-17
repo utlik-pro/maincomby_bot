@@ -144,6 +144,30 @@ const casesData: CaseStudy[] = [
         testimonial: 'Раньше у меня работало 10 человек на обработке заказов. Теперь AI-агенты делают всё сами, а 2 оператора только следят за процессом. Весь бизнес работает на автомате.',
         testimonialEn: 'I used to have 10 people processing orders. Now AI agents do everything automatically, and just 2 operators monitor the process. The entire business runs on autopilot.',
         color: '#0ea5e9' // Sky blue for tourism
+    },
+    {
+        id: 'belhard-ai',
+        company: 'BelHard AI',
+        companyEn: 'BelHard AI',
+        logo: '/partners/belhard.png',
+        industry: 'B2B / Корпоративные решения',
+        industryEn: 'B2B / Enterprise Solutions',
+        description: 'Корпоративный AI-ассистент с базой знаний компании для автоматизации доступа к документации',
+        descriptionEn: 'Corporate AI assistant with company knowledge base for automating access to documentation',
+        challenge: 'Сотрудники тратят 15-30 минут на поиск информации, эксперты перегружены однотипными вопросами, знания разбросаны по разным системам',
+        challengeEn: 'Employees spend 15-30 minutes searching for information, experts overwhelmed with repetitive questions, knowledge scattered across systems',
+        solution: 'AI-чатбот со знанием всей документации компании, специализация по отделам (HR, бухгалтерия, IT), точные ответы со ссылками на источники',
+        solutionEn: 'AI chatbot with full company documentation knowledge, department specialization (HR, accounting, IT), precise answers with source references',
+        results: [
+            { metric: 'Скорость ответа', metricEn: 'Response speed', value: '60x' },
+            { metric: 'Обращений к экспертам', metricEn: 'Expert requests', value: '-70%' },
+            { metric: 'Корпораций внедрили', metricEn: 'Corporations deployed', value: '3' },
+        ],
+        launchDate: 'Сентябрь 2025',
+        launchDateEn: 'September 2025',
+        testimonial: 'Раньше новички неделями искали нужные документы и дёргали коллег. Теперь ответ на любой вопрос — за секунды, с точной ссылкой на регламент.',
+        testimonialEn: 'New employees used to spend weeks searching for documents and bothering colleagues. Now any question is answered in seconds, with exact reference to regulations.',
+        color: '#8b5cf6' // Purple for enterprise/tech
     }
 ]
 
