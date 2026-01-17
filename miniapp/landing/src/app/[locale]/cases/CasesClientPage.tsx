@@ -115,8 +115,8 @@ const casesData: CaseStudy[] = [
             { metric: 'Ускорение', metricEn: 'Speed up', value: '-25%' },
             { metric: 'Скорость ответа', metricEn: 'Response speed', value: '< 10 сек' },
         ],
-        launchDate: 'Февраль 2026',
-        launchDateEn: 'February 2026',
+        launchDate: 'Ноябрь 2024',
+        launchDateEn: 'November 2024',
         testimonial: 'Ассистент помогает новичкам находить ответы на сложные вопросы по регламентам за секунды, а не часы.',
         testimonialEn: 'The assistant helps newcomers find answers to complex regulatory questions in seconds, not hours.',
         color: '#84cc16' // Lime green matching logo
