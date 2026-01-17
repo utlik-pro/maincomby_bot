@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp, validateInitData, getInitData } from '@/lib/telegram'
+import { isPreviewMode } from '@/lib/tenant'
 import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
@@ -835,6 +836,33 @@ const App: React.FC = () => {
       }
     }
   }, [isLoading, user?.id, setActiveTab, setDeepLinkTarget])
+
+  // Listen for postMessage navigation commands from admin builder (preview mode)
+  useEffect(() => {
+    if (!isPreviewMode()) return
+
+    const handleMessage = (event: MessageEvent) => {
+      // Accept messages with NAVIGATE type
+      if (event.data?.type === 'NAVIGATE' && event.data?.screen) {
+        const screenMap: Record<string, typeof activeTab> = {
+          'home': 'home',
+          'events': 'events',
+          'learn': 'learn',
+          'network': 'network',
+          'achievements': 'achievements',
+          'profile': 'profile',
+        }
+        const targetTab = screenMap[event.data.screen]
+        if (targetTab) {
+          console.log('[Preview] Navigate to:', targetTab)
+          setActiveTab(targetTab)
+        }
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [setActiveTab])
 
   // Show loading screen
   if (isLoading) {

@@ -44,13 +44,14 @@ CREATE TRIGGER trigger_tenant_bots_updated_at
 -- ═══════════════════════════════════════════════════════════════
 
 INSERT INTO tenant_bots (tenant_id, bot_type, bot_username, is_active)
-VALUES (
+SELECT
   '00000000-0000-0000-0000-000000000001',
   'own',
   'maincomapp_bot',
   true
-)
-ON CONFLICT DO NOTHING;
+WHERE NOT EXISTS (
+  SELECT 1 FROM tenant_bots WHERE tenant_id = '00000000-0000-0000-0000-000000000001'
+);
 
 -- ═══════════════════════════════════════════════════════════════
 -- RLS POLICIES

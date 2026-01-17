@@ -27,6 +27,8 @@ import { openTelegramLink } from '@/lib/telegram'
 import NotificationsScreen from './NotificationsScreen'
 import EventAnnouncementModal from '@/components/EventAnnouncementModal'
 import { SubscriptionBadge } from '@/components/SubscriptionBadge'
+import { useTenantBlocks } from '@/hooks/useTenantBlocks'
+import { DynamicBlockList } from '@/components/blocks'
 
 // Legacy fallback - Avatar ring styles based on role/tier (used when skin system not available)
 const getLegacyAvatarRing = (teamRole?: string | null, tier?: string) => {
@@ -45,6 +47,9 @@ const HomeScreen: React.FC = () => {
   const tier = getSubscriptionTier()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showEventAnnouncement, setShowEventAnnouncement] = useState(false)
+
+  // Dynamic blocks from tenant
+  const { blocks, isMultiTenant } = useTenantBlocks()
 
   // Handle consultation request
   const handleConsultation = async () => {
@@ -140,6 +145,40 @@ const HomeScreen: React.FC = () => {
   const rankInfo = RANK_LABELS[rank]
   const { progress, next } = getRankProgress()
   const nextRankInfo = next ? RANK_LABELS[next] : null
+
+  // If tenant has dynamic blocks configured, render them instead
+  if (isMultiTenant && blocks.length > 0) {
+    return (
+      <div className="pb-6">
+        {/* Notifications header - always show */}
+        <div className="p-4 flex items-center justify-end">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowNotifications(true)}
+            className="w-10 h-10 rounded-xl bg-bg-card flex items-center justify-center relative"
+          >
+            <Bell size={20} className="text-gray-400" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-danger text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </motion.button>
+        </div>
+
+        {/* Dynamic blocks */}
+        <DynamicBlockList blocks={blocks} />
+
+        {/* Event Announcement Modal */}
+        <EventAnnouncementModal
+          isOpen={showEventAnnouncement}
+          event={announcementEvent || null}
+          onClose={handleDismissAnnouncement}
+          onViewDetails={handleViewEventDetails}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="pb-6">

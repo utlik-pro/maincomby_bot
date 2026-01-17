@@ -7,12 +7,189 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.8] - 2026-01-17
+### God Mode Admin Panel - Phase 1, 2 & 3 (In Progress)
 
-[0;34mGenerating changelog from v1.0-stable to HEAD[0m
-### Added
-- add lesson sidebar with progress tracking
-- Phase 1 - Foundation for multi-tenancy
+#### Phase 3.2: Interactive Preview with Screen Navigation (Completed - 2026-01-17)
+
+**Live Miniapp Preview in iframe:**
+- Added `PhonePreviewIframe` component replacing static mockup:
+  - Loads real miniapp via iframe with `?tenant=xxx&preview=true&screen=home`
+  - Full screen navigation support via postMessage API
+  - Loading indicator while iframe loads
+  - "Refresh Preview" button for manual reload
+  - "Live Preview" badge indicator
+
+**Preview Mode Toggle:**
+- Added **Edit Blocks** / **Live Preview** toggle in right panel:
+  - Edit Blocks: Static drag-n-drop PhoneMockup (existing functionality)
+  - Live Preview: Real miniapp in iframe with working navigation
+
+**postMessage Navigation:**
+- Miniapp listens for navigation commands from admin:
+  ```typescript
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'NAVIGATE') {
+      setActiveTab(event.data.screen)
+    }
+  })
+  ```
+- Admin sends navigation via `iframe.contentWindow.postMessage()`
+- Supports all screens: home, events, learn, network, achievements, profile
+
+**Admin Navigation Overlay:**
+- Custom navigation bar over iframe for admin control
+- Click tabs to switch screens in preview
+- Shows active screen indicator (dot + accent color)
+- Displays "Click tabs to navigate • X tabs visible"
+
+**Auto-refresh on Publish:**
+- Preview automatically reloads after publishing blocks
+- Uses `refreshKey` state to trigger iframe reload
+
+**Files Modified:**
+- `admin/src/app/(dashboard)/builder/page.tsx` - PhonePreviewIframe component, preview mode toggle
+- `miniapp/src/App.tsx` - postMessage listener for NAVIGATE commands
+- `admin/.env.local` - Added `NEXT_PUBLIC_MINIAPP_URL`
+
+#### Phase 3.1: Builder Realistic Blocks & Navigation Editor (Completed - 2026-01-17)
+
+**Block Previews with Realistic Data:**
+- Replaced placeholder blocks with realistic miniapp-style previews:
+  - **Hero**: "Добро пожаловать!", "Ваш центр сообщества", accent "Начать" button
+  - **Profile**: "Dmitry", "Лидер" rank, "5,240 XP", progress bar to next rank (26%)
+  - **Events**: "React Conf 2025", "23 янв", "Москва", "Join" button
+  - **Leaderboard**: Top 3 with medals 🥇🥈🥉 - Alex 5,850 XP, Marina 5,420 XP, Dmitry (you) 5,240 XP
+  - **Network**: "Нетворк", "Найди людей для знакомства"
+  - **Courses**: "Курсы", "Учись и получай XP"
+  - **Achievements**: 4 badge grid with earned/locked states
+  - **Stats**: 3-column grid - События (12), Знакомства (45), Бейджи (8)
+  - **Announcements**: "Новый митап!", "Регистрация открыта до 25 января"
+  - **Custom HTML**: Placeholder for custom content
+
+**Separate Navigation Editor Tab:**
+- Added [Blocks] / [Navigation] tabs in left panel
+- NavigationEditor component with full configuration:
+  - Sortable list with up/down arrows for reordering
+  - Edit dialog per tab:
+    - Screen selector: home, events, learn, achievements, profile, network, notifications
+    - Icon picker: 8 available icons (home, calendar, graduation-cap, trophy, user, flame, bell, users)
+    - Label inputs for RU and EN
+    - Visibility toggle (Switch)
+  - Delete button (min 2 tabs required)
+  - Add Tab button (max 5 tabs allowed)
+  - Real-time preview in PhoneMockup
+
+**PhoneMockup Improvements:**
+- Shows only visible navigation tabs (filtered by `visible: true`)
+- Displays tab count indicator ("3 of 5 tabs visible")
+- Removed in-phone toggle - all editing via Navigation tab
+
+**Files Modified:**
+- `admin/src/app/(dashboard)/builder/page.tsx` - Complete rewrite with NavigationEditor
+
+#### Phase 3: Builder Live Preview & Dynamic Blocks (Completed - 2026-01-17)
+
+**Builder Page with Live iPhone Preview:**
+- Redesigned `/builder` page layout to 50/50 split:
+  - Left column: Block Library (compact 2-column grid) + Current Layout (drag-n-drop)
+  - Right column: Live iPhone Preview with realistic frame
+- Added `PhonePreview` component with:
+  - Realistic iPhone frame with notch and side buttons
+  - iframe embedding miniapp with `?tenant=xxx&preview=true` params
+  - Manual "Refresh Preview" button
+- Implemented auto-refresh mechanism:
+  - `refreshPreview()` called after every block operation (add/delete/reorder/visibility toggle)
+  - Preview updates in real-time as admin makes changes
+
+**Miniapp Preview Mode Support:**
+- Extended `miniapp/src/lib/tenant.ts`:
+  - `isPreviewMode()` - detects `?preview=true` in URL
+  - `getTenantIdFromUrl()` - extracts tenant ID from URL params
+  - `refetchTenantBlocks()` - reloads blocks from DB
+  - `initializePreviewMode()` - initializes tenant from URL param instead of Telegram
+- Updated `miniapp/src/hooks/useTenantBlocks.ts`:
+  - Auto-refresh every 2 seconds in preview mode
+  - `refetch()` function exposed for manual refresh
+  - `isPreview` flag in return value
+
+**Dynamic Block Components:**
+- Created 10 block components in `miniapp/src/components/blocks/`:
+  - `ProfileBlock.tsx` - User profile card
+  - `EventsBlock.tsx` - Upcoming events list
+  - `LeaderboardBlock.tsx` - Top users ranking
+  - `NetworkBlock.tsx` - Match suggestions
+  - `AchievementsBlock.tsx` - User badges
+  - `StatsBlock.tsx` - Community statistics
+  - `CoursesBlock.tsx` - Learning modules
+  - `HeroBlock.tsx` - Welcome banner
+  - `AnnouncementsBlock.tsx` - Important notices
+  - `CustomHtmlBlock.tsx` - Custom content
+- Created `DynamicBlock` renderer with `BLOCK_COMPONENTS` registry
+- Updated `HomeScreen.tsx` to use `DynamicBlockList` when tenant has configured blocks
+
+**API Layer Extensions:**
+- Added to `admin/src/lib/api.ts`:
+  - `createBlock()` - Create new block with auto-position
+  - `updateBlock()` - Update block properties (visibility, config)
+  - `deleteBlock()` - Remove block from tenant
+  - `updateTenantTheme()` - Update theme colors
+  - `setDefaultTheme()` - Set theme as default
+  - `deleteTenantTheme()` - Remove theme
+
+**Files Modified:**
+- `admin/src/app/(dashboard)/builder/page.tsx` - Complete rewrite with PhonePreview
+- `admin/src/lib/api.ts` - Added block/theme CRUD functions
+- `miniapp/src/lib/tenant.ts` - Added preview mode support
+- `miniapp/src/hooks/useTenantBlocks.ts` - Added auto-refresh
+- `miniapp/src/hooks/index.ts` - Export useTenantBlocks
+- `miniapp/src/components/blocks/index.tsx` - Block registry
+- `miniapp/src/components/blocks/*.tsx` - 10 new block components
+- `miniapp/src/screens/HomeScreen.tsx` - Dynamic blocks support
+
+#### Phase 1: Foundation (Completed)
+- Created `shared/` directory with TypeScript types for multi-tenancy:
+  - `shared/types/tenant.ts` - Tenant, TenantTheme, TenantFeature interfaces
+  - `shared/types/roles.ts` - AdminRole system (god_mode, partner_admin, moderator)
+  - `shared/types/blocks.ts` - Block builder types with 10 block types
+  - `shared/constants/defaults.ts` - Default theme, features, blocks
+- Created centralized configuration system in miniapp:
+  - `miniapp/src/lib/config.ts` - App config with feature flags
+  - `miniapp/src/lib/theme.ts` - Dynamic theme system with CSS variables
+  - `miniapp/src/lib/tenant.ts` - Tenant context and role checking
+- Database migrations for multi-tenancy:
+  - `20260116_001_add_tenants.sql` - Tenants table with MAIN Community default
+  - `20260116_002_add_admin_roles.sql` - Admin users with permissions
+  - `20260116_003_add_tenant_themes.sql` - Theme storage with color palettes
+  - `20260116_004_add_app_blocks.sql` - Block configuration with drag-drop support
+  - `20260116_005_add_tenant_bots.sql` - Bot attachment (own or shared)
+  - `20260116_006_add_tenant_features.sql` - Feature flags per tenant
+- Updated vite.config.ts and tsconfig.json for @shared alias
+
+#### Phase 2: Admin Panel MVP (Completed)
+- Initialized `admin/` project with Next.js 15 + App Router
+- Configured shadcn/ui component library (sidebar, card, table, badge, etc.)
+- Added Supabase client with SSR support:
+  - `admin/src/lib/supabase/client.ts` - Browser client
+  - `admin/src/lib/supabase/server.ts` - Server client
+  - `admin/src/middleware.ts` - Auth middleware
+- Created API functions in `admin/src/lib/api.ts`:
+  - CRUD operations for tenants
+  - Dashboard stats aggregation
+  - Theme and bot management
+- Built UI components:
+  - `AppSidebar` - Navigation with Main, Builder, System sections
+  - Dashboard layout with SidebarProvider
+- Created pages:
+  - `/dashboard` - Stats cards, quick actions, recent activity
+  - `/tenants` - List all tenants with data table
+  - `/tenants/[id]` - Tenant details with settings, features, bot config
+  - `/tenants/new` - Create new tenant form
+  - `/tenants/[id]/edit` - Edit tenant form
+
+#### Git Workflow
+- Created branch: `feature/god-mode-admin`
+- Created backup tag: `v1.0-stable`
+
 ## [1.1.7] - 2026-01-16
 
 [0;34mGenerating changelog from v1.1.6 to HEAD[0m

@@ -54,7 +54,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tenant_themes_one_default
 -- ═══════════════════════════════════════════════════════════════
 
 INSERT INTO tenant_themes (tenant_id, name, colors, is_default)
-VALUES (
+SELECT
   '00000000-0000-0000-0000-000000000001',
   'MAIN Dark',
   '{
@@ -74,8 +74,9 @@ VALUES (
     "info": "#3b82f6"
   }'::jsonb,
   true
-)
-ON CONFLICT DO NOTHING;
+WHERE NOT EXISTS (
+  SELECT 1 FROM tenant_themes WHERE tenant_id = '00000000-0000-0000-0000-000000000001'
+);
 
 -- ═══════════════════════════════════════════════════════════════
 -- RLS POLICIES

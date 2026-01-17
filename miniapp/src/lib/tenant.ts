@@ -452,3 +452,86 @@ export function resetTenantContext(): void {
   _adminUser = null;
   _isInitialized = false;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PREVIEW MODE SUPPORT
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Проверить работаем ли в preview режиме (для Builder)
+ */
+export function isPreviewMode(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('preview') === 'true';
+}
+
+/**
+ * Получить tenant ID из URL параметра (для preview mode)
+ */
+export function getTenantIdFromUrl(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('tenant');
+}
+
+/**
+ * Перезагрузить блоки tenant'а из БД
+ * Используется в preview mode для получения актуальных данных
+ */
+export async function refetchTenantBlocks(): Promise<AppBlock[]> {
+  // Сначала пробуем взять tenant ID из URL (preview mode)
+  let tenantId = getTenantIdFromUrl();
+
+  // Если нет в URL, берём из текущего tenant
+  if (!tenantId && _currentTenant) {
+    tenantId = _currentTenant.id;
+  }
+
+  if (!tenantId) {
+    return [];
+  }
+
+  const blocks = await fetchTenantBlocks(tenantId);
+  _currentBlocks = blocks;
+  return blocks;
+}
+
+/**
+ * Инициализация для preview mode
+ * Принимает tenant ID напрямую из URL
+ */
+export async function initializePreviewMode(): Promise<void> {
+  const tenantId = getTenantIdFromUrl();
+
+  if (!tenantId) {
+    console.log('[Tenant] Preview mode: no tenant ID in URL');
+    _isInitialized = true;
+    return;
+  }
+
+  try {
+    // Загружаем tenant
+    const tenant = await fetchTenant(tenantId);
+
+    if (tenant) {
+      _currentTenant = tenant;
+
+      // Загружаем тему
+      const theme = await fetchTenantTheme(tenantId);
+      _currentTheme = theme || createDefaultTheme();
+
+      // Загружаем блоки
+      _currentBlocks = await fetchTenantBlocks(tenantId);
+
+      // Применяем конфиг и тему
+      updateConfigFromTenant(tenant, _currentTheme);
+      applyTheme(_currentTheme);
+
+      console.log('[Tenant] Preview mode initialized:', tenant.name);
+    }
+
+    _isInitialized = true;
+  } catch (error) {
+    console.error('[Tenant] Preview mode initialization failed:', error);
+    _isInitialized = true;
+  }
+}

@@ -101,7 +101,7 @@ VALUES
     '{"showLocked": true, "limit": 8, "layout": "grid"}'::jsonb,
     true
   )
-ON CONFLICT DO NOTHING;
+ON CONFLICT (tenant_id, position) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════
 -- RLS POLICIES

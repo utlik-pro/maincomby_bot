@@ -9,10 +9,123 @@
       "date": "2026-01-17",
       "tag": "v1.1.8",
       "type": "patch",
-      "summary": "Release v1.1.8",
-      "highlights": [],
-      "features": [],
-      "fixes": [],
+      "summary": "Исправления и улучшения v1.1.8",
+      "highlights": [
+        "add lesson sidebar with progress tracking",
+        "Phase 1 - Foundation for multi-tenancy",
+        "migrate prompt engineering course from HTML to React",
+        "add course progress tracking system",
+        "open course catalog and details without auth, require auth o"
+      ],
+      "features": [
+        {
+          "description": "add lesson sidebar with progress tracking",
+          "scope": "all"
+        },
+        {
+          "description": "Phase 1 - Foundation for multi-tenancy",
+          "scope": "all"
+        },
+        {
+          "description": "migrate prompt engineering course from HTML to React",
+          "scope": "all"
+        },
+        {
+          "description": "add course progress tracking system",
+          "scope": "all"
+        },
+        {
+          "description": "open course catalog and details without auth, require auth only for actions",
+          "scope": "all"
+        },
+        {
+          "description": "add privacy policy page and change session to 24h",
+          "scope": "all"
+        },
+        {
+          "description": "add session tracking and course auth protection",
+          "scope": "all"
+        },
+        {
+          "description": "improve web login with auto-refresh code and avatar",
+          "scope": "all"
+        },
+        {
+          "description": "add QR scanner for web login + fix CORS",
+          "scope": "all"
+        },
+        {
+          "description": "add QR code + 6-digit code authentication for landing",
+          "scope": "all"
+        },
+        {
+          "description": "add bot-based authentication for landing",
+          "scope": "all"
+        },
+        {
+          "description": "add Telegram Login Widget to navigation",
+          "scope": "all"
+        },
+        {
+          "description": "support rating all event speakers",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "course opens on landing page, not Telegram bot",
+          "scope": "all"
+        },
+        {
+          "description": "require auth for all courses, hide teacher mode toggle",
+          "scope": "all"
+        },
+        {
+          "description": "use tg_user_id instead of user_id in courses/access API",
+          "scope": "all"
+        },
+        {
+          "description": "use first_seen_at instead of created_at in bot_users query",
+          "scope": "all"
+        },
+        {
+          "description": "use confirmed_tg_user_id column without foreign key",
+          "scope": "all"
+        },
+        {
+          "description": "store and lookup by tg_user_id instead of internal id",
+          "scope": "all"
+        },
+        {
+          "description": "add CORS headers to all GET responses in validate-token",
+          "scope": "all"
+        },
+        {
+          "description": "use tg_user_id column in GET validate-token",
+          "scope": "all"
+        },
+        {
+          "description": "use Telegram native QR scanner and back button",
+          "scope": "all"
+        },
+        {
+          "description": "add Telegram button on auth callback page",
+          "scope": "all"
+        },
+        {
+          "description": "make auth_session_tokens.user_id nullable",
+          "scope": "all"
+        },
+        {
+          "description": "wrap layout in AuthProvider for course access",
+          "scope": "all"
+        },
+        {
+          "description": "handle multiple registrations in review eligibility check",
+          "scope": "all"
+        }
+      ],
+      "improvements": [],
       "breaking": []
     },
     {

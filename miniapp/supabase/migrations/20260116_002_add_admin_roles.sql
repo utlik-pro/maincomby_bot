@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
   role admin_role NOT NULL,
   telegram_id BIGINT UNIQUE,
-  telegram_username TEXT,
+  telegram_username TEXT UNIQUE,
   permissions JSONB DEFAULT '{}'::jsonb,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
