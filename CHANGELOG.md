@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.8] - 2026-01-17
+
+[0;34mGenerating changelog from v1.0-stable to HEAD[0m
+### Added
+- add lesson sidebar with progress tracking
+- Phase 1 - Foundation for multi-tenancy
 ## [1.1.7] - 2026-01-16
 
 [0;34mGenerating changelog from v1.1.6 to HEAD[0m

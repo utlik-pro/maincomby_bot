@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.7'
+export const APP_VERSION = '1.1.8'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 11
+export const CURRENT_APP_VERSION = 12
 
 export interface ReleaseHighlight {
   title: string
@@ -29,23 +29,19 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.7',
-  date: '2026-01-16',
-  summary: 'Исправления и улучшения v1.1.7',
+  version: '1.1.8',
+  date: '2026-01-17',
+  summary: 'Исправления и улучшения v1.1.8',
   highlights: [
-    { title: 'Add Prompt Engineering co...', description: 'Подробнее в changelog' },
-    { title: 'add trusted by partners m...', description: 'Подробнее в changelog' },
-    { title: 'add click tracking for br...', description: 'Подробнее в changelog' },
+    { title: 'add lesson sidebar with p...', description: 'Подробнее в changelog' },
+    { title: 'Phase 1 - Foundation for ...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'Add Prompt Engineering course module',
-    'add trusted by partners marquee section',
-    'add click tracking for broadcast analytics',
+    'add lesson sidebar with progress tracking',
+    'Phase 1 - Foundation for multi-tenancy',
   ],
   fixes: [
-    'show events for entire day instead of filtering by time',
-    'dark background for broadcast input fields',
-    'correct import path for getDictionary in cases page',
+
   ],
 }
 
