@@ -139,8 +139,8 @@ const casesData: CaseStudy[] = [
             { metric: 'Осталось операторов', metricEn: 'Operators now', value: '2' },
             { metric: 'Заказов в день', metricEn: 'Orders per day', value: '150+' },
         ],
-        launchDate: 'Декабрь 2024',
-        launchDateEn: 'December 2024',
+        launchDate: 'Октябрь 2025',
+        launchDateEn: 'October 2025',
         testimonial: 'Раньше у меня работало 10 человек на обработке заказов. Теперь AI-агенты делают всё сами, а 2 оператора только следят за процессом. Весь бизнес работает на автомате.',
         testimonialEn: 'I used to have 10 people processing orders. Now AI agents do everything automatically, and just 2 operators monitor the process. The entire business runs on autopilot.',
         color: '#0ea5e9' // Sky blue for tourism
