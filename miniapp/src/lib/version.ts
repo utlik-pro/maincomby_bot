@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.8'
+export const APP_VERSION = '1.1.9'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 12
+export const CURRENT_APP_VERSION = 13
 
 export interface ReleaseHighlight {
   title: string
@@ -29,19 +29,23 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.8',
-  date: '2026-01-17',
-  summary: 'Исправления и улучшения v1.1.8',
+  version: '1.1.9',
+  date: '2026-01-18',
+  summary: 'Исправления и улучшения v1.1.9',
   highlights: [
-    { title: 'add lesson sidebar with p...', description: 'Подробнее в changelog' },
-    { title: 'Phase 1 - Foundation for ...', description: 'Подробнее в changelog' },
+    { title: 'harden Mini App API secur...', description: 'Подробнее в changelog' },
+    { title: 'add Team page with 7 spec...', description: 'Подробнее в changelog' },
+    { title: 'update retail case with E...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'add lesson sidebar with progress tracking',
-    'Phase 1 - Foundation for multi-tenancy',
+    'harden Mini App API security',
+    'add Team page with 7 specialist roles',
+    'update retail case with Eurotorg branding',
   ],
   fixes: [
-
+    'update Eurotorg suppliers count to 1000+',
+    'update BelHard AI solution and testimonial',
+    'correct A-100 launch date to November 2024',
   ],
 }
 
