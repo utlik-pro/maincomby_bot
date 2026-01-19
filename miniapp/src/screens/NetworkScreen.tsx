@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -49,12 +49,21 @@ const NetworkScreen: React.FC = () => {
   const queryClient = useQueryClient()
 
   const [activeTab, setActiveTab] = useState<'swipe' | 'matches' | 'likes'>('swipe')
-  const [showMatches, setShowMatches] = useState(false)
   const [showProfileDetail, setShowProfileDetail] = useState<SwipeCardProfile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [lastSwipe, setLastSwipe] = useState<LastSwipeInfo | null>(null)
   const [showUndoButton, setShowUndoButton] = useState(false)
+  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (deepLinkTarget === 'matches') {
@@ -151,7 +160,8 @@ const NetworkScreen: React.FC = () => {
         timestamp: Date.now()
       })
       setShowUndoButton(true)
-      setTimeout(() => setShowUndoButton(false), 5000)
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+      undoTimeoutRef.current = setTimeout(() => setShowUndoButton(false), 5000)
 
       // Check and award first swipe bonus
       try {
@@ -290,7 +300,8 @@ const NetworkScreen: React.FC = () => {
         timestamp: Date.now()
       })
       setShowUndoButton(true)
-      setTimeout(() => setShowUndoButton(false), 5000)
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+      undoTimeoutRef.current = setTimeout(() => setShowUndoButton(false), 5000)
 
       // Send notification with username
       const myUsername = user.username
