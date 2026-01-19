@@ -10,6 +10,7 @@ interface SwipeCardProps {
   onSwipe: (direction: 'left' | 'right') => void
   onViewProfile: () => void
   isProcessing?: boolean
+  fullscreen?: boolean
 }
 
 // Get badge config for team role
@@ -35,7 +36,8 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   profile: cardData,
   onSwipe,
   onViewProfile,
-  isProcessing = false
+  isProcessing = false,
+  fullscreen = false
 }) => {
   const { profile, user, photos = [], activeSkin } = cardData
 
@@ -73,9 +75,14 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   const displaySkills = skills.slice(0, 2)
   const remainingSkills = skills.length > 2 ? skills.length - 2 : 0
 
+  // Container styles based on mode
+  const containerClass = fullscreen
+    ? "relative w-full h-full overflow-hidden bg-black cursor-grab active:cursor-grabbing"
+    : "relative w-full aspect-[3/4] max-h-[calc(100vh-220px)] rounded-card overflow-hidden bg-bg-card cursor-grab active:cursor-grabbing"
+
   return (
     <motion.div
-      className="relative w-full aspect-[3/4] max-h-[calc(100vh-220px)] rounded-card overflow-hidden bg-bg-card cursor-grab active:cursor-grabbing"
+      className={containerClass}
       style={{ x, rotate, opacity }}
       drag={isProcessing ? false : 'x'}
       dragConstraints={{ left: 0, right: 0 }}
@@ -107,10 +114,14 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
       </motion.div>
 
       {/* User Info Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+      <div className={`absolute bottom-0 left-0 right-0 z-10 ${
+        fullscreen
+          ? 'p-5 pb-28 bg-gradient-to-t from-black via-black/80 to-transparent'
+          : 'p-4'
+      }`}>
         {/* Name and Badge */}
         <div className="flex items-center gap-2 mb-1">
-          <h2 className="text-2xl font-bold text-white">{displayName}</h2>
+          <h2 className={`font-bold text-white ${fullscreen ? 'text-3xl' : 'text-2xl'}`}>{displayName}</h2>
           {badge && (
             <span
               className="px-2 py-0.5 text-xs font-bold rounded-full"

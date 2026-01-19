@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -44,6 +45,7 @@ import { PhotoGallery } from '@/components/PhotoGallery'
 import type { SwipeCardProfile, LastSwipeInfo } from '@/types'
 
 const NetworkScreen: React.FC = () => {
+  const navigate = useNavigate()
   const { user, setUser, addPoints, getSubscriptionTier, getDailySwipesRemaining, profile, deepLinkTarget, setDeepLinkTarget } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
@@ -79,12 +81,13 @@ const NetworkScreen: React.FC = () => {
     } else if (activeTab !== 'swipe') {
       backButton.show(() => setActiveTab('swipe'))
     } else {
-      backButton.hide()
+      // In swipe mode - back to home
+      backButton.show(() => navigate('/'))
     }
     return () => {
       backButton.hide()
     }
-  }, [activeTab, showProfileDetail])
+  }, [activeTab, showProfileDetail, navigate])
 
   const tier = getSubscriptionTier()
   const swipesRemaining = getDailySwipesRemaining()
@@ -599,26 +602,218 @@ const NetworkScreen: React.FC = () => {
     )
   }
 
-  // Main view with tabs
+  // Fullscreen swipe mode
+  if (activeTab === 'swipe') {
+    return (
+      <div className="fixed inset-0 bg-black z-40 flex flex-col">
+        {/* Top Bar with gradient */}
+        <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+          <div className="flex items-center justify-between p-4 pt-safe">
+            {/* Back button */}
+            <button
+              onClick={() => navigate('/')}
+              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center"
+            >
+              <ArrowLeft size={20} className="text-white" />
+            </button>
+
+            {/* Compact Tabs */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('swipe')}
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-accent text-bg"
+              >
+                Свайпы
+              </button>
+              <button
+                onClick={() => setActiveTab('matches')}
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white flex items-center gap-1"
+              >
+                Контакты
+                {matches && matches.length > 0 && (
+                  <span className="px-1.5 py-0.5 text-xs rounded-full bg-success/30 text-success">
+                    {matches.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('likes')}
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white flex items-center gap-1"
+              >
+                <Heart size={12} />
+                {tier === 'free' ? (
+                  <Crown size={12} className="text-amber-400" />
+                ) : incomingLikes && incomingLikes.profiles.length > 0 ? (
+                  <span className="px-1.5 py-0.5 text-xs rounded-full bg-pink-500/30 text-pink-400">
+                    {incomingLikes.profiles.length}
+                  </span>
+                ) : null}
+              </button>
+            </div>
+
+            {/* Superlikes counter */}
+            {tier !== 'free' && superlikesRemaining > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-lg backdrop-blur">
+                <Star size={12} className="text-purple-400 fill-purple-400" />
+                <span className="text-xs text-purple-400 font-semibold">{superlikesRemaining}</span>
+              </div>
+            )}
+            {(tier === 'free' || superlikesRemaining === 0) && <div className="w-10" />}
+          </div>
+        </div>
+
+        {/* Fullscreen Card Area */}
+        <div className="flex-1 relative">
+          {isLoading ? (
+            <div className="w-full h-full flex items-center justify-center bg-bg-card">
+              <Skeleton className="w-32 h-32 rounded-full" />
+            </div>
+          ) : profilesError ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <EmptyState
+                icon={<X size={48} className="text-danger" />}
+                title="Ошибка загрузки"
+                description="Не удалось загрузить профили."
+              />
+            </div>
+          ) : swipesRemaining <= 0 && tier !== 'pro' ? (
+            <div className="w-full h-full flex items-center justify-center p-4">
+              <Card className="w-full max-w-sm p-6 text-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-accent/20 flex items-center justify-center">
+                  <Clock size={40} className="text-accent" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">Свайпы закончились</h2>
+                <p className="text-gray-400 mb-6">
+                  {tier === 'free'
+                    ? 'У вас было 5 свайпов на сегодня. Новые свайпы будут доступны завтра.'
+                    : 'У вас было 20 свайпов на сегодня. Новые свайпы будут доступны завтра.'}
+                </p>
+                <div className="space-y-3">
+                  <Button
+                    className="w-full"
+                    onClick={() => openTelegramLink('https://t.me/maincomapp_bot?start=subscribe')}
+                  >
+                    <Crown size={18} className="mr-2" />
+                    Получить PRO — безлимит
+                  </Button>
+                  <p className="text-xs text-gray-500">
+                    PRO-подписка даёт безлимитные свайпы и другие преимущества
+                  </p>
+                </div>
+                {matches && matches.length > 0 && (
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => setActiveTab('matches')}
+                  >
+                    <Heart size={16} className="mr-2 text-success fill-success" />
+                    Посмотреть контакты ({matches.length})
+                  </Button>
+                )}
+              </Card>
+            </div>
+          ) : !currentProfile ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <EmptyState
+                icon={<Sparkles size={48} className="text-accent" />}
+                title="Все просмотрено!"
+                description="Загляните позже, появятся новые участники"
+              />
+            </div>
+          ) : (
+            <SwipeCard
+              profile={currentProfile}
+              onSwipe={handleSwipe}
+              onViewProfile={() => setShowProfileDetail(currentProfile)}
+              isProcessing={isProcessing}
+              fullscreen={true}
+            />
+          )}
+        </div>
+
+        {/* Bottom Action Buttons with gradient */}
+        {currentProfile && !isLoading && (swipesRemaining > 0 || tier === 'pro') && (
+          <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+            <div className="flex justify-center items-center gap-4 p-4 pb-safe">
+              {/* Skip button - large */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => handleSwipe('left')}
+                disabled={isProcessing}
+                className="w-16 h-16 rounded-full bg-white/10 backdrop-blur border-2 border-red-400 flex items-center justify-center disabled:opacity-50"
+              >
+                <X size={28} className="text-red-400" />
+              </motion.button>
+
+              {/* Undo button - small (shown briefly after swipe) */}
+              <AnimatePresence>
+                {showUndoButton && lastSwipe && (
+                  <motion.button
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleUndo}
+                    disabled={isProcessing}
+                    className="w-12 h-12 rounded-full bg-amber-500/90 backdrop-blur flex items-center justify-center disabled:opacity-50"
+                  >
+                    <Undo2 size={20} className="text-white" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
+              {/* Super Like button - small (Light/Pro only) */}
+              {tier !== 'free' && (
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleSuperLike}
+                  disabled={isProcessing || superlikesRemaining <= 0}
+                  className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 backdrop-blur flex items-center justify-center disabled:opacity-50"
+                >
+                  <Star size={20} className="text-white fill-white" />
+                </motion.button>
+              )}
+
+              {/* View profile button - small */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowProfileDetail(currentProfile)}
+                className="w-12 h-12 rounded-full bg-white/10 backdrop-blur flex items-center justify-center"
+              >
+                <User size={20} className="text-white" />
+              </motion.button>
+
+              {/* Like button - large */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => handleSwipe('right')}
+                disabled={isProcessing}
+                className="w-16 h-16 rounded-full bg-accent backdrop-blur flex items-center justify-center disabled:opacity-50"
+              >
+                <Heart size={28} className="text-bg" />
+              </motion.button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Non-swipe tabs (Matches, Likes) - regular view
   return (
     <div className="h-full flex flex-col p-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-2 shrink-0">
-        <div>
-          <h1 className="text-xl font-bold">Нетворкинг</h1>
-          {activeTab === 'swipe' && (
-            <p className="text-gray-400 text-sm">
-              {tier === 'pro' ? '∞ свайпов' : `${swipesRemaining} свайпов осталось`}
-            </p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {tier !== 'free' && superlikesRemaining > 0 && activeTab === 'swipe' && (
-            <div className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg">
-              <Star size={14} className="text-purple-400 fill-purple-400" />
-              <span className="text-sm text-purple-400 font-semibold">{superlikesRemaining}</span>
-            </div>
-          )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveTab('swipe')}
+            className="w-10 h-10 rounded-full bg-bg-card flex items-center justify-center"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-xl font-bold">
+            {activeTab === 'matches' ? 'Контакты' : 'Кто вас лайкнул'}
+          </h1>
         </div>
       </div>
 
@@ -626,9 +821,7 @@ const NetworkScreen: React.FC = () => {
       <div className="flex gap-2 mb-3 overflow-x-auto pb-1 shrink-0 relative z-10">
         <button
           onClick={() => setActiveTab('swipe')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === 'swipe' ? 'bg-accent text-bg' : 'bg-bg-card text-gray-400'
-          }`}
+          className="px-4 py-2 rounded-full text-sm font-medium bg-bg-card text-gray-400"
         >
           Свайпы
         </button>
@@ -666,136 +859,6 @@ const NetworkScreen: React.FC = () => {
           )}
         </button>
       </div>
-
-      {/* Tab Content */}
-      {activeTab === 'swipe' && (
-        <>
-          {/* Swipe Card Area */}
-          <div className="flex-1 flex items-center justify-center min-h-0">
-            {isLoading ? (
-              <Card className="w-full aspect-[3/4] max-h-[calc(100vh-280px)] flex items-center justify-center">
-                <Skeleton className="w-32 h-32 rounded-full" />
-              </Card>
-            ) : profilesError ? (
-              <EmptyState
-                icon={<X size={48} className="text-danger" />}
-                title="Ошибка загрузки"
-                description="Не удалось загрузить профили."
-              />
-            ) : swipesRemaining <= 0 && tier !== 'pro' ? (
-              <Card className="w-full max-w-sm p-6 text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-accent/20 flex items-center justify-center">
-                  <Clock size={40} className="text-accent" />
-                </div>
-                <h2 className="text-xl font-bold mb-2">Свайпы закончились</h2>
-                <p className="text-gray-400 mb-6">
-                  {tier === 'free'
-                    ? 'У вас было 5 свайпов на сегодня. Новые свайпы будут доступны завтра.'
-                    : 'У вас было 20 свайпов на сегодня. Новые свайпы будут доступны завтра.'}
-                </p>
-                <div className="space-y-3">
-                  <Button
-                    className="w-full"
-                    onClick={() => openTelegramLink('https://t.me/maincomapp_bot?start=subscribe')}
-                  >
-                    <Crown size={18} className="mr-2" />
-                    Получить PRO — безлимит
-                  </Button>
-                  <p className="text-xs text-gray-500">
-                    PRO-подписка даёт безлимитные свайпы и другие преимущества
-                  </p>
-                </div>
-                {matches && matches.length > 0 && (
-                  <Button
-                    variant="outline"
-                    className="w-full mt-4"
-                    onClick={() => setActiveTab('matches')}
-                  >
-                    <Heart size={16} className="mr-2 text-success fill-success" />
-                    Посмотреть контакты ({matches.length})
-                  </Button>
-                )}
-              </Card>
-            ) : !currentProfile ? (
-              <EmptyState
-                icon={<Sparkles size={48} className="text-accent" />}
-                title="Все просмотрено!"
-                description="Загляните позже, появятся новые участники"
-              />
-            ) : (
-              <SwipeCard
-                profile={currentProfile}
-                onSwipe={handleSwipe}
-                onViewProfile={() => setShowProfileDetail(currentProfile)}
-                isProcessing={isProcessing}
-              />
-            )}
-          </div>
-
-          {/* Action Buttons with Super Like and Undo */}
-          {currentProfile && !isLoading && swipesRemaining > 0 && (
-            <div className="flex justify-center items-center gap-4 py-4">
-              {/* Skip button */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => handleSwipe('left')}
-                disabled={isProcessing}
-                className="w-14 h-14 rounded-full border-2 border-danger flex items-center justify-center disabled:opacity-50"
-              >
-                <X size={24} className="text-danger" />
-              </motion.button>
-
-              {/* Undo button (shown briefly after swipe) */}
-              <AnimatePresence>
-                {showUndoButton && lastSwipe && (
-                  <motion.button
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={handleUndo}
-                    disabled={isProcessing}
-                    className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center disabled:opacity-50"
-                  >
-                    <Undo2 size={20} className="text-white" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-
-              {/* Super Like button (Light/Pro only) */}
-              {tier !== 'free' && (
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handleSuperLike}
-                  disabled={isProcessing || superlikesRemaining <= 0}
-                  className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center disabled:opacity-50"
-                >
-                  <Star size={20} className="text-white fill-white" />
-                </motion.button>
-              )}
-
-              {/* View profile button */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setShowProfileDetail(currentProfile)}
-                className="w-12 h-12 rounded-full bg-bg-card flex items-center justify-center"
-              >
-                <User size={20} className="text-gray-400" />
-              </motion.button>
-
-              {/* Like button */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => handleSwipe('right')}
-                disabled={isProcessing}
-                className="w-14 h-14 rounded-full bg-accent flex items-center justify-center disabled:opacity-50"
-              >
-                <Heart size={24} className="text-bg" />
-              </motion.button>
-            </div>
-          )}
-        </>
-      )}
 
       {/* Matches Tab */}
       {activeTab === 'matches' && (
