@@ -605,7 +605,7 @@ const NetworkScreen: React.FC = () => {
   // Fullscreen swipe mode
   if (activeTab === 'swipe') {
     return (
-      <div className="fixed inset-0 bg-black z-40 flex flex-col">
+      <div className="h-full w-full bg-black flex flex-col relative overflow-hidden">
         {/* Top Bar with gradient */}
         <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
           <div className="flex items-center justify-between p-4 pt-safe">
