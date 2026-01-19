@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
@@ -90,6 +90,9 @@ const App: React.FC = () => {
 
   // Session tracking state
   const [sessionId, setSessionId] = useState<number | null>(null)
+
+  // Pending broadcast click to log when user loads
+  const pendingBroadcastClick = useRef<number | null>(null)
 
   // Check if should show What's New after loading
   useEffect(() => {
@@ -739,6 +742,40 @@ const App: React.FC = () => {
     }
   }, [sessionId, user?.id])
 
+  // Capture broadcast click immediately (before user loads)
+  useEffect(() => {
+    const webApp = getTelegramWebApp()
+    // @ts-ignore - start_param might not be in types
+    const startParam = webApp?.initDataUnsafe?.start_param
+    const urlParams = new URLSearchParams(window.location.search)
+    const screenParam = urlParams.get('screen')
+    const deepLinkValue = startParam || screenParam
+
+    if (deepLinkValue) {
+      const broadcastMatch = deepLinkValue.match(/^(.+)_b(\d+)$/)
+      if (broadcastMatch) {
+        const broadcastId = parseInt(broadcastMatch[2], 10)
+        if (!isNaN(broadcastId)) {
+          pendingBroadcastClick.current = broadcastId
+        }
+      }
+    }
+  }, []) // Run once on mount
+
+  // Log pending broadcast click when user loads
+  useEffect(() => {
+    if (user?.id && pendingBroadcastClick.current !== null) {
+      const broadcastId = pendingBroadcastClick.current
+      pendingBroadcastClick.current = null // Clear to prevent duplicate logs
+
+      fetch('/api/send-broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'log_click', broadcastId, userId: user.id })
+      }).catch(console.warn)
+    }
+  }, [user?.id])
+
   // Handle deep links (startapp parameter or URL query params)
   useEffect(() => {
     if (isLoading || !user?.id) return
@@ -757,17 +794,8 @@ const App: React.FC = () => {
       // Check for broadcast tracking suffix: screen_b{broadcastId}
       const broadcastMatch = deepLinkValue.match(/^(.+)_b(\d+)$/)
       if (broadcastMatch) {
-        const [, actualScreen, broadcastIdStr] = broadcastMatch
-        const broadcastId = parseInt(broadcastIdStr, 10)
-        // Log broadcast click asynchronously (don't await)
-        if (!isNaN(broadcastId) && user?.id) {
-          fetch('/api/send-broadcast', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'log_click', broadcastId, userId: user.id })
-          }).catch(console.warn)
-        }
-        // Use the actual screen for navigation
+        const [, actualScreen] = broadcastMatch
+        // Click already logged in separate effect, just extract screen
         deepLinkValue = actualScreen
       }
 
