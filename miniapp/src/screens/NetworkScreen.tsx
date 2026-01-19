@@ -592,11 +592,13 @@ const NetworkScreen: React.FC = () => {
   return (
     <div className="h-full flex flex-col p-4">
       {/* Header */}
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mb-2 shrink-0">
         <div>
           <h1 className="text-xl font-bold">Нетворкинг</h1>
           {activeTab === 'swipe' && (
-            <p className="text-gray-400 text-sm">{swipesRemaining} свайпов осталось</p>
+            <p className="text-gray-400 text-sm">
+              {tier === 'pro' ? '∞ свайпов' : `${swipesRemaining} свайпов осталось`}
+            </p>
           )}
         </div>
         <div className="flex gap-2">
@@ -610,7 +612,7 @@ const NetworkScreen: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1 shrink-0 relative z-10">
         <button
           onClick={() => setActiveTab('swipe')}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
@@ -658,7 +660,7 @@ const NetworkScreen: React.FC = () => {
       {activeTab === 'swipe' && (
         <>
           {/* Swipe Card Area */}
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center min-h-0">
             {isLoading ? (
               <Card className="w-full aspect-[3/4] max-h-[calc(100vh-280px)] flex items-center justify-center">
                 <Skeleton className="w-32 h-32 rounded-full" />
