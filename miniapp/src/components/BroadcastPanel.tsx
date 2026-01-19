@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -107,6 +107,7 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
   // Modal state
   const [selectedBroadcast, setSelectedBroadcast] = useState<Broadcast | null>(null)
   const [showRecipientsModal, setShowRecipientsModal] = useState(false)
+  const [recipientFilter, setRecipientFilter] = useState<'all' | 'delivered' | 'failed'>('all')
 
   // Superadmin check
   const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
@@ -150,6 +151,16 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
   const historyBroadcasts = broadcasts.filter(b => ['completed', 'failed', 'cancelled'].includes(b.status))
   const scheduledBroadcasts = broadcasts.filter(b => b.status === 'scheduled')
   const sendingBroadcasts = broadcasts.filter(b => b.status === 'sending')
+
+  // Filtered recipients and counts
+  const filteredRecipients = useMemo(() => {
+    if (recipientFilter === 'all') return recipients
+    if (recipientFilter === 'delivered') return recipients.filter(r => r.status === 'delivered')
+    return recipients.filter(r => r.status === 'failed')
+  }, [recipients, recipientFilter])
+
+  const deliveredCount = recipients.filter(r => r.status === 'delivered').length
+  const failedCount = recipients.filter(r => r.status === 'failed').length
 
   // Reset audience config when type changes
   useEffect(() => {
@@ -714,39 +725,81 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
               className="bg-bg-secondary rounded-2xl w-full max-w-md max-h-[70vh] overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <h3 className="font-bold text-white">Получатели ({selectedBroadcast.total_recipients})</h3>
-                <button onClick={() => setShowRecipientsModal(false)} className="text-gray-400">
-                  <X size={20} />
-                </button>
+              <div className="p-4 border-b border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-white">Получатели ({selectedBroadcast.total_recipients})</h3>
+                  <button onClick={() => setShowRecipientsModal(false)} className="text-gray-400">
+                    <X size={20} />
+                  </button>
+                </div>
+                {/* Filter tabs */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setRecipientFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      recipientFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-bg text-gray-400'
+                    }`}
+                  >
+                    Все ({recipients.length})
+                  </button>
+                  <button
+                    onClick={() => setRecipientFilter('delivered')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      recipientFilter === 'delivered' ? 'bg-green-600 text-white' : 'bg-bg text-gray-400'
+                    }`}
+                  >
+                    Доставлено ({deliveredCount})
+                  </button>
+                  <button
+                    onClick={() => setRecipientFilter('failed')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      recipientFilter === 'failed' ? 'bg-red-600 text-white' : 'bg-bg text-gray-400'
+                    }`}
+                  >
+                    Ошибки ({failedCount})
+                  </button>
+                </div>
               </div>
               <div className="overflow-y-auto max-h-[50vh] p-4">
                 {isLoadingRecipients ? (
                   <div className="flex justify-center py-4">
                     <Loader2 size={24} className="animate-spin text-blue-500" />
                   </div>
-                ) : recipients.length === 0 ? (
+                ) : filteredRecipients.length === 0 ? (
                   <p className="text-center text-gray-400">Нет данных</p>
                 ) : (
                   <div className="space-y-2">
-                    {recipients.map(recipient => (
-                      <div key={recipient.id} className="flex items-center justify-between p-2 bg-bg rounded-lg">
-                        <div>
+                    {filteredRecipients.map(recipient => (
+                      <div key={recipient.id} className="flex items-center justify-between p-3 bg-bg rounded-lg">
+                        <div className="flex-1 min-w-0">
                           <div className="text-white text-sm">
                             {recipient.user?.first_name || 'Пользователь'} {recipient.user?.last_name || ''}
                           </div>
-                          {recipient.user?.username && (
-                            <div className="text-gray-500 text-xs">@{recipient.user.username}</div>
+                          {recipient.user?.username ? (
+                            <a
+                              href={`https://t.me/${recipient.user.username}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-accent text-xs hover:underline"
+                            >
+                              @{recipient.user.username}
+                            </a>
+                          ) : (
+                            <span className="text-gray-600 text-xs">без username</span>
+                          )}
+                          {recipient.status === 'failed' && recipient.error_message && (
+                            <div className="text-red-400 text-xs mt-1 truncate">
+                              {recipient.error_message}
+                            </div>
                           )}
                         </div>
-                        <div className={`text-xs px-2 py-1 rounded ${
+                        <div className={`text-xs px-2 py-1 rounded ml-2 shrink-0 ${
                           recipient.status === 'delivered' ? 'bg-green-500/20 text-green-500' :
                           recipient.status === 'failed' ? 'bg-red-500/20 text-red-500' :
                           'bg-gray-500/20 text-gray-400'
                         }`}>
-                          {recipient.status === 'delivered' ? 'Доставлено' :
-                           recipient.status === 'failed' ? 'Ошибка' :
-                           recipient.status === 'pending' ? 'Ожидает' : recipient.status}
+                          {recipient.status === 'delivered' ? '✓' :
+                           recipient.status === 'failed' ? '✗' : '...'}
                         </div>
                       </div>
                     ))}
