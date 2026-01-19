@@ -286,6 +286,28 @@ async function processBatch(
     p_failed: failedCount
   })
 
+  // Check if broadcast should be marked as completed based on sent_count
+  // This handles cases where polling is interrupted before the final empty batch
+  const { data: updatedBroadcast } = await supabase
+    .from('broadcasts')
+    .select('sent_count, total_recipients, status')
+    .eq('id', broadcastId)
+    .single()
+
+  if (updatedBroadcast &&
+      updatedBroadcast.status === 'sending' &&
+      updatedBroadcast.total_recipients > 0 &&
+      updatedBroadcast.sent_count >= updatedBroadcast.total_recipients) {
+    await supabase
+      .from('broadcasts')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', broadcastId)
+  }
+
   // Check if there are more recipients
   const { count } = await supabase
     .from('broadcast_recipients')
