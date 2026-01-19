@@ -143,7 +143,7 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
   // Fetch recipients for modal
   const { data: recipients = [], isLoading: isLoadingRecipients } = useQuery({
     queryKey: ['broadcastRecipients', selectedBroadcast?.id],
-    queryFn: () => selectedBroadcast ? getBroadcastRecipients(selectedBroadcast.id) : [],
+    queryFn: () => selectedBroadcast ? getBroadcastRecipients(selectedBroadcast.id, undefined, 1000) : [],
     enabled: isSuperAdmin && showRecipientsModal && !!selectedBroadcast,
   })
 
