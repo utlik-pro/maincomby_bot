@@ -110,8 +110,8 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
             />
 
             {/* Content */}
-            <div className="relative w-full max-w-sm bg-bg-card rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-                <div className="p-4 border-b border-border flex justify-between items-center bg-red-500/10">
+            <div className="relative w-full max-w-sm bg-bg-card rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[85vh] flex flex-col">
+                <div className="p-4 border-b border-border flex justify-between items-center bg-red-500/10 shrink-0">
                     <h2 className="text-lg font-bold flex items-center gap-2 text-red-500">
                         <Shield size={20} />
                         Admin Control
@@ -121,7 +121,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                     </button>
                 </div>
 
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-4 overflow-y-auto flex-1">
                     <div className="p-4 rounded-xl bg-bg border border-border">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
@@ -268,7 +268,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                     </button>
                 </div>
 
-                <div className="p-4 bg-bg border-t border-border text-center text-xs text-gray-600 font-mono">
+                <div className="p-4 bg-bg border-t border-border text-center text-xs text-gray-600 font-mono shrink-0">
                     LOGGED AS: {user?.username} (SUPERADMIN)
                 </div>
             </div>
