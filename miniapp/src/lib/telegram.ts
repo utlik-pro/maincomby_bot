@@ -562,3 +562,17 @@ export const notifyNewLike = async (
     message: `${likerName} заинтересован(а) в нетворкинге с вами. Ответьте взаимностью, чтобы начать общение!`,
   })
 }
+
+// Notify about super like (with username visible - key differentiator)
+export const notifySuperLike = async (
+  recipientTgId: number,
+  likerUsername: string | null,
+  likerName: string
+): Promise<boolean> => {
+  const usernameText = likerUsername ? `@${likerUsername}` : likerName
+  return sendPushNotification(recipientTgId, {
+    type: 'match',
+    title: 'Super Like!',
+    message: `${usernameText} очень хочет познакомиться с вами!`,
+  }, { screen: 'network', buttonText: 'Посмотреть' })
+}

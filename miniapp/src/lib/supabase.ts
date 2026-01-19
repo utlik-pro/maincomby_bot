@@ -290,6 +290,176 @@ export async function checkMutualLike(userId1: number, userId2: number) {
   return !!data
 }
 
+/**
+ * Delete a swipe record (for undo functionality)
+ * Returns true if successful
+ */
+export async function deleteSwipe(swipeId: number, swiperId: number): Promise<boolean> {
+  const supabase = getSupabase()
+
+  // Verify ownership before deleting
+  const { data: swipe, error: findError } = await supabase
+    .from('bot_swipes')
+    .select('id, swiper_id')
+    .eq('id', swipeId)
+    .eq('swiper_id', swiperId)
+    .single()
+
+  if (findError || !swipe) {
+    console.warn('[deleteSwipe] Swipe not found or unauthorized')
+    return false
+  }
+
+  // Delete the swipe
+  const { error: deleteError } = await supabase
+    .from('bot_swipes')
+    .delete()
+    .eq('id', swipeId)
+
+  if (deleteError) {
+    console.error('[deleteSwipe] Error:', deleteError)
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Get profiles who liked the current user (for "Who Liked You" feature)
+ * Excludes users the current user has already swiped on
+ */
+export async function getIncomingLikes(userId: number): Promise<{
+  profiles: SwipeCardProfile[]
+  count: number
+}> {
+  const supabase = getSupabase()
+
+  // Get users who liked current user
+  const { data: incomingSwipes, error: swipesError } = await supabase
+    .from('bot_swipes')
+    .select('swiper_id, action, swiped_at')
+    .eq('swiped_id', userId)
+    .in('action', ['like', 'superlike'])
+    .order('swiped_at', { ascending: false })
+
+  if (swipesError) throw swipesError
+  if (!incomingSwipes || incomingSwipes.length === 0) {
+    return { profiles: [], count: 0 }
+  }
+
+  // Get IDs the current user has already swiped
+  const { data: alreadySwiped } = await supabase
+    .from('bot_swipes')
+    .select('swiped_id')
+    .eq('swiper_id', userId)
+
+  const alreadySwipedIds = new Set(alreadySwiped?.map(s => s.swiped_id) || [])
+
+  // Filter out already-swiped users
+  const pendingSwipes = incomingSwipes.filter(s => !alreadySwipedIds.has(s.swiper_id))
+  const likerIds = pendingSwipes.map(s => s.swiper_id)
+
+  if (likerIds.length === 0) {
+    return { profiles: [], count: incomingSwipes.length }
+  }
+
+  // Fetch full profile data
+  const { data: profiles, error: profilesError } = await supabase
+    .from('bot_profiles')
+    .select(`
+      *,
+      user:bot_users(*, active_skin:avatar_skins(*)),
+      photos:profile_photos(*)
+    `)
+    .in('user_id', likerIds)
+    .eq('is_visible', true)
+
+  if (profilesError) throw profilesError
+
+  // Transform to SwipeCardProfile format
+  const swipeCardProfiles: SwipeCardProfile[] = (profiles || []).map(p => {
+    const userData = Array.isArray(p.user) ? p.user[0] : p.user
+    const skinData = userData?.active_skin
+    const swipeInfo = pendingSwipes.find(s => s.swiper_id === p.user_id)
+
+    return {
+      profile: p as UserProfile,
+      user: userData as User,
+      photos: ((p.photos || []) as ProfilePhoto[]).sort((a: ProfilePhoto, b: ProfilePhoto) => a.position - b.position),
+      activeSkin: Array.isArray(skinData) ? skinData[0] : skinData,
+      isSuperlike: swipeInfo?.action === 'superlike',
+      likedAt: swipeInfo?.swiped_at
+    }
+  })
+
+  // Sort by date (most recent first)
+  swipeCardProfiles.sort((a, b) => {
+    const aTime = new Date(a.likedAt || 0).getTime()
+    const bTime = new Date(b.likedAt || 0).getTime()
+    return bTime - aTime
+  })
+
+  return {
+    profiles: swipeCardProfiles,
+    count: incomingSwipes.length
+  }
+}
+
+/**
+ * Increment daily superlikes counter for a user
+ * Resets counter if it's a new day
+ */
+export async function incrementDailySuperlikes(userId: number): Promise<{
+  daily_superlikes_used: number
+  daily_superlikes_reset_at: string
+}> {
+  const supabase = getSupabase()
+
+  // Get current user data
+  const { data: user, error: fetchError } = await supabase
+    .from('bot_users')
+    .select('daily_superlikes_used, daily_superlikes_reset_at')
+    .eq('id', userId)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  const now = new Date()
+  const resetAt = user?.daily_superlikes_reset_at ? new Date(user.daily_superlikes_reset_at) : null
+
+  // Check if we need to reset (new day or never set)
+  const needsReset = !resetAt || now >= resetAt
+
+  let newCount: number
+  let newResetAt: string
+
+  if (needsReset) {
+    // Reset to 1 and set next reset time to tomorrow midnight
+    newCount = 1
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    newResetAt = tomorrow.toISOString()
+  } else {
+    // Increment counter
+    newCount = (user?.daily_superlikes_used || 0) + 1
+    newResetAt = user?.daily_superlikes_reset_at || now.toISOString()
+  }
+
+  // Update user
+  const { error: updateError } = await supabase
+    .from('bot_users')
+    .update({
+      daily_superlikes_used: newCount,
+      daily_superlikes_reset_at: newResetAt
+    })
+    .eq('id', userId)
+
+  if (updateError) throw updateError
+
+  return { daily_superlikes_used: newCount, daily_superlikes_reset_at: newResetAt }
+}
+
 // Matches
 export async function createMatch(userId1: number, userId2: number) {
   const supabase = getSupabase()

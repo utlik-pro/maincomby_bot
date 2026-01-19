@@ -233,6 +233,8 @@ export interface User {
   subscription_expires_at: string | null
   daily_swipes_used: number
   daily_swipes_reset_at: string | null
+  daily_superlikes_used: number
+  daily_superlikes_reset_at: string | null
   // Streak system
   daily_streak?: number
   last_streak_check_at?: string | null
@@ -764,6 +766,18 @@ export interface SwipeCardProfile {
   user: User
   photos: ProfilePhoto[]
   activeSkin?: AvatarSkin | null
+  // Optional fields for incoming likes view
+  isSuperlike?: boolean
+  likedAt?: string
+}
+
+// Last swipe info for undo functionality
+export interface LastSwipeInfo {
+  swipeId: number
+  swipedUserId: number
+  action: 'like' | 'skip' | 'superlike'
+  profile: SwipeCardProfile
+  timestamp: number
 }
 
 // Max photos per user
