@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end()
   }
 
-  // Rate limiting: 5 requests per minute
+  // Rate limiting: 60 requests per minute (polling every 1.5s = 40 req/min)
   if (applyRateLimit(req, res, RATE_LIMITS.sendBroadcast)) {
     return // Response already sent by rate limiter
   }

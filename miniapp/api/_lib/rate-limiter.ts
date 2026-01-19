@@ -144,10 +144,10 @@ export const RATE_LIMITS = {
     maxRequests: 10,
     keyPrefix: 'notify',
   },
-  // send-broadcast: 5 requests per minute
+  // send-broadcast: 60 requests per minute (polling every 1.5s = 40 req/min)
   sendBroadcast: {
     windowMs: 60000,
-    maxRequests: 5,
+    maxRequests: 60,
     keyPrefix: 'broadcast',
   },
 } as const
