@@ -1,9 +1,7 @@
-import React from 'react'
-import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion'
-import { MapPin, Briefcase, Target, HandshakeIcon } from 'lucide-react'
-import { PhotoGallery } from './PhotoGallery'
-import { Badge } from '@/components/ui'
-import type { SwipeCardProfile, AvatarSkin } from '@/types'
+import React, { useState } from 'react'
+import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from 'framer-motion'
+import { MapPin, Briefcase, Info } from 'lucide-react'
+import type { SwipeCardProfile } from '@/types'
 
 interface SwipeCardProps {
   profile: SwipeCardProfile
@@ -12,23 +10,11 @@ interface SwipeCardProps {
   isProcessing?: boolean
 }
 
-// Get badge config for team role
-const getRoleBadge = (role: string | null) => {
-  const config: Record<string, { label: string; color: string }> = {
-    core: { label: 'MAIN Team', color: '#c8ff00' },
-    partner: { label: 'Partner', color: '#3b82f6' },
-    sponsor: { label: 'Sponsor', color: '#eab308' },
-    volunteer: { label: 'Volunteer', color: '#22c55e' },
-    speaker: { label: 'Speaker', color: '#a855f7' },
-  }
-  return role ? config[role] : null
-}
-
-// Get badge for subscription tier
-const getTierBadge = (tier: string | null) => {
-  if (tier === 'pro') return { label: 'PRO', color: '#f59e0b' }
-  if (tier === 'light') return { label: 'LIGHT', color: '#10b981' }
-  return null
+// Helper to get correct photo URL
+const getPhotoUrl = (url?: string | null) => {
+  if (!url) return 'https://placehold.co/600x800/1a1a1a/ffffff?text=No+Photo'
+  if (url.startsWith('http')) return url
+  return url
 }
 
 export const SwipeCard: React.FC<SwipeCardProps> = ({
@@ -37,7 +23,8 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   onViewProfile,
   isProcessing = false
 }) => {
-  const { profile, user, photos = [], activeSkin } = cardData
+  const { profile, user, photos = [] } = cardData
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
 
   // Motion values for drag
   const x = useMotionValue(0)
@@ -48,9 +35,26 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   const likeOpacity = useTransform(x, [0, 100], [0, 1])
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0])
 
+  // Photo Navigation
+  const allPhotos = photos.length > 0 ? photos.map(p => p.photo_url) : [profile.photo_url]
+  const currentPhoto = allPhotos[currentPhotoIndex]
+
+  const nextPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (currentPhotoIndex < allPhotos.length - 1) {
+      setCurrentPhotoIndex(prev => prev + 1)
+    }
+  }
+
+  const prevPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (currentPhotoIndex > 0) {
+      setCurrentPhotoIndex(prev => prev - 1)
+    }
+  }
+
   const handleDragEnd = (_: any, info: PanInfo) => {
     if (isProcessing) return
-
     const threshold = 100
     if (info.offset.x > threshold) {
       onSwipe('right')
@@ -59,23 +63,15 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
     }
   }
 
-  // Get display name
-  const displayName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Participant'
+  const displayName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Участник'
 
-  // Get badge to show (priority: skin > role > tier)
-  const skinBadge = activeSkin ? { label: activeSkin.name, color: activeSkin.ring_color } : null
-  const roleBadge = getRoleBadge(user?.team_role)
-  const tierBadge = getTierBadge(user?.subscription_tier)
-  const badge = skinBadge || roleBadge || tierBadge
-
-  // Parse skills if available
-  const skills = profile.skills || []
-  const displaySkills = skills.slice(0, 2)
-  const remainingSkills = skills.length > 2 ? skills.length - 2 : 0
+  // Use occupation from profile
+  const role = profile.occupation || null
+  const city = profile.city || null
 
   return (
     <motion.div
-      className="relative w-full aspect-[3/4] max-h-[calc(100vh-220px)] rounded-card overflow-hidden bg-bg-card cursor-grab active:cursor-grabbing"
+      className="relative w-full h-full rounded-2xl overflow-hidden bg-zinc-900 shadow-2xl border border-white/5 select-none"
       style={{ x, rotate, opacity }}
       drag={isProcessing ? false : 'x'}
       dragConstraints={{ left: 0, right: 0 }}
@@ -83,107 +79,102 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
       onDragEnd={handleDragEnd}
       whileTap={{ cursor: 'grabbing' }}
     >
-      {/* Photo Gallery */}
-      <PhotoGallery
-        photos={photos}
-        fallbackUrl={profile.photo_url}
-        userName={user?.first_name}
-        className="absolute inset-0"
-        onTap={onViewProfile}
-      />
+      {/* Main Photo Container */}
+      <div className="absolute inset-0 bg-black">
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={currentPhoto || 'placeholder'}
+            src={getPhotoUrl(currentPhoto)}
+            alt="Profile"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full h-full object-cover pointer-events-none"
+            draggable={false}
+          />
+        </AnimatePresence>
 
-      {/* Swipe Indicators */}
+        {/* Gradients */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80" />
+
+        {/* Navigation Touch Zones */}
+        <div className="absolute inset-0 flex z-10 w-full h-full">
+          <div className="w-1/2 h-full cursor-pointer" onClick={prevPhoto} />
+          <div className="w-1/2 h-full cursor-pointer" onClick={nextPhoto} />
+        </div>
+      </div>
+
+      {/* Top Indicators */}
+      <div className="absolute top-2 left-2 right-2 flex gap-1 z-20 pointer-events-none">
+        {allPhotos.map((_, idx) => (
+          <div
+            key={idx}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${idx === currentPhotoIndex ? 'bg-white' : 'bg-white/20'
+              }`}
+          />
+        ))}
+      </div>
+
+      {/* Swipe Stamps */}
       <motion.div
-        className="absolute top-8 left-6 px-4 py-2 border-4 border-success rounded-lg rotate-[-20deg] z-20"
+        className="absolute top-10 left-6 px-4 py-2 border-4 border-green-500 rounded-lg rotate-[-20deg] z-30 pointer-events-none"
         style={{ opacity: likeOpacity }}
       >
-        <span className="text-2xl font-bold text-success">LIKE</span>
+        <span className="text-4xl font-black text-green-500 tracking-widest uppercase">LIKE</span>
       </motion.div>
       <motion.div
-        className="absolute top-8 right-6 px-4 py-2 border-4 border-danger rounded-lg rotate-[20deg] z-20"
+        className="absolute top-10 right-6 px-4 py-2 border-4 border-red-500 rounded-lg rotate-[20deg] z-30 pointer-events-none"
         style={{ opacity: nopeOpacity }}
       >
-        <span className="text-2xl font-bold text-danger">NOPE</span>
+        <span className="text-4xl font-black text-red-500 tracking-widest uppercase">NOPE</span>
       </motion.div>
 
-      {/* User Info Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-        {/* Name and Badge */}
-        <div className="flex items-center gap-2 mb-1">
-          <h2 className="text-2xl font-bold text-white">{displayName}</h2>
-          {badge && (
-            <span
-              className="px-2 py-0.5 text-xs font-bold rounded-full"
-              style={{
-                backgroundColor: badge.color,
-                color: badge.color === '#c8ff00' || badge.color === '#eab308' ? '#000' : '#fff'
-              }}
-            >
-              {badge.label}
-            </span>
+
+      {/* Bottom Info Overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-5 pb-24 z-20 pointer-events-none">
+        <div className="flex flex-col gap-2 text-white">
+          <div className="flex items-center gap-2">
+            <h2 className="text-3xl font-bold shadow-black drop-shadow-md">
+              {displayName}
+            </h2>
+          </div>
+
+          {role && (
+            <div className="flex items-center gap-2 text-white/90 text-sm font-medium drop-shadow-md">
+              <Briefcase size={16} />
+              <span>{role}</span>
+            </div>
+          )}
+
+          {city && (
+            <div className="flex items-center gap-2 text-white/80 text-sm drop-shadow-md">
+              <MapPin size={16} />
+              <span>{city}</span>
+            </div>
+          )}
+
+          {profile.bio && (
+            <p className="text-white/80 text-sm line-clamp-2 mt-1 drop-shadow-md max-w-[90%]">
+              {profile.bio}
+            </p>
           )}
         </div>
 
-        {/* Occupation and City */}
-        <div className="flex items-center gap-3 text-gray-300 text-sm mb-2">
-          {profile.occupation && (
-            <span className="flex items-center gap-1">
-              <Briefcase size={14} />
-              {profile.occupation}
-            </span>
-          )}
-          {profile.city && (
-            <span className="flex items-center gap-1">
-              <MapPin size={14} />
-              {profile.city}
-            </span>
-          )}
+        {/* Info Button */}
+        <div className="absolute right-4 bottom-28 pointer-events-auto">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewProfile();
+            }}
+            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition shadow-lg"
+          >
+            <Info size={16} className="text-white" />
+          </button>
         </div>
-
-        {/* Bio */}
-        {profile.bio && (
-          <p className="text-gray-300 text-sm line-clamp-2 mb-3">
-            {profile.bio}
-          </p>
-        )}
-
-        {/* Looking for / Can help with */}
-        {(profile.looking_for || profile.can_help_with) && (
-          <div className="space-y-1 mb-3">
-            {profile.looking_for && (
-              <div className="flex items-start gap-2 text-sm">
-                <Target size={14} className="text-accent flex-shrink-0 mt-0.5" />
-                <span className="text-gray-300 line-clamp-1">{profile.looking_for}</span>
-              </div>
-            )}
-            {profile.can_help_with && (
-              <div className="flex items-start gap-2 text-sm">
-                <HandshakeIcon size={14} className="text-success flex-shrink-0 mt-0.5" />
-                <span className="text-gray-300 line-clamp-1">{profile.can_help_with}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Skills */}
-        {skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {displaySkills.map((skill, index) => (
-              <span
-                key={index}
-                className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm text-white"
-              >
-                {skill}
-              </span>
-            ))}
-            {remainingSkills > 0 && (
-              <span className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm text-white">
-                +{remainingSkills}
-              </span>
-            )}
-          </div>
-        )}
       </div>
+
     </motion.div>
   )
 }
