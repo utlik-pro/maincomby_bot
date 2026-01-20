@@ -976,7 +976,7 @@ const NetworkScreen: React.FC = () => {
                       <EmptyState
                         icon={<Heart size={48} className="text-red-500/50" />}
                         title="Ошибка загрузки"
-                        description="Не удалось загрузить лайки. Попробуйте обновить страницу."
+                        description={`${(likesError as any)?.message || String(likesError)}`}
                       />
                     </div>
                   ) : incomingLikes?.profiles.length === 0 ? (
