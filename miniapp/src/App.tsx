@@ -984,11 +984,11 @@ const App: React.FC = () => {
       {!hideHeader && <LogoHeader />}
       <ToastContainer />
 
-      <PageTransition key={activeTab}>
+      <div key={activeTab}>
         <React.Suspense fallback={<LoadingScreen />}>
           {renderScreen()}
         </React.Suspense>
-      </PageTransition>
+      </div>
 
       {!hideNavigation && <Navigation />}
 

@@ -139,14 +139,28 @@ const NetworkScreen: React.FC = () => {
     enabled: !!user,
   })
 
-  // Fetch incoming likes for "Who Liked You" feature
-  const { data: incomingLikes, isLoading: likesLoading, refetch: refetchLikes } = useQuery({
+  // Incoming Likes
+  const {
+    data: incomingLikes,
+    isLoading: likesLoading,
+    refetch: refetchLikes,
+    error: likesError
+  } = useQuery({
     queryKey: ['incomingLikes', user?.id],
     queryFn: async () => {
-      if (!user) return { profiles: [], count: 0 }
-      return getIncomingLikes(user.id)
+      if (!user?.id) return null
+      console.log('Fetching incoming likes for', user.id)
+      try {
+        const result = await getIncomingLikes(user.id)
+        console.log('Incoming likes result:', result)
+        return result
+      } catch (err: any) {
+        console.error('Error fetching incoming likes:', err)
+        throw err
+      }
     },
     enabled: !!user,
+    retry: false
   })
 
   // Force refetch likes when tab changes to 'likes'
@@ -661,7 +675,7 @@ const NetworkScreen: React.FC = () => {
       <div className="flex-shrink-0 bg-zinc-900/50 z-30 px-3 py-2">
         {/* DEBUG: Remove later */}
         <div className="text-[10px] text-white/30 text-center mb-1">
-          UID: {user?.id} | Likes: {incomingLikes?.count ?? 'null'} | L:{likesLoading ? '1' : '0'}
+          UID: {user?.id} | L:{incomingLikes?.count ?? 'null'} | Err: {likesError ? (likesError as any).message || JSON.stringify(likesError) : 'none'}
         </div>
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
