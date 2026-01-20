@@ -658,8 +658,11 @@ const NetworkScreen: React.FC = () => {
 
   return (
     <div className="h-full w-full bg-black flex flex-col overflow-hidden">
-      {/* Compact Top Bar - Now BELOW TG header naturally */}
       <div className="flex-shrink-0 bg-zinc-900/50 z-30 px-3 py-2">
+        {/* DEBUG: Remove later */}
+        <div className="text-[10px] text-white/30 text-center mb-1">
+          UID: {user?.id} | Likes: {incomingLikes?.count ?? 'null'} | L:{likesLoading ? '1' : '0'}
+        </div>
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
           <div className="flex gap-0.5 p-0.5 bg-zinc-900 rounded-full">
