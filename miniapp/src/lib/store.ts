@@ -47,6 +47,7 @@ interface AppState {
   // UI state
   activeTab: 'home' | 'events' | 'learn' | 'network' | 'achievements' | 'profile'
   hideNavigation: boolean
+  hideHeader: boolean
   isVolunteerMode: boolean
   onboardingVersion: number
   lastSeenAppVersion: number // For "What's New" modal
@@ -67,6 +68,7 @@ interface AppState {
   setLoading: (loading: boolean) => void
   setActiveTab: (tab: AppState['activeTab']) => void
   setHideNavigation: (hide: boolean) => void
+  setHideHeader: (hide: boolean) => void
   setDeepLinkTarget: (target: string | null) => void
   setPendingInviteCode: (code: string | null) => void
   setAccessDenied: (denied: boolean) => void
@@ -103,6 +105,7 @@ export const useAppStore = create<AppState>()(
       isLoading: true,
       activeTab: 'home',
       hideNavigation: false,
+      hideHeader: false,
       isVolunteerMode: false,
       onboardingVersion: 0,
       lastSeenAppVersion: 0,
@@ -132,6 +135,7 @@ export const useAppStore = create<AppState>()(
       setLoading: (isLoading) => set({ isLoading }),
       setActiveTab: (activeTab) => set({ activeTab }),
       setHideNavigation: (hideNavigation) => set({ hideNavigation }),
+      setHideHeader: (hideHeader) => set({ hideHeader }),
       setVolunteerMode: (isVolunteerMode) => set({ isVolunteerMode }),
       setShowFunnelForTeam: (showFunnelForTeam) => set({ showFunnelForTeam }),
       completeOnboarding: () => set({ onboardingVersion: CURRENT_ONBOARDING_VERSION }),
