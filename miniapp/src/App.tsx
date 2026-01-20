@@ -5,7 +5,7 @@ import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp, validateInitData, getInitData } from '@/lib/telegram'
 import { isPreviewMode } from '@/lib/tenant'
-import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam } from '@/lib/supabase'
+import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam, getPendingProGift, acknowledgeProGift } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -27,6 +27,7 @@ const AccessGateScreen = React.lazy(() => import('@/screens/AccessGateScreen'))
 const InviteBottomSheet = React.lazy(() => import('@/components/InviteBottomSheet').then(m => ({ default: m.InviteBottomSheet })))
 const ChangelogSheet = React.lazy(() => import('@/components/ChangelogSheet'))
 const ReviewBottomSheet = React.lazy(() => import('@/components/ReviewBottomSheet').then(m => ({ default: m.ReviewBottomSheet })))
+const ProGiftModal = React.lazy(() => import('@/components/ProGiftModal').then(m => ({ default: m.ProGiftModal })))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -94,6 +95,16 @@ const App: React.FC = () => {
   // Pending broadcast click to log when user loads
   const pendingBroadcastClick = useRef<number | null>(null)
 
+  // PRO gift notification state
+  const [showProGiftModal, setShowProGiftModal] = useState(false)
+  const [proGiftData, setProGiftData] = useState<{
+    id: number
+    adminName: string
+    adminUsername: string
+    adminAvatarUrl?: string
+    durationDays: number
+  } | null>(null)
+
   // Check if should show What's New after loading
   useEffect(() => {
     if (!isLoading && isAuthenticated && !shouldShowOnboarding() && shouldShowWhatsNew()) {
@@ -123,6 +134,25 @@ const App: React.FC = () => {
 
     checkPendingReviews()
   }, [user?.id, isLoading, showChangelog])
+
+  // Check for pending PRO gift notifications
+  useEffect(() => {
+    const checkProGift = async () => {
+      if (!user?.id || isLoading || showChangelog || showReviewPrompt) return
+
+      try {
+        const gift = await getPendingProGift(user.id)
+        if (gift) {
+          setProGiftData(gift)
+          setTimeout(() => setShowProGiftModal(true), 500)
+        }
+      } catch (e) {
+        console.warn('Failed to check PRO gift:', e)
+      }
+    }
+
+    checkProGift()
+  }, [user?.id, isLoading, showChangelog, showReviewPrompt])
 
   // Global user data refresh - sync team_role and other critical fields
   const { data: freshUserData } = useQuery({
@@ -1001,7 +1031,26 @@ const App: React.FC = () => {
           />
         )}
       </React.Suspense>
+
+      {/* PRO Gift Notification Modal */}
+      <React.Suspense fallback={null}>
+        {proGiftData && (
+          <ProGiftModal
+            isOpen={showProGiftModal}
+            onClose={() => {
+              setShowProGiftModal(false)
+              acknowledgeProGift(proGiftData.id)
+              setProGiftData(null)
+            }}
+            adminName={proGiftData.adminName}
+            adminUsername={proGiftData.adminUsername}
+            adminAvatarUrl={proGiftData.adminAvatarUrl}
+            durationDays={proGiftData.durationDays}
+          />
+        )}
+      </React.Suspense>
     </div>
+
   )
 }
 

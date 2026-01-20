@@ -4635,3 +4635,56 @@ export async function giftUserPro(
 
   return true
 }
+
+/**
+ * Get pending PRO gift notification for user
+ */
+export async function getPendingProGift(userId: number): Promise<{
+  id: number
+  adminName: string
+  adminUsername: string
+  adminAvatarUrl?: string
+  durationDays: number
+} | null> {
+  const supabase = getSupabase()
+
+  // Check for recently completed gift_pro actions for this user
+  const { data, error } = await supabase
+    .from('bot_admin_actions')
+    .select('*')
+    .eq('action', 'gift_pro')
+    .eq('status', 'completed')
+    .order('processed_at', { ascending: false })
+    .limit(10)
+
+  if (error || !data) return null
+
+  // Find one that targets this user and hasn't been acknowledged
+  for (const action of data) {
+    const payload = action.payload as any
+    if (payload?.user_id === userId) {
+      // Check if already acknowledged (stored in localStorage)
+      const acknowledgedGifts = JSON.parse(localStorage.getItem('acknowledged_pro_gifts') || '[]')
+      if (!acknowledgedGifts.includes(action.id)) {
+        return {
+          id: action.id,
+          adminName: payload.admin_name || 'Дмитрий Утлик',
+          adminUsername: payload.admin_username || 'dmitryutlik',
+          adminAvatarUrl: payload.admin_avatar_url,
+          durationDays: payload.duration_days || 30
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Acknowledge PRO gift (mark as seen)
+ */
+export function acknowledgeProGift(giftId: number) {
+  const acknowledged = JSON.parse(localStorage.getItem('acknowledged_pro_gifts') || '[]')
+  acknowledged.push(giftId)
+  localStorage.setItem('acknowledged_pro_gifts', JSON.stringify(acknowledged))
+}
