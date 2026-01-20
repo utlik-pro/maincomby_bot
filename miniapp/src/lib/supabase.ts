@@ -2736,6 +2736,7 @@ export async function getApprovedProfilesWithPhotos(
   city?: string
 ): Promise<SwipeCardProfile[]> {
   const supabase = getSupabase()
+  console.log('[getSwipeProfiles] Starting for user:', excludeUserId, 'city filter:', city || 'none')
 
   // Get swiped user IDs
   const { data: swipedData } = await supabase
@@ -2803,6 +2804,8 @@ export async function getApprovedProfilesWithPhotos(
 
   if (error) throw error
 
+  console.log('[getSwipeProfiles] Total visible profiles:', data?.length || 0, 'Already swiped:', swipedIds.length, 'Matches:', matchedIds.size)
+
   // Separate new and already-swiped profiles
   const allProfiles = (data || []).map(p => {
     const userData = Array.isArray(p.user) ? p.user[0] : p.user
@@ -2817,20 +2820,23 @@ export async function getApprovedProfilesWithPhotos(
   })
 
   const newProfiles = allProfiles.filter(p => !swipedIds.includes(p.profile.user_id))
+  console.log('[getSwipeProfiles] New (unswiped) profiles:', newProfiles.length)
 
   // If there are new profiles, return them
   if (newProfiles.length > 0) {
     return newProfiles
   }
 
-  // Otherwise, recycle old profiles (excluding matches, limit to 20)
-  console.log('[getApprovedProfilesWithPhotos] No new profiles, recycling old ones')
+  // Otherwise, recycle old profiles (excluding matches)
+  console.log('[getSwipeProfiles] No new profiles, recycling old ones (excluding', matchedIds.size, 'matches)')
   const recyclableProfiles = allProfiles
     .filter(p => !matchedIds.has(p.profile.user_id))
     .map(p => ({ ...p, isRecycled: true }))
-    .slice(0, 20)
 
-  return recyclableProfiles
+  console.log('[getSwipeProfiles] Recyclable profiles (excl matches):', recyclableProfiles.length, 'Returning:', Math.min(recyclableProfiles.length, 50))
+
+  // Return up to 50 recycled profiles
+  return recyclableProfiles.slice(0, 50)
 }
 
 // ============================================

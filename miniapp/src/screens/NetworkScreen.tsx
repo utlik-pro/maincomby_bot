@@ -51,6 +51,7 @@ const NetworkScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'swipe' | 'matches' | 'likes'>('swipe')
   const [showProfileDetail, setShowProfileDetail] = useState<SwipeCardProfile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showAllCities, setShowAllCities] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [lastSwipe, setLastSwipe] = useState<{
     swipeId: number
@@ -124,11 +125,12 @@ const NetworkScreen: React.FC = () => {
   const swipesRemaining = getDailySwipesRemaining()
 
   // Fetch profiles with photos
+  const cityFilter = showAllCities ? undefined : profile?.city
   const { data: profiles, isLoading, error: profilesError, refetch } = useQuery({
-    queryKey: ['swipeProfilesWithPhotos', user?.id],
+    queryKey: ['swipeProfilesWithPhotos', user?.id, cityFilter],
     queryFn: async () => {
       if (!user) return []
-      return getApprovedProfilesWithPhotos(user.id, profile?.city)
+      return getApprovedProfilesWithPhotos(user.id, cityFilter)
     },
     enabled: !!user,
   })
@@ -788,11 +790,24 @@ const NetworkScreen: React.FC = () => {
                 </div>
               ) : !currentProfile ? (
                 <div className="w-full h-full flex items-center justify-center p-4">
-                  <EmptyState
-                    icon={<Sparkles size={64} className="text-accent/50 animate-pulse" />}
-                    title="Это всё на сегодня!"
-                    description="Загляните позже, обязательно появятся новые участники."
-                  />
+                  <div className="text-center">
+                    <EmptyState
+                      icon={<Sparkles size={64} className="text-accent/50 animate-pulse" />}
+                      title="Это всё на сегодня!"
+                      description={profile?.city
+                        ? `Вы просмотрели всех из города "${profile.city}". Попробуйте расширить географию.`
+                        : "Загляните позже, обязательно появятся новые участники."
+                      }
+                    />
+                    {profile?.city && !showAllCities && (
+                      <button
+                        className="mt-4 px-6 py-3 bg-accent/20 hover:bg-accent text-accent hover:text-bg rounded-xl font-medium transition-all"
+                        onClick={() => setShowAllCities(true)}
+                      >
+                        Показать всех участников
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="w-full max-w-sm h-[70vh] mx-auto relative overflow-hidden rounded-3xl shadow-2xl border border-white/10">
