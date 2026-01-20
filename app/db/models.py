@@ -305,3 +305,25 @@ class AdminAction(Base):
     processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
+
+class EngagementNotification(Base):
+    """Tracks engagement notifications for analytics."""
+    __tablename__ = "engagement_notifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot_users.id"), index=True)
+    notification_type: Mapped[str] = mapped_column(String(50))  # profile_incomplete, no_swipes, inactive_7d, etc.
+    sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    delivered: Mapped[bool] = mapped_column(Boolean, default=True)
+    error_message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # Conversion tracking
+    converted: Mapped[bool] = mapped_column(Boolean, default=False)
+    converted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    conversion_time_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # Context data
+    context: Mapped[dict] = mapped_column(JSON, default={})
+
+    user: Mapped[User] = relationship()
+

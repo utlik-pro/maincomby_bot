@@ -8,7 +8,7 @@ Sends automated notifications to encourage app usage:
 """
 
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Tuple
 import logging
 
 from aiogram import Bot
@@ -16,7 +16,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import User, UserProfile, Swipe
+from app.db.models import User, UserProfile, Swipe, EngagementNotification
 
 from supabase import create_client, Client
 import os
@@ -52,6 +52,27 @@ class EngagementNotificationService:
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text=text, url=url)]
         ])
+
+    async def _log_notification(
+        self,
+        session: AsyncSession,
+        user_id: int,
+        notification_type: str,
+        delivered: bool,
+        error_message: Optional[str] = None,
+        context: Optional[dict] = None
+    ) -> EngagementNotification:
+        """Log notification send to database for analytics"""
+        notification = EngagementNotification(
+            user_id=user_id,
+            notification_type=notification_type,
+            sent_at=datetime.utcnow(),
+            delivered=delivered,
+            error_message=error_message,
+            context=context or {}
+        )
+        session.add(notification)
+        return notification
 
     # === PROFILE INCOMPLETE ===
 
@@ -120,6 +141,12 @@ class EngagementNotificationService:
                 # Send notification
                 if user.tg_user_id:
                     success = await self.send_profile_incomplete(user.tg_user_id)
+                    # Log for analytics
+                    await self._log_notification(
+                        session, user.id, 'profile_incomplete',
+                        delivered=success,
+                        error_message=None if success else "Telegram send failed"
+                    )
                     if success:
                         user.engagement_profile_sent_at = now
                         sent_count += 1
@@ -198,6 +225,12 @@ class EngagementNotificationService:
                 # Send notification
                 if user.tg_user_id:
                     success = await self.send_no_swipes(user.tg_user_id)
+                    # Log for analytics
+                    await self._log_notification(
+                        session, user.id, 'no_swipes',
+                        delivered=success,
+                        error_message=None if success else "Telegram send failed"
+                    )
                     if success:
                         user.engagement_swipes_sent_at = now
                         sent_count += 1
@@ -282,6 +315,13 @@ class EngagementNotificationService:
 
                 if user.tg_user_id:
                     success = await self.send_inactive_7d(user.tg_user_id, likes_count)
+                    # Log for analytics
+                    await self._log_notification(
+                        session, user.id, 'inactive_7d',
+                        delivered=success,
+                        error_message=None if success else "Telegram send failed",
+                        context={'likes_count': likes_count}
+                    )
                     if success:
                         user.engagement_inactive_7d_sent_at = now
                         sent_count += 1
@@ -357,6 +397,13 @@ class EngagementNotificationService:
             for user in users:
                 if user.tg_user_id:
                     success = await self.send_inactive_14d(user.tg_user_id, new_users_count)
+                    # Log for analytics
+                    await self._log_notification(
+                        session, user.id, 'inactive_14d',
+                        delivered=success,
+                        error_message=None if success else "Telegram send failed",
+                        context={'new_users_count': new_users_count}
+                    )
                     if success:
                         user.engagement_inactive_14d_sent_at = now
                         sent_count += 1
@@ -451,6 +498,13 @@ class EngagementNotificationService:
                     if tier_to_send and tier_field and user.tg_user_id:
                         success = await self.send_likes_notification(
                             user.tg_user_id, likes_count, tier_to_send
+                        )
+                        # Log for analytics
+                        await self._log_notification(
+                            session, user.id, f'likes_{tier_to_send}',
+                            delivered=success,
+                            error_message=None if success else "Telegram send failed",
+                            context={'likes_count': likes_count, 'tier': tier_to_send}
                         )
                         if success:
                             setattr(user, tier_field, now)

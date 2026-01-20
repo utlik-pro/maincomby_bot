@@ -3511,8 +3511,104 @@ export async function updateLastAppOpen(userId: number): Promise<void> {
       .from('bot_users')
       .update({ last_app_open_at: new Date().toISOString() })
       .eq('id', userId)
+
+    // Also track conversions - mark recent notifications as converted
+    await trackEngagementConversion(userId)
   } catch (e) {
     console.warn('[Supabase] Failed to update last_app_open_at:', e)
+  }
+}
+
+// Track engagement notification conversions (user opened app within 24h of notification)
+export async function trackEngagementConversion(userId: number): Promise<void> {
+  const supabase = getSupabase()
+  try {
+    const now = new Date()
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+
+    // Find unconverted notifications sent within last 24 hours
+    const { data: notifications } = await supabase
+      .from('engagement_notifications')
+      .select('id, sent_at')
+      .eq('user_id', userId)
+      .eq('delivered', true)
+      .eq('converted', false)
+      .gte('sent_at', twentyFourHoursAgo)
+
+    if (notifications && notifications.length > 0) {
+      for (const notification of notifications) {
+        const sentAt = new Date(notification.sent_at)
+        const conversionTime = Math.floor((now.getTime() - sentAt.getTime()) / 1000)
+
+        await supabase
+          .from('engagement_notifications')
+          .update({
+            converted: true,
+            converted_at: now.toISOString(),
+            conversion_time_seconds: conversionTime
+          })
+          .eq('id', notification.id)
+      }
+      console.log(`[Engagement] Marked ${notifications.length} notifications as converted`)
+    }
+  } catch (e) {
+    console.warn('[Supabase] Failed to track engagement conversion:', e)
+  }
+}
+
+// Get engagement notification stats for admin dashboard
+export interface EngagementStats {
+  daily: Array<{
+    date: string
+    notification_type: string
+    total_sent: number
+    delivered: number
+    failed: number
+    conversions: number
+    conversion_rate: number
+    avg_conversion_minutes: number
+  }>
+  summary: Array<{
+    notification_type: string
+    total_sent: number
+    delivered: number
+    conversions: number
+    conversion_rate: number
+    first_sent: string
+    last_sent: string
+  }>
+}
+
+export async function getEngagementStats(): Promise<EngagementStats | null> {
+  const supabase = getSupabase()
+  try {
+    // Get daily stats from view
+    const { data: daily, error: dailyError } = await supabase
+      .from('engagement_stats_daily')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(100)
+
+    if (dailyError) {
+      console.warn('[Supabase] Failed to get daily engagement stats:', dailyError)
+    }
+
+    // Get summary stats from view
+    const { data: summary, error: summaryError } = await supabase
+      .from('engagement_stats_summary')
+      .select('*')
+
+    if (summaryError) {
+      console.warn('[Supabase] Failed to get engagement summary:', summaryError)
+    }
+
+    return {
+      daily: daily || [],
+      summary: summary || []
+    }
+  } catch (e) {
+    console.warn('[Supabase] Failed to get engagement stats:', e)
+    return null
   }
 }
 

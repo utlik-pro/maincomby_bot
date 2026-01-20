@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { isInviteRequired, updateAppSetting, getActiveEvents } from '@/lib/supabase'
-import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw, BookOpen, Send, Gift } from 'lucide-react'
+import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw, BookOpen, Send, Gift, Bell } from 'lucide-react'
 import { UserRoleManager } from './UserRoleManager'
 import { UserManager } from './UserManager'
 import { AnalyticsPanel } from './AnalyticsPanel'
 import { LearningAdminPanel } from './LearningAdminPanel'
 import { BroadcastPanel } from './BroadcastPanel'
+import { EngagementDashboard } from './EngagementDashboard'
 import { Event } from '@/types'
 import { hapticFeedback, shareUrl } from '@/lib/telegram'
 
@@ -27,6 +28,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     const [showLearningAdmin, setShowLearningAdmin] = useState(false)
     const [showBroadcast, setShowBroadcast] = useState(false)
     const [showUserManager, setShowUserManager] = useState(false)
+    const [showEngagement, setShowEngagement] = useState(false)
     const [events, setEvents] = useState<Event[]>([])
     const [eventsLoading, setEventsLoading] = useState(false)
 
@@ -266,6 +268,25 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                         </div>
                     </button>
 
+                    {/* Engagement Analytics */}
+                    <button
+                        onClick={() => setShowEngagement(true)}
+                        className="w-full p-4 rounded-xl bg-bg border border-border hover:border-green-500/50 transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-green-500/20 text-green-500 flex items-center justify-center">
+                                    <Bell size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Engagement</div>
+                                    <div className="text-xs text-gray-400">Аналитика уведомлений</div>
+                                </div>
+                            </div>
+                            <div className="text-green-500">→</div>
+                        </div>
+                    </button>
+
                     {/* Reset Easter Eggs */}
                     <button
                         onClick={() => {
@@ -317,6 +338,11 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
             {/* User Manager Panel */}
             {showUserManager && (
                 <UserManager onClose={() => setShowUserManager(false)} />
+            )}
+
+            {/* Engagement Dashboard */}
+            {showEngagement && (
+                <EngagementDashboard onClose={() => setShowEngagement(false)} />
             )}
 
             {/* Event Links Panel */}
