@@ -145,7 +145,7 @@ export const Navigation: React.FC = () => {
           >
             <Flame
               size={28}
-              className="text-white"
+              className="text-white animate-flame-pulse"
               strokeWidth={2.5}
               fill="white"
             />
