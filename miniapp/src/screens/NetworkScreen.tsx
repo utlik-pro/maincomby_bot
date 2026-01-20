@@ -617,9 +617,9 @@ const NetworkScreen: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col">
+    <div className="fixed inset-0 bg-black flex flex-col pt-safe">
       {/* Compact Top Bar */}
-      <div className="flex-shrink-0 bg-black z-30 px-2 py-2 border-b border-white/10">
+      <div className="flex-shrink-0 bg-black/90 z-30 px-3 py-2 border-b border-white/10">
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
           <div className="flex gap-0.5 p-0.5 bg-zinc-900 rounded-full">
@@ -673,11 +673,11 @@ const NetworkScreen: React.FC = () => {
       </div>
 
       {/* Main Content Area - fills remaining space */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 min-h-0 overflow-hidden relative">
         {activeTab === 'swipe' && (
-          <div className="absolute inset-0 flex flex-col">
-            {/* Swipe Card Area */}
-            <div className="flex-1 flex items-center justify-center p-3 overflow-hidden">
+          <div className="h-full flex flex-col">
+            {/* Swipe Card Area - constrained height */}
+            <div className="flex-1 min-h-0 flex items-center justify-center p-2 overflow-hidden">
               {isLoading ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <Skeleton className="w-48 h-64 rounded-3xl bg-white/5" />
@@ -731,13 +731,20 @@ const NetworkScreen: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className="h-full w-full max-w-md mx-auto relative overflow-hidden rounded-[2.5rem] shadow-2xl border border-white/10">
+                <div className="w-full h-full max-w-sm max-h-[60vh] mx-auto relative overflow-hidden rounded-3xl shadow-2xl border border-white/10">
                   <SwipeCard
                     profile={currentProfile}
                     onSwipe={handleSwipe}
                     onViewProfile={() => setShowProfileDetail(currentProfile)}
                     isProcessing={isProcessing}
                   />
+                  {/* Profile info button */}
+                  <button
+                    onClick={() => setShowProfileDetail(currentProfile)}
+                    className="absolute bottom-3 right-3 z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20"
+                  >
+                    <User size={18} className="text-white" />
+                  </button>
                 </div>
               )}
             </div>
