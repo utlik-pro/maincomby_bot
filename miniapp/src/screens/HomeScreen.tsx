@@ -260,41 +260,6 @@ const HomeScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Networking Banner */}
-      <div className="px-4 mb-6">
-        <Card
-          onClick={() => setActiveTab('network')}
-          className="!p-3 bg-gradient-to-r from-red-500/20 to-red-500/5 border border-red-500/20 cursor-pointer overflow-hidden relative"
-        >
-          <div className="flex items-center gap-3 relative z-10">
-            {/* Icon with notification badges */}
-            <div className="relative shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                <Flame className="text-red-500" size={20} />
-              </div>
-              {/* Notification badges */}
-              {(matchesCount > 0 || likesCount > 0) && (
-                <div className="absolute -top-1.5 -right-1.5 flex items-center">
-                  {likesCount > 0 && (
-                    <span className="flex items-center gap-0.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg">
-                      <Heart size={9} className="fill-white" />
-                      {likesCount}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-bold text-white text-sm">Networking</div>
-              <div className="text-[11px] text-gray-400 leading-tight">
-                Знакомься и находи единомышленников
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-gray-500 shrink-0" />
-          </div>
-        </Card>
-      </div>
-
       {/* Daily Streak Card - временно отключен */}
       {/* {streakStatus && (
         <div className="px-4 mb-6">
