@@ -361,14 +361,33 @@ const HomeScreen: React.FC = () => {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="px-4 grid grid-cols-3 gap-3 mb-6">
-        <Card onClick={() => setActiveTab('network')} className="text-center py-4">
-          <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-accent/10 flex items-center justify-center">
-            <Flame size={20} className="text-accent" />
+      {/* Networking Section */}
+      <div className="px-4 mb-6">
+        <Card
+          onClick={() => setActiveTab('network')}
+          className="bg-gradient-to-r from-red-500/20 to-red-500/5 border border-red-500/20 cursor-pointer overflow-hidden relative"
+        >
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center shrink-0">
+              <Heart className="text-red-400 fill-red-400" size={24} />
+            </div>
+            <div className="flex-1">
+              <div className="font-bold text-white mb-0.5">Нетворкинг</div>
+              <div className="text-xs text-gray-400">
+                Знакомься с участниками сообщества
+              </div>
+            </div>
+            <ChevronRight size={20} className="text-gray-500" />
           </div>
-          <div className="text-xs font-semibold">Нетворкинг</div>
+          {/* Decorative background element */}
+          <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
+            <Heart size={80} className="text-red-400 fill-red-400" />
+          </div>
         </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="px-4 grid grid-cols-2 gap-3 mb-6">
         <Card onClick={() => setActiveTab('events')} className="text-center py-4">
           <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-accent/10 flex items-center justify-center">
             <Calendar size={20} className="text-accent" />
