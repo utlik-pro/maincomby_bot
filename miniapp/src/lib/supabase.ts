@@ -371,7 +371,7 @@ export async function getIncomingLikes(userId: number): Promise<{
       photos:profile_photos(*)
     `)
     .in('user_id', likerIds)
-    .eq('is_visible', true)
+  // .eq('is_visible', true) // Allow seeing hidden profiles if they liked you
 
   if (profilesError) throw profilesError
 
