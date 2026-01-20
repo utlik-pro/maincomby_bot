@@ -369,7 +369,7 @@ const HomeScreen: React.FC = () => {
         >
           <div className="flex items-center gap-4 relative z-10">
             <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center shrink-0">
-              <Heart className="text-red-400 fill-red-400" size={24} />
+              <Flame className="text-red-400" size={24} />
             </div>
             <div className="flex-1">
               <div className="font-bold text-white mb-0.5">Нетворкинг</div>
@@ -381,7 +381,7 @@ const HomeScreen: React.FC = () => {
           </div>
           {/* Decorative background element */}
           <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
-            <Heart size={80} className="text-red-400 fill-red-400" />
+            <Flame size={80} className="text-red-400" />
           </div>
         </Card>
       </div>
