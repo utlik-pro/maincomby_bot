@@ -4688,3 +4688,21 @@ export function acknowledgeProGift(giftId: number) {
   acknowledged.push(giftId)
   localStorage.setItem('acknowledged_pro_gifts', JSON.stringify(acknowledged))
 }
+
+/**
+ * Get recent admin actions for history view
+ */
+export async function getRecentAdminActions() {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('bot_admin_actions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (error) {
+    console.error('Error fetching admin actions:', error)
+    return []
+  }
+  return data
+}

@@ -143,12 +143,11 @@ const NetworkScreen: React.FC = () => {
   const {
     data: incomingLikes,
     isLoading: likesLoading,
-    refetch: refetchLikes,
-    error: likesError
+    refetch: refetchLikes
   } = useQuery({
     queryKey: ['incomingLikes', user?.id],
     queryFn: async () => {
-      if (!user?.id) return null
+      if (!user?.id) return { profiles: [], count: 0 }
       console.log('Fetching incoming likes for', user.id)
       try {
         const result = await getIncomingLikes(user.id)
@@ -156,11 +155,12 @@ const NetworkScreen: React.FC = () => {
         return result
       } catch (err: any) {
         console.error('Error fetching incoming likes:', err)
-        throw err
+        return { profiles: [], count: 0 }
       }
     },
     enabled: !!user,
-    retry: false
+    retry: 1,
+    staleTime: 30000
   })
 
   // Force refetch likes when tab changes to 'likes'
@@ -673,10 +673,6 @@ const NetworkScreen: React.FC = () => {
   return (
     <div className="h-full w-full bg-black flex flex-col overflow-hidden">
       <div className="flex-shrink-0 bg-zinc-900/50 z-30 px-3 py-2">
-        {/* DEBUG: Remove later */}
-        <div className="text-[10px] text-white/30 text-center mb-1">
-          UID: {user?.id} | L:{incomingLikes?.count ?? 'null'} | Err: {likesError ? (likesError as any).message || JSON.stringify(likesError) : 'none'}
-        </div>
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
           <div className="flex gap-0.5 p-0.5 bg-zinc-900 rounded-full">

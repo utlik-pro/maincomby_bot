@@ -980,8 +980,7 @@ const App: React.FC = () => {
 
   return (
     <div
-      className={`bg-bg text-white max-w-lg mx-auto flex flex-col ${isFixedScreen ? 'h-[100dvh] overflow-hidden' : 'min-h-screen'
-        }`}
+      className="bg-bg text-white max-w-lg mx-auto flex flex-col h-full overflow-hidden select-none"
       {...swipeHandlers}
     >
       {!hideHeader && <LogoHeader />}
@@ -991,7 +990,7 @@ const App: React.FC = () => {
         key={activeTab}
         className={`flex-1 w-full relative ${!hideHeader ? 'pt-[90px]' : ''
           } ${!hideNavigation && !isFixedScreen ? 'pb-[90px]' : ''
-          }`}
+          } ${isFixedScreen ? 'overflow-hidden' : 'overflow-y-auto overscroll-contain'}`}
       >
         <React.Suspense fallback={<LoadingScreen />}>
           {renderScreen()}
