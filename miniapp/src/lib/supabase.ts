@@ -326,7 +326,7 @@ export async function deleteSwipe(swipeId: number, swiperId: number): Promise<bo
 
 /**
  * Get profiles who liked the current user (for "Who Liked You" feature)
- * Excludes users the current user has already swiped on
+ * Shows ALL historical likes (even if already swiped)
  */
 export async function getIncomingLikes(userId: number): Promise<{
   profiles: SwipeCardProfile[]
@@ -334,7 +334,7 @@ export async function getIncomingLikes(userId: number): Promise<{
 }> {
   const supabase = getSupabase()
 
-  // Get users who liked current user
+  // Get users who liked current user (ALL TIME)
   const { data: incomingSwipes, error: swipesError } = await supabase
     .from('bot_swipes')
     .select('swiper_id, action, swiped_at')
@@ -347,7 +347,7 @@ export async function getIncomingLikes(userId: number): Promise<{
     return { profiles: [], count: 0 }
   }
 
-  // Get IDs the current user has already swiped
+  // Get IDs the current user has already swiped (to mark as "processed")
   const { data: alreadySwiped } = await supabase
     .from('bot_swipes')
     .select('swiped_id')
@@ -355,12 +355,11 @@ export async function getIncomingLikes(userId: number): Promise<{
 
   const alreadySwipedIds = new Set(alreadySwiped?.map(s => s.swiped_id) || [])
 
-  // Filter out already-swiped users
-  const pendingSwipes = incomingSwipes.filter(s => !alreadySwipedIds.has(s.swiper_id))
-  const likerIds = pendingSwipes.map(s => s.swiper_id)
+  // Get ALL liker IDs (no filtering)
+  const likerIds = incomingSwipes.map(s => s.swiper_id)
 
   if (likerIds.length === 0) {
-    return { profiles: [], count: incomingSwipes.length }
+    return { profiles: [], count: 0 }
   }
 
   // Fetch full profile data
@@ -380,7 +379,7 @@ export async function getIncomingLikes(userId: number): Promise<{
   const swipeCardProfiles: SwipeCardProfile[] = (profiles || []).map(p => {
     const userData = Array.isArray(p.user) ? p.user[0] : p.user
     const skinData = userData?.active_skin
-    const swipeInfo = pendingSwipes.find(s => s.swiper_id === p.user_id)
+    const swipeInfo = incomingSwipes.find(s => s.swiper_id === p.user_id)
 
     return {
       profile: p as UserProfile,
@@ -388,7 +387,8 @@ export async function getIncomingLikes(userId: number): Promise<{
       photos: ((p.photos || []) as ProfilePhoto[]).sort((a: ProfilePhoto, b: ProfilePhoto) => a.position - b.position),
       activeSkin: Array.isArray(skinData) ? skinData[0] : skinData,
       isSuperlike: swipeInfo?.action === 'superlike',
-      likedAt: swipeInfo?.swiped_at
+      likedAt: swipeInfo?.swiped_at,
+      isProcessed: alreadySwipedIds.has(p.user_id) // Mark if already swiped
     }
   })
 
@@ -3040,8 +3040,8 @@ function isConsecutiveDay(lastDate: string | null, now: Date): boolean {
 // Check if date is today
 function isSameDay(date1: Date, date2: Date): boolean {
   return date1.getFullYear() === date2.getFullYear() &&
-         date1.getMonth() === date2.getMonth() &&
-         date1.getDate() === date2.getDate()
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
 }
 
 // Grant Pro subscription for X days
@@ -3148,7 +3148,7 @@ export async function checkAndUpdateDailyStreak(userId: number): Promise<{
   // Check if new week (compare week numbers)
   const lastCheckDate = lastCheck ? new Date(lastCheck) : null
   const isNewWeek = !lastCheckDate || getWeekNumber(lastCheckDate) !== getWeekNumber(now) ||
-                    lastCheckDate.getFullYear() !== now.getFullYear()
+    lastCheckDate.getFullYear() !== now.getFullYear()
 
   // Update week_activity
   let weekActivity: number[]
@@ -3395,7 +3395,7 @@ export async function getUserStreakStatus(userId: number): Promise<{
   // Check if it's a new week - if so, week_activity should be empty
   const lastCheck = user?.last_streak_check_at ? new Date(user.last_streak_check_at) : null
   const isNewWeek = !lastCheck || getWeekNumber(lastCheck) !== getWeekNumber(now) ||
-                    lastCheck.getFullYear() !== now.getFullYear()
+    lastCheck.getFullYear() !== now.getFullYear()
   const weekActivity = isNewWeek ? [] : (user?.week_activity || [])
 
   // Find next unclaimed daily milestone
@@ -4571,3 +4571,27 @@ export async function grantCourseAccess(
 
   return true
 }
+
+/**
+ * Gift PRO subscription to a user via admin action queue
+ * The Python bot will process this and send a Telegram notification
+ */
+export async function giftUserPro(userId: number, durationDays: number = 30): Promise<boolean> {
+  const supabase = getSupabase()
+
+  const { error } = await supabase
+    .from('bot_admin_actions')
+    .insert({
+      action: 'gift_pro',
+      payload: { user_id: userId, duration_days: durationDays },
+      status: 'pending'
+    })
+
+  if (error) {
+    console.error('Error gifting PRO:', error)
+    return false
+  }
+
+  return true
+}
+
