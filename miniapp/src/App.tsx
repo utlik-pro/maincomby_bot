@@ -976,15 +976,23 @@ const App: React.FC = () => {
     }
   }
 
+  const isFixedScreen = activeTab === 'network'
+
   return (
     <div
-      className="bg-bg min-h-screen text-white max-w-lg mx-auto flex flex-col"
+      className={`bg-bg text-white max-w-lg mx-auto flex flex-col ${isFixedScreen ? 'h-[100dvh] overflow-hidden' : 'min-h-screen'
+        }`}
       {...swipeHandlers}
     >
       {!hideHeader && <LogoHeader />}
       <ToastContainer />
 
-      <div key={activeTab} className="flex-1 w-full relative">
+      <div
+        key={activeTab}
+        className={`flex-1 w-full relative ${!hideHeader ? 'pt-[90px]' : ''
+          } ${!hideNavigation && !isFixedScreen ? 'pb-[90px]' : ''
+          }`}
+      >
         <React.Suspense fallback={<LoadingScreen />}>
           {renderScreen()}
         </React.Suspense>
