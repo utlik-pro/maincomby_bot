@@ -35,13 +35,19 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
     }
 
     const handleGiftPro = async () => {
-        if (!selectedUser) return
+        if (!selectedUser || !currentUser) return
 
         setIsGifting(true)
         hapticFeedback.medium()
 
         try {
-            const success = await giftUserPro(selectedUser.id, 30)
+            // Only dmitryutlik and utlik_offer can gift PRO
+            const success = await giftUserPro(selectedUser.id, 30, {
+                name: currentUser.first_name || 'Дмитрий Утлик',
+                username: currentUser.username || 'dmitryutlik',
+                // Avatar will be fetched by backend from profile if needed
+            })
+
 
             if (success) {
                 hapticFeedback.success()
@@ -58,6 +64,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
             setIsGifting(false)
         }
     }
+
 
     if (!isSuperAdmin) {
         return null

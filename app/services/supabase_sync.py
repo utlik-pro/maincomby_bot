@@ -832,24 +832,48 @@ class SupabaseSync:
                             logger.info(f"Gifted PRO to user {user.id} until {expires_at}")
 
                             # Notify user
-                            if notification_service and user.tg_user_id:
+                            if self.bot and user.tg_user_id:
                                 try:
-                                    # Send message via Telegram
+                                    admin_name = payload.get("admin_name", "Администратор")
+                                    admin_username = payload.get("admin_username", "admin")
+                                    
+                                    # Send message via Telegram with admin info
                                     await self.bot.send_message(
                                         chat_id=user.tg_user_id,
                                         text=(
-                                            "🎁 <b>Вам подарили PRO подписку!</b>\n\n"
-                                            f"Администратор активировал для вас режим PRO на {duration_days} дней.\n"
+                                            f"🎁 <b>Вам подарил PRO подписку @{admin_username}!</b>\n\n"
+                                            f"{admin_name} активировал для вас режим PRO на {duration_days} дней.\n"
                                             "Теперь вам доступны:\n"
                                             "✨ Безлимитные лайки\n"
                                             "✨ 5 суперлайков в день\n"
                                             "✨ Режим инкогнито\n"
-                                            "✨ Перемотка последней анкеты"
+                                            "✨ Перемотка последней анкеты\n\n"
+                                            "Поблагодари в ответ! 🙏"
                                         ),
                                         parse_mode="HTML"
                                     )
-                                    # Also notify via internal notification system (Mini App)
-                                    # await notification_service.send_notification(...) 
+                                    
+                                    # Also send push notification to Mini App
+                                    try:
+                                        import aiohttp
+                                        async with aiohttp.ClientSession() as http_session:
+                                            await http_session.post(
+                                                "https://main-community-miniapp.vercel.app/api/send-notification",
+                                                json={
+                                                    "userTgId": user.tg_user_id,
+                                                    "type": "system",
+                                                    "title": "🎁 Вам подарили PRO!",
+                                                    "message": f"@{admin_username} активировал PRO на {duration_days} дней",
+                                                    "deepLink": {
+                                                        "screen": "profile",
+                                                        "buttonText": "Открыть профиль"
+                                                    }
+                                                },
+                                                timeout=aiohttp.ClientTimeout(total=5)
+                                            )
+                                    except Exception as push_error:
+                                        logger.debug(f"Failed to send push notification: {push_error}")
+                                        
                                 except Exception as e:
                                     logger.error(f"Failed to notify user {user.id} about PRO gift: {e}")
 

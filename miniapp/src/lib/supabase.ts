@@ -4603,14 +4603,28 @@ export async function grantCourseAccess(
  * Gift PRO subscription to a user via admin action queue
  * The Python bot will process this and send a Telegram notification
  */
-export async function giftUserPro(userId: number, durationDays: number = 30): Promise<boolean> {
+export async function giftUserPro(
+  userId: number,
+  durationDays: number = 30,
+  adminInfo?: {
+    name: string
+    username: string
+    avatarUrl?: string
+  }
+): Promise<boolean> {
   const supabase = getSupabase()
 
   const { error } = await supabase
     .from('bot_admin_actions')
     .insert({
       action: 'gift_pro',
-      payload: { user_id: userId, duration_days: durationDays },
+      payload: {
+        user_id: userId,
+        duration_days: durationDays,
+        admin_name: adminInfo?.name || 'Администратор',
+        admin_username: adminInfo?.username || 'admin',
+        admin_avatar_url: adminInfo?.avatarUrl
+      },
       status: 'pending'
     })
 
@@ -4621,4 +4635,3 @@ export async function giftUserPro(userId: number, durationDays: number = 30): Pr
 
   return true
 }
-
