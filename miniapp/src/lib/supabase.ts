@@ -331,6 +331,7 @@ export async function deleteSwipe(swipeId: number, swiperId: number): Promise<bo
 export async function getIncomingLikes(userId: number): Promise<{
   profiles: SwipeCardProfile[]
   count: number
+  totalSwipes: number
 }> {
   const supabase = getSupabase()
   console.log('[getIncomingLikes] Starting for userId:', userId)
@@ -352,7 +353,7 @@ export async function getIncomingLikes(userId: number): Promise<{
 
   if (!incomingSwipes || incomingSwipes.length === 0) {
     console.log('[getIncomingLikes] No incoming swipes found')
-    return { profiles: [], count: 0 }
+    return { profiles: [], count: 0, totalSwipes: 0 }
   }
 
   // Get IDs the current user has already swiped (to mark as "processed")
@@ -367,7 +368,7 @@ export async function getIncomingLikes(userId: number): Promise<{
   const likerIds = incomingSwipes.map(s => s.swiper_id)
 
   if (likerIds.length === 0) {
-    return { profiles: [], count: 0 }
+    return { profiles: [], count: 0, totalSwipes: 0 }
   }
 
   // Fetch full profile data (without photos join - no FK relationship)
@@ -386,6 +387,13 @@ export async function getIncomingLikes(userId: number): Promise<{
   }
 
   console.log('[getIncomingLikes] Fetched profiles:', profiles?.length || 0, 'for likerIds:', likerIds)
+
+  // Log missing profiles for diagnostics
+  if (profiles && profiles.length < likerIds.length) {
+    const foundIds = new Set(profiles.map(p => p.user_id))
+    const missingIds = likerIds.filter(id => !foundIds.has(id))
+    console.warn('[getIncomingLikes] Missing profiles for user_ids:', missingIds)
+  }
 
   // Transform to SwipeCardProfile format
   const swipeCardProfiles: SwipeCardProfile[] = (profiles || []).map(p => {
@@ -420,7 +428,8 @@ export async function getIncomingLikes(userId: number): Promise<{
 
   return {
     profiles: swipeCardProfiles,
-    count: swipeCardProfiles.length
+    count: swipeCardProfiles.length,
+    totalSwipes: incomingSwipes.length
   }
 }
 
@@ -4620,7 +4629,7 @@ export async function grantCourseAccess(
 
 /**
  * Gift PRO subscription to a user via admin action queue
- * The Python bot will process this and send a Telegram notification
+ * Creates a pending action and immediately triggers the Edge Function to process it
  */
 export async function giftUserPro(
   userId: number,
@@ -4650,6 +4659,25 @@ export async function giftUserPro(
   if (error) {
     console.error('Error gifting PRO:', error)
     return false
+  }
+
+  // Trigger Edge Function to process immediately (fire and forget)
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-admin-actions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || anonKey}`
+      },
+      body: '{}'
+    }).catch(() => {
+      // Silently ignore - cron job or bot will pick it up
+    })
+  } catch {
+    // Silently ignore - the action is queued anyway
   }
 
   return true

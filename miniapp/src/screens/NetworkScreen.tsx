@@ -150,7 +150,7 @@ const NetworkScreen: React.FC = () => {
     queryFn: async () => {
       if (!user?.id) {
         console.log('[incomingLikes] No user ID, returning empty')
-        return { profiles: [], count: 0 }
+        return { profiles: [], count: 0, totalSwipes: 0 }
       }
       console.log('[incomingLikes] Fetching for user:', user.id)
       try {
@@ -885,17 +885,18 @@ const NetworkScreen: React.FC = () => {
           <div className="h-full w-full flex flex-col px-4">
             <div className="flex-1 overflow-y-auto pb-safe custom-scrollbar">
               {activeTab === 'matches' ? (
-                <div className="space-y-3">
-                  {matches && matches.length > 0 ? (
-                    matches.map((match: any) => {
+                matches && matches.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    {matches.map((match: any) => {
                       const matchUser = match.user1_id === user?.id ? match.user2 : match.user1
                       const matchProfile = match.user1_id === user?.id ? match.profile2 : match.profile1
                       const skinData = Array.isArray(matchUser?.active_skin) ? matchUser.active_skin[0] : matchUser?.active_skin
+                      const displayName = matchUser?.first_name || 'Участник'
 
                       return (
                         <div
                           key={match.id}
-                          className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm cursor-pointer active:scale-95 transition-all hover:bg-white/10"
+                          className="group relative flex flex-col rounded-2xl bg-zinc-900 overflow-hidden border border-white/5 active:scale-95 transition-all shadow-xl"
                           onClick={() => {
                             setShowProfileDetail({
                               profile: matchProfile,
@@ -905,44 +906,45 @@ const NetworkScreen: React.FC = () => {
                             })
                           }}
                         >
-                          <AvatarWithSkin
-                            src={matchProfile?.photo_url || undefined}
-                            name={matchUser?.first_name}
-                            size="lg"
-                            skin={skinData}
-                            role={matchUser?.team_role}
-                            tier={matchUser?.subscription_tier}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-bold text-white truncate text-base">
-                              {matchUser?.first_name} {matchUser?.last_name}
-                            </div>
-                            <div className="text-xs text-white/50 truncate flex items-center gap-1">
-                              {matchProfile?.occupation || 'Участник сообщества'}
+                          <div className="aspect-[4/5] relative">
+                            <img
+                              src={matchProfile?.photo_url || undefined}
+                              alt={displayName}
+                              className="w-full h-full object-cover grayscale-[0.2] transition-all group-hover:grayscale-0"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+
+                            <div className="absolute bottom-2 left-3 right-3">
+                              <div className="font-bold text-white text-sm truncate">{displayName}</div>
+                              <div className="text-[10px] text-white/50 truncate font-medium">
+                                {matchProfile?.occupation || 'Участник'}
+                              </div>
                             </div>
                           </div>
+
                           <button
-                            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-accent hover:bg-accent hover:text-bg transition-colors"
+                            className="w-full py-2.5 bg-accent/20 hover:bg-accent text-accent hover:text-bg text-xs font-bold transition-all border-t border-white/5 flex items-center justify-center gap-1.5"
                             onClick={(e) => {
                               e.stopPropagation()
                               handleMessageMatch(matchUser)
                             }}
                           >
-                            <MessageCircle size={20} />
+                            <MessageCircle size={14} />
+                            Написать
                           </button>
                         </div>
                       )
-                    })
-                  ) : (
-                    <div className="h-full flex items-center justify-center mt-20">
-                      <EmptyState
-                        icon={<Search size={48} className="text-white/20" />}
-                        title="Пока нет контактов"
-                        description="Свайпайте вправо, чтобы найти единомышленников!"
-                      />
-                    </div>
-                  )}
-                </div>
+                    })}
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center mt-20">
+                    <EmptyState
+                      icon={<Search size={48} className="text-white/20" />}
+                      title="Пока нет контактов"
+                      description="Свайпайте вправо, чтобы найти единомышленников!"
+                    />
+                  </div>
+                )
               ) : (
                 <div className="space-y-4">
                   {tier === 'free' ? (
@@ -988,7 +990,17 @@ const NetworkScreen: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="pt-2">
+                      {/* Diagnostic info if there's a mismatch */}
+                      {incomingLikes && incomingLikes.totalSwipes > incomingLikes.count && (
+                        <div className="mb-3 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                          <p className="text-xs text-yellow-500/80">
+                            Показано {incomingLikes.count} из {incomingLikes.totalSwipes} лайков.
+                            У остальных пользователей нет профиля.
+                          </p>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-3">
                       {incomingLikes?.profiles.map((cardProfile) => {
                         const displayName = cardProfile.user?.first_name || 'Участник'
                         return (
@@ -1033,6 +1045,7 @@ const NetworkScreen: React.FC = () => {
                           </div>
                         )
                       })}
+                      </div>
                     </div>
                   )}
                 </div>
