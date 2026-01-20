@@ -6,7 +6,10 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint src --ext ts,tsx"
+    "lint": "eslint src --ext ts,tsx",
+    "deploy:functions": "npm run deploy:validate && npm run deploy:notify",
+    "deploy:validate": "source .env && supabase functions deploy validate-init-data --project-ref ndpkxustvcijykzxqxrn --use-api",
+    "deploy:notify": "source .env && supabase functions deploy send-notification --project-ref ndpkxustvcijykzxqxrn --use-api"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

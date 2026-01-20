@@ -22,7 +22,7 @@ from supabase._async.client import create_client as create_async_client, AsyncCl
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.models import User, Event, EventRegistration, EventFeedback, Question, SecurityLog, UserProfile, Match, Swipe
+from ..db.models import User, Event, EventRegistration, EventFeedback, Question, SecurityLog, UserProfile, Match, Swipe, AdminAction
 from .notifications import get_notification_service
 
 # Supabase configuration from environment variables
@@ -83,6 +83,14 @@ class SupabaseSync:
             await self._sync_registrations(session)
             await self._sync_feedback(session)
             await self._sync_questions(session)
+            await self._sync_security_logs(session)
+            await self._sync_profiles(session)
+            await self._sync_swipes(session)
+            await self._sync_matches(session)
+
+            # Process admin actions from Mini App (Gift PRO etc)
+            await self._process_admin_actions(session)
+
             await self._sync_security_logs(session)
             await self._sync_profiles(session)
             await self._sync_swipes(session)
@@ -765,8 +773,112 @@ class SupabaseSync:
             if sent_count > 0:
                 logger.info(f"Sent {sent_count} event reminders")
 
+            if sent_count > 0:
+                logger.info(f"Sent {sent_count} event reminders")
+
         except Exception as e:
             logger.error(f"Error sending event reminders: {e}")
+
+    async def _process_admin_actions(self, session: AsyncSession):
+        """Process pending admin actions from Supabase (e.g. Gift PRO)"""
+        try:
+            # Fetch pending actions
+            actions = await self.supabase.table("bot_admin_actions") \
+                .select("*") \
+                .eq("status", "pending") \
+                .execute()
+
+            if not actions.data:
+                return
+
+            notification_service = get_notification_service()
+
+            for action_data in actions.data:
+                action_id = action_data.get("id")
+                action_type = action_data.get("action")
+                payload = action_data.get("payload", {})
+
+                logger.info(f"Processing admin action {action_id}: {action_type}")
+
+                try:
+                    # Mark as processing
+                    await self.supabase.table("bot_admin_actions") \
+                        .update({"status": "processing"}) \
+                        .eq("id", action_id) \
+                        .execute()
+
+                    if action_type == "gift_pro":
+                        # Gift PRO status
+                        target_user_id = payload.get("user_id")
+                        duration_days = payload.get("duration_days", 30)
+
+                        result = await session.execute(
+                            select(User).where(User.id == target_user_id)
+                        )
+                        user = result.scalar_one_or_none()
+
+                        if user:
+                            now = datetime.utcnow()
+                            expires_at = now + timedelta(days=duration_days)
+                            
+                            # If already pro and not expired, extend
+                            if user.subscription_tier == 'pro' and user.subscription_expires_at and user.subscription_expires_at > now:
+                                expires_at = user.subscription_expires_at + timedelta(days=duration_days)
+
+                            user.subscription_tier = 'pro'
+                            user.subscription_expires_at = expires_at
+                            
+                            await session.commit()
+                            logger.info(f"Gifted PRO to user {user.id} until {expires_at}")
+
+                            # Notify user
+                            if notification_service and user.tg_user_id:
+                                try:
+                                    # Send message via Telegram
+                                    await self.bot.send_message(
+                                        chat_id=user.tg_user_id,
+                                        text=(
+                                            "🎁 <b>Вам подарили PRO подписку!</b>\n\n"
+                                            f"Администратор активировал для вас режим PRO на {duration_days} дней.\n"
+                                            "Теперь вам доступны:\n"
+                                            "✨ Безлимитные лайки\n"
+                                            "✨ 5 суперлайков в день\n"
+                                            "✨ Режим инкогнито\n"
+                                            "✨ Перемотка последней анкеты"
+                                        ),
+                                        parse_mode="HTML"
+                                    )
+                                    # Also notify via internal notification system (Mini App)
+                                    # await notification_service.send_notification(...) 
+                                except Exception as e:
+                                    logger.error(f"Failed to notify user {user.id} about PRO gift: {e}")
+
+                        else:
+                            raise ValueError(f"User {target_user_id} not found")
+
+                    # Mark as completed
+                    await self.supabase.table("bot_admin_actions") \
+                        .update({
+                            "status": "completed", 
+                            "processed_at": datetime.utcnow().isoformat()
+                        }) \
+                        .eq("id", action_id) \
+                        .execute()
+
+                except Exception as e:
+                    logger.error(f"Failed to process action {action_id}: {e}")
+                    await self.supabase.table("bot_admin_actions") \
+                        .update({
+                            "status": "failed", 
+                            "error_message": str(e),
+                            "processed_at": datetime.utcnow().isoformat()
+                        }) \
+                        .eq("id", action_id) \
+                        .execute()
+
+        except Exception as e:
+            logger.error(f"Error processing admin actions: {e}")
+
 
 
 # Global instance

@@ -78,7 +78,7 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 )
 
 const App: React.FC = () => {
-  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, shouldShowWhatsNew, setLastSeenAppVersion, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired, showInvites, setShowInvites, setShowFunnelForTeam } = useAppStore()
+  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, shouldShowWhatsNew, setLastSeenAppVersion, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired, showInvites, setShowInvites, setShowFunnelForTeam, hideNavigation, hideHeader } = useAppStore()
   const { addToast } = useToastStore()
 
   // What's New changelog sheet state
@@ -951,7 +951,7 @@ const App: React.FC = () => {
       className="bg-bg min-h-screen text-white max-w-lg mx-auto"
       {...swipeHandlers}
     >
-      <LogoHeader />
+      {!hideHeader && <LogoHeader />}
       <ToastContainer />
 
       <AnimatePresence mode="popLayout">
@@ -962,7 +962,7 @@ const App: React.FC = () => {
         </PageTransition>
       </AnimatePresence>
 
-      <Navigation />
+      {!hideNavigation && <Navigation />}
 
       {/* Global Invite Bottom Sheet */}
       <AnimatePresence>
