@@ -13,7 +13,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import User, Event, EventRegistration, UserProfile, Match
-from app.db.database import async_session_maker
+
 from supabase import create_client, Client
 import os
 
