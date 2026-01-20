@@ -671,7 +671,7 @@ const NetworkScreen: React.FC = () => {
   }
 
   return (
-    <div className="h-full w-full bg-black flex flex-col overflow-hidden pt-20">
+    <div className={`h-full w-full bg-black flex flex-col overflow-hidden ${activeTab === 'swipe' ? 'pt-12' : ''}`}>
       <div className="flex-shrink-0 bg-zinc-900/50 z-30 px-3 py-2">
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
@@ -871,7 +871,7 @@ const NetworkScreen: React.FC = () => {
         )}
 
         {(activeTab === 'matches' || activeTab === 'likes') && (
-          <div className="h-full w-full flex flex-col px-4 pt-4">
+          <div className="h-full w-full flex flex-col px-4">
             <div className="flex-1 overflow-y-auto pb-safe custom-scrollbar">
               {activeTab === 'matches' ? (
                 <div className="space-y-3">
