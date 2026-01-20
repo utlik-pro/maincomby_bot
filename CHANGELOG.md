@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.10] - 2026-01-20
+
+[0;34mGenerating changelog from v1.1.9 to HEAD[0m
+### Added
+- implement tinder-like immersive swipe card
+- fullscreen Tinder-style swipe UI
+- add Pro features - who liked you, undo, super like
+- improve recipients modal with filtering and Telegram links
+- add tenant blocks and hooks
+
+### Fixed
+- implemented missing setHideHeader action
+- remove fixed positioning to prevent crash
+- fix memory leak from undo timer on unmount
+- fix layout overlap and infinity display for Pro users
+- add scroll to admin settings panel
+- increase recipients fetch limit to 1000
+- capture click tracking before user loads
+- auto-complete status when all recipients processed
+- increase rate limit from 5 to 60 req/min
 ## [1.1.9] - 2026-01-18
 
 [0;34mGenerating changelog from v1.1.8 to HEAD[0m

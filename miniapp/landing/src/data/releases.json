@@ -5,6 +5,82 @@
   "repository": "https://github.com/maincomby/maincomby_bot",
   "releases": [
     {
+      "version": "1.1.10",
+      "date": "2026-01-20",
+      "tag": "v1.1.10",
+      "type": "patch",
+      "summary": "\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f v1.1.10",
+      "highlights": [
+        "implement tinder-like immersive swipe card",
+        "fullscreen Tinder-style swipe UI",
+        "add Pro features - who liked you, undo, super like",
+        "improve recipients modal with filtering and Telegr...",
+        "add tenant blocks and hooks"
+      ],
+      "features": [
+        {
+          "description": "implement tinder-like immersive swipe card",
+          "scope": "all"
+        },
+        {
+          "description": "fullscreen Tinder-style swipe UI",
+          "scope": "all"
+        },
+        {
+          "description": "add Pro features - who liked you, undo, super like",
+          "scope": "all"
+        },
+        {
+          "description": "improve recipients modal with filtering and Telegram links",
+          "scope": "all"
+        },
+        {
+          "description": "add tenant blocks and hooks",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "implemented missing setHideHeader action",
+          "scope": "all"
+        },
+        {
+          "description": "remove fixed positioning to prevent crash",
+          "scope": "all"
+        },
+        {
+          "description": "fix memory leak from undo timer on unmount",
+          "scope": "all"
+        },
+        {
+          "description": "fix layout overlap and infinity display for Pro users",
+          "scope": "all"
+        },
+        {
+          "description": "add scroll to admin settings panel",
+          "scope": "all"
+        },
+        {
+          "description": "increase recipients fetch limit to 1000",
+          "scope": "all"
+        },
+        {
+          "description": "capture click tracking before user loads",
+          "scope": "all"
+        },
+        {
+          "description": "auto-complete status when all recipients processed",
+          "scope": "all"
+        },
+        {
+          "description": "increase rate limit from 5 to 60 req/min",
+          "scope": "all"
+        }
+      ],
+      "improvements": [],
+      "breaking": []
+    },
+    {
       "version": "1.1.9",
       "date": "2026-01-18",
       "tag": "v1.1.9",

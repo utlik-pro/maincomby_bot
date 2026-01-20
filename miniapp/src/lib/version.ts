@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.9'
+export const APP_VERSION = '1.1.10'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 13
+export const CURRENT_APP_VERSION = 14
 
 export interface ReleaseHighlight {
   title: string
@@ -29,23 +29,23 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.9',
-  date: '2026-01-18',
-  summary: 'Исправления и улучшения v1.1.9',
+  version: '1.1.10',
+  date: '2026-01-20',
+  summary: 'Исправления и улучшения v1.1.10',
   highlights: [
-    { title: 'harden Mini App API secur...', description: 'Подробнее в changelog' },
-    { title: 'add Team page with 7 spec...', description: 'Подробнее в changelog' },
-    { title: 'update retail case with E...', description: 'Подробнее в changelog' },
+    { title: 'implement tinder-like imm...', description: 'Подробнее в changelog' },
+    { title: 'fullscreen Tinder-style s...', description: 'Подробнее в changelog' },
+    { title: 'add Pro features - who li...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'harden Mini App API security',
-    'add Team page with 7 specialist roles',
-    'update retail case with Eurotorg branding',
+    'implement tinder-like immersive swipe card',
+    'fullscreen Tinder-style swipe UI',
+    'add Pro features - who liked you, undo, super like',
   ],
   fixes: [
-    'update Eurotorg suppliers count to 1000+',
-    'update BelHard AI solution and testimonial',
-    'correct A-100 launch date to November 2024',
+    'implemented missing setHideHeader action',
+    'remove fixed positioning to prevent crash',
+    'fix memory leak from undo timer on unmount',
   ],
 }
 
