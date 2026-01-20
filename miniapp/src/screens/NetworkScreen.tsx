@@ -96,32 +96,24 @@ const NetworkScreen: React.FC = () => {
   }, [deepLinkTarget, setDeepLinkTarget])
 
   // Handle Telegram BackButton
-  // Handle Telegram BackButton - Safer implementation prevents black screen crash
+  // Handle Telegram BackButton - Simplified to prevent crash
   useEffect(() => {
     const handleBack = () => {
-      try {
+      // Use zero-timeout to break call stack just in case
+      setTimeout(() => {
         if (showProfileDetail) {
           setShowProfileDetail(null)
         } else if (activeTab !== 'swipe') {
           setActiveTab('swipe')
         } else {
-          // Go home safely
-          // Use requestAnimationFrame to detach from current event loop
-          requestAnimationFrame(() => {
-            setGlobalActiveTab('home')
-          })
+          setGlobalActiveTab('home')
         }
-      } catch (e) {
-        console.error('Back button error:', e)
-        // Fallback
-        setGlobalActiveTab('home')
-      }
+      }, 0)
     }
 
     backButton.show(handleBack)
 
     return () => {
-      // Clean up cleanly
       backButton.hide()
     }
   }, [activeTab, showProfileDetail, setGlobalActiveTab])
@@ -160,9 +152,15 @@ const NetworkScreen: React.FC = () => {
   // Force refetch likes when tab changes to 'likes'
   useEffect(() => {
     if (activeTab === 'likes') {
-      refetchLikes()
+      console.log('Refetching likes...')
+      refetchLikes().then(res => {
+        console.log('Likes refetch result:', res.data)
+        if (!res.data || res.data.count === 0) {
+          console.log('No likes found for user:', user?.id)
+        }
+      })
     }
-  }, [activeTab, refetchLikes])
+  }, [activeTab, refetchLikes, user?.id])
 
   // Calculate daily superlikes remaining
   const getDailySuperlikesRemaining = () => {
