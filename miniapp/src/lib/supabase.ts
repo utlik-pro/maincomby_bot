@@ -333,6 +333,7 @@ export async function getIncomingLikes(userId: number): Promise<{
   count: number
 }> {
   const supabase = getSupabase()
+  console.log('[getIncomingLikes] Starting for userId:', userId)
 
   // Get users who liked current user (ALL TIME)
   const { data: incomingSwipes, error: swipesError } = await supabase
@@ -342,8 +343,15 @@ export async function getIncomingLikes(userId: number): Promise<{
     .in('action', ['like', 'superlike'])
     .order('swiped_at', { ascending: false })
 
-  if (swipesError) throw swipesError
+  if (swipesError) {
+    console.error('[getIncomingLikes] Swipes query error:', swipesError)
+    throw swipesError
+  }
+
+  console.log('[getIncomingLikes] Found swipes:', incomingSwipes?.length || 0)
+
   if (!incomingSwipes || incomingSwipes.length === 0) {
+    console.log('[getIncomingLikes] No incoming swipes found')
     return { profiles: [], count: 0 }
   }
 
@@ -373,7 +381,12 @@ export async function getIncomingLikes(userId: number): Promise<{
     .in('user_id', likerIds)
   // .eq('is_visible', true) // Allow seeing hidden profiles if they liked you
 
-  if (profilesError) throw profilesError
+  if (profilesError) {
+    console.error('[getIncomingLikes] Profiles query error:', profilesError)
+    throw profilesError
+  }
+
+  console.log('[getIncomingLikes] Fetched profiles:', profiles?.length || 0, 'for likerIds:', likerIds)
 
   // Transform to SwipeCardProfile format
   const swipeCardProfiles: SwipeCardProfile[] = (profiles || []).map(p => {
@@ -399,9 +412,16 @@ export async function getIncomingLikes(userId: number): Promise<{
     return bTime - aTime
   })
 
+  // Warn if there's a mismatch between swipes and profiles
+  if (swipeCardProfiles.length !== incomingSwipes.length) {
+    console.warn('[getIncomingLikes] Mismatch: swipes=', incomingSwipes.length, 'profiles=', swipeCardProfiles.length)
+  }
+
+  console.log('[getIncomingLikes] Returning', swipeCardProfiles.length, 'profiles')
+
   return {
     profiles: swipeCardProfiles,
-    count: incomingSwipes.length
+    count: swipeCardProfiles.length
   }
 }
 
