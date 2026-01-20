@@ -324,6 +324,18 @@ const NetworkScreen: React.FC = () => {
           hapticFeedback.success()
           addToast(`Новый контакт: ${theirName}! +${XP_REWARDS.MATCH_RECEIVED} XP`, 'success')
           queryClient.invalidateQueries({ queryKey: ['matches'] })
+        } else {
+          // Not a mutual like - notify the user they received a like
+          if (currentProfile.user?.tg_user_id) {
+            const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Участник'
+            callEdgeFunction('send-notification', {
+              userTgId: currentProfile.user.tg_user_id,
+              type: 'match',
+              title: '❤️ Новый лайк!',
+              message: `${myName} хочет познакомиться! Открой Нетворкинг, чтобы ответить.`,
+              deepLink: { screen: 'network', buttonText: 'Открыть Нетворкинг' }
+            }).catch(console.error)
+          }
         }
       }
 

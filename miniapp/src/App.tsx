@@ -5,7 +5,7 @@ import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp, validateInitData, getInitData } from '@/lib/telegram'
 import { isPreviewMode } from '@/lib/tenant'
-import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam, getPendingProGift, acknowledgeProGift } from '@/lib/supabase'
+import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam, getPendingProGift, acknowledgeProGift, getIncomingLikes } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -28,6 +28,7 @@ const InviteBottomSheet = React.lazy(() => import('@/components/InviteBottomShee
 const ChangelogSheet = React.lazy(() => import('@/components/ChangelogSheet'))
 const ReviewBottomSheet = React.lazy(() => import('@/components/ReviewBottomSheet').then(m => ({ default: m.ReviewBottomSheet })))
 const ProGiftModal = React.lazy(() => import('@/components/ProGiftModal').then(m => ({ default: m.ProGiftModal })))
+const NetworkingPromoSheet = React.lazy(() => import('@/components/NetworkingPromoSheet').then(m => ({ default: m.NetworkingPromoSheet })))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -105,6 +106,10 @@ const App: React.FC = () => {
     durationDays: number
   } | null>(null)
 
+  // Networking promo state
+  const [showNetworkingPromo, setShowNetworkingPromo] = useState(false)
+  const [networkingLikesCount, setNetworkingLikesCount] = useState(0)
+
   // Check if should show What's New after loading
   useEffect(() => {
     if (!isLoading && isAuthenticated && !shouldShowOnboarding() && shouldShowWhatsNew()) {
@@ -153,6 +158,30 @@ const App: React.FC = () => {
 
     checkProGift()
   }, [user?.id, isLoading, showChangelog, showReviewPrompt])
+
+  // Check for incoming likes to show networking promo
+  useEffect(() => {
+    const checkLikesForPromo = async () => {
+      if (!user?.id || isLoading || showChangelog || showReviewPrompt || showProGiftModal) return
+
+      try {
+        const likesData = await getIncomingLikes(user.id)
+        if (likesData?.count && likesData.count > 0) {
+          // Check if we already showed today
+          const lastShown = localStorage.getItem('networkingPromoLastShown')
+          const today = new Date().toDateString()
+          if (lastShown !== today) {
+            setNetworkingLikesCount(likesData.count)
+            setTimeout(() => setShowNetworkingPromo(true), 1500)
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to check likes for promo:', e)
+      }
+    }
+
+    checkLikesForPromo()
+  }, [user?.id, isLoading, showChangelog, showReviewPrompt, showProGiftModal])
 
   // Global user data refresh - sync team_role and other critical fields
   const { data: freshUserData } = useQuery({
@@ -1053,6 +1082,23 @@ const App: React.FC = () => {
             durationDays={proGiftData.durationDays}
           />
         )}
+      </React.Suspense>
+
+      {/* Networking Promo Sheet */}
+      <React.Suspense fallback={null}>
+        <NetworkingPromoSheet
+          isOpen={showNetworkingPromo}
+          onClose={() => {
+            setShowNetworkingPromo(false)
+            localStorage.setItem('networkingPromoLastShown', new Date().toDateString())
+          }}
+          likesCount={networkingLikesCount}
+          onOpenNetwork={() => {
+            setShowNetworkingPromo(false)
+            localStorage.setItem('networkingPromoLastShown', new Date().toDateString())
+            setActiveTab('network')
+          }}
+        />
       </React.Suspense>
     </div>
 
