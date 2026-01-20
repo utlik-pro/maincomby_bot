@@ -52,9 +52,16 @@ const NetworkScreen: React.FC = () => {
   const [showProfileDetail, setShowProfileDetail] = useState<SwipeCardProfile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
-  const [lastSwipe, setLastSwipe] = useState<LastSwipeInfo | null>(null)
+  const [lastSwipe, setLastSwipe] = useState<{
+    swipeId: number
+    swipedUserId: number
+    action: 'like' | 'skip' | 'superlike'
+    profile: SwipeCardProfile
+    timestamp: number
+  } | null>(null)
   const [showUndoButton, setShowUndoButton] = useState(false)
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [currentIndex, setCurrentIndex] = useState(0) // Track current profile index
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -147,8 +154,13 @@ const NetworkScreen: React.FC = () => {
 
   const superlikesRemaining = getDailySuperlikesRemaining()
 
-  // Current profile - first from list
-  const currentProfile = profiles && profiles.length > 0 ? profiles[0] : undefined
+  // Reset index when profiles change
+  useEffect(() => {
+    setCurrentIndex(0)
+  }, [profiles?.length])
+
+  // Current profile - use index instead of always [0]
+  const currentProfile = profiles && profiles.length > currentIndex ? profiles[currentIndex] : undefined
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (!currentProfile || !user || isProcessing) return
@@ -265,8 +277,13 @@ const NetworkScreen: React.FC = () => {
         }
       }
 
-      // Refetch profiles
-      await refetch()
+      // Advance to next profile (instead of just refetching)
+      setCurrentIndex(prev => prev + 1)
+
+      // If we've gone through all profiles, refetch for more
+      if (profiles && currentIndex >= profiles.length - 1) {
+        await refetch()
+      }
 
     } catch (error) {
       console.error('Swipe error:', error)
@@ -617,9 +634,9 @@ const NetworkScreen: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col pt-safe">
+    <div className="fixed inset-0 bg-black flex flex-col" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
       {/* Compact Top Bar */}
-      <div className="flex-shrink-0 bg-black/90 z-30 px-3 py-2 border-b border-white/10">
+      <div className="flex-shrink-0 bg-black z-30 px-3 py-2 border-b border-white/10">
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
           <div className="flex gap-0.5 p-0.5 bg-zinc-900 rounded-full">
