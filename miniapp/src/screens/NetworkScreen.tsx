@@ -617,74 +617,67 @@ const NetworkScreen: React.FC = () => {
   }
 
   return (
-    <div className="h-[100dvh] w-full bg-black flex flex-col relative overflow-hidden">
-      {/* Persistent Top Bar - Sticky */}
-      <div className="sticky top-0 left-0 right-0 z-30 bg-black/95 backdrop-blur-xl border-b border-white/5 pt-safe">
-        <div className="flex items-center justify-between p-3">
-          {/* Spacer for symmetry/TG back button area */}
-          <div className="w-12" />
-
-          {/* Compact Tabs - Persistent across all views */}
-          <div className="flex gap-1 p-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
+    <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Compact Top Bar */}
+      <div className="flex-shrink-0 bg-black z-30 px-2 py-2 border-b border-white/10">
+        <div className="flex items-center justify-center gap-2">
+          {/* Compact Tabs */}
+          <div className="flex gap-0.5 p-0.5 bg-zinc-900 rounded-full">
             <button
               onClick={() => setActiveTab('swipe')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${activeTab === 'swipe'
-                ? 'bg-accent text-bg shadow-lg'
-                : 'text-white/70 hover:text-white'
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'swipe'
+                ? 'bg-accent text-black'
+                : 'text-white/60'
                 }`}
             >
               Свайпы
             </button>
             <button
               onClick={() => setActiveTab('matches')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'matches'
-                ? 'bg-white/20 text-white shadow-lg'
-                : 'text-white/70 hover:text-white'
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1 ${activeTab === 'matches'
+                ? 'bg-zinc-700 text-white'
+                : 'text-white/60'
                 }`}
             >
               Контакты
               {matches && matches.length > 0 && (
-                <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-success px-1.5 text-xs text-white font-bold">
+                <span className="w-4 h-4 text-[10px] rounded-full bg-green-500 text-white flex items-center justify-center">
                   {matches.length}
                 </span>
               )}
             </button>
             <button
               onClick={() => setActiveTab('likes')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'likes'
-                ? 'bg-white/20 text-white shadow-lg'
-                : 'text-white/70 hover:text-white'
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1 ${activeTab === 'likes'
+                ? 'bg-zinc-700 text-white'
+                : 'text-white/60'
                 }`}
             >
-              <Heart size={14} className="text-red-500 fill-red-500" />
+              <Heart size={12} className="text-red-500 fill-red-500" />
               Лайки
-              {tier === 'free' ? (
-                <Crown size={14} className="text-amber-400" />
-              ) : incomingLikes && incomingLikes.profiles.length > 0 ? (
-                <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-pink-500 px-1.5 text-xs text-white font-bold">
+              {incomingLikes && incomingLikes.profiles.length > 0 && (
+                <span className="w-4 h-4 text-[10px] rounded-full bg-pink-500 text-white flex items-center justify-center">
                   {incomingLikes.profiles.length}
                 </span>
-              ) : null}
+              )}
             </button>
           </div>
-
-          {/* Superlikes counter - larger icon */}
-          <div className="w-12 flex justify-end">
-            {tier !== 'free' && superlikesRemaining > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-500/20 backdrop-blur-sm rounded-xl border border-blue-500/30">
-                <Star size={16} className="text-blue-400 fill-blue-400" />
-                <span className="text-sm text-blue-100 font-bold">{superlikesRemaining}</span>
-              </div>
-            )}
-          </div>
+          {/* SuperLikes counter */}
+          {tier !== 'free' && superlikesRemaining > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 rounded-lg">
+              <Star size={14} className="text-blue-400 fill-blue-400" />
+              <span className="text-xs text-blue-300 font-bold">{superlikesRemaining}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* Main Content Area - fills remaining space */}
+      <div className="flex-1 overflow-hidden relative">
         {activeTab === 'swipe' && (
-          <div className="h-full w-full flex flex-col">
-            <div className="flex-1 relative px-4 pb-28">
+          <div className="absolute inset-0 flex flex-col">
+            {/* Swipe Card Area */}
+            <div className="flex-1 flex items-center justify-center p-3 overflow-hidden">
               {isLoading ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <Skeleton className="w-48 h-64 rounded-3xl bg-white/5" />
@@ -749,10 +742,10 @@ const NetworkScreen: React.FC = () => {
               )}
             </div>
 
-            {/* Swipe Action Buttons */}
+            {/* Bottom Action Buttons - Always visible */}
             {currentProfile && !isLoading && (swipesRemaining > 0 || tier === 'pro') && (
-              <div className="absolute bottom-0 left-0 right-0 z-20 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-black via-black/80 to-transparent">
-                <div className="flex justify-center items-center gap-5 px-4 max-w-sm mx-auto">
+              <div className="flex-shrink-0 bg-black py-3 px-4">
+                <div className="flex justify-center items-center gap-4 max-w-xs mx-auto">
                   {/* Undo Button */}
                   <div className="w-12 h-12 flex items-center justify-center">
                     <AnimatePresence>
