@@ -18,6 +18,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedUser, setSelectedUser] = useState<any>(null)
     const [isGifting, setIsGifting] = useState(false)
+    const [selectedDuration, setSelectedDuration] = useState<number>(30)
 
     // Search query
     const { data: searchResults, isLoading } = useQuery({
@@ -49,7 +50,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
 
         setIsGifting(true)
         try {
-            const success = await giftUserPro(selectedUser.id, 30, {
+            const success = await giftUserPro(selectedUser.id, selectedDuration, {
                 name: user.first_name || 'Admin',
                 username: user.username || 'admin'
             })
@@ -173,6 +174,26 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
                                                         exit={{ height: 0, opacity: 0 }}
                                                         className="overflow-hidden mt-3 pt-3 border-t border-border"
                                                     >
+                                                        {/* Duration selector */}
+                                                        <div className="flex gap-2 mb-3">
+                                                            {[3, 7, 30].map((days) => (
+                                                                <button
+                                                                    key={days}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        setSelectedDuration(days)
+                                                                        hapticFeedback.selection()
+                                                                    }}
+                                                                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                                                                        selectedDuration === days
+                                                                            ? 'bg-yellow-500 text-black'
+                                                                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                                                                    }`}
+                                                                >
+                                                                    {days} {days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
@@ -186,7 +207,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
                                                             ) : (
                                                                 <>
                                                                     <Gift size={18} />
-                                                                    Подарить PRO (30 дней)
+                                                                    Подарить PRO ({selectedDuration} {selectedDuration < 5 ? 'дня' : 'дней'})
                                                                 </>
                                                             )}
                                                         </button>
