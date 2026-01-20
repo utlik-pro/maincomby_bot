@@ -81,6 +81,9 @@ class SupabaseSync:
             # Pull events from web admin (Supabase → SQLite)
             await self._pull_web_events(session)
 
+            # Pull last_app_open_at from Supabase (Mini App writes there)
+            await self._pull_last_app_open(session)
+
             # Process pending broadcasts from web admin
             await self._process_broadcasts(session)
 
@@ -136,6 +139,15 @@ class SupabaseSync:
                 "subscription_expires_at": user.subscription_expires_at.isoformat() if getattr(user, 'subscription_expires_at', None) else None,
                 "daily_swipes_used": getattr(user, 'daily_swipes_used', 0),
                 "daily_swipes_reset_at": user.daily_swipes_reset_at.isoformat() if getattr(user, 'daily_swipes_reset_at', None) else None,
+                # Engagement tracking fields (synced from bot to Supabase)
+                "engagement_profile_sent_at": user.engagement_profile_sent_at.isoformat() if getattr(user, 'engagement_profile_sent_at', None) else None,
+                "engagement_swipes_sent_at": user.engagement_swipes_sent_at.isoformat() if getattr(user, 'engagement_swipes_sent_at', None) else None,
+                "engagement_inactive_7d_sent_at": user.engagement_inactive_7d_sent_at.isoformat() if getattr(user, 'engagement_inactive_7d_sent_at', None) else None,
+                "engagement_inactive_14d_sent_at": user.engagement_inactive_14d_sent_at.isoformat() if getattr(user, 'engagement_inactive_14d_sent_at', None) else None,
+                "engagement_likes_1_sent_at": user.engagement_likes_1_sent_at.isoformat() if getattr(user, 'engagement_likes_1_sent_at', None) else None,
+                "engagement_likes_3_sent_at": user.engagement_likes_3_sent_at.isoformat() if getattr(user, 'engagement_likes_3_sent_at', None) else None,
+                "engagement_likes_5_sent_at": user.engagement_likes_5_sent_at.isoformat() if getattr(user, 'engagement_likes_5_sent_at', None) else None,
+                "engagement_likes_10_sent_at": user.engagement_likes_10_sent_at.isoformat() if getattr(user, 'engagement_likes_10_sent_at', None) else None,
             }
 
             if existing.data:
@@ -249,6 +261,54 @@ class SupabaseSync:
 
         except Exception as e:
             logger.error(f"Error pulling web events: {e}")
+
+    async def _pull_last_app_open(self, session: AsyncSession):
+        """Pull last_app_open_at from Supabase to SQLite (Mini App writes there)"""
+        try:
+            # Get users with last_app_open_at set in Supabase
+            result = await self.supabase.table("bot_users") \
+                .select("tg_user_id, last_app_open_at") \
+                .not_.is_("last_app_open_at", "null") \
+                .execute()
+
+            if not result.data:
+                return
+
+            updated_count = 0
+            for supabase_user in result.data:
+                tg_user_id = supabase_user.get("tg_user_id")
+                last_app_open = supabase_user.get("last_app_open_at")
+
+                if not tg_user_id or not last_app_open:
+                    continue
+
+                # Parse timestamp
+                try:
+                    if isinstance(last_app_open, str):
+                        last_app_open_dt = datetime.fromisoformat(last_app_open.replace("Z", "+00:00").replace("+00:00", ""))
+                    else:
+                        last_app_open_dt = last_app_open
+                except:
+                    continue
+
+                # Update local user
+                local_result = await session.execute(
+                    select(User).where(User.tg_user_id == tg_user_id)
+                )
+                local_user = local_result.scalar_one_or_none()
+
+                if local_user:
+                    # Only update if different
+                    if local_user.last_app_open_at != last_app_open_dt:
+                        local_user.last_app_open_at = last_app_open_dt
+                        updated_count += 1
+
+            if updated_count > 0:
+                await session.commit()
+                logger.debug(f"Pulled last_app_open_at for {updated_count} users")
+
+        except Exception as e:
+            logger.error(f"Error pulling last_app_open_at: {e}")
 
     async def _process_event_notification_triggers(self, session: AsyncSession):
         """Process manual notification triggers from admin (send_notifications flag in bot_events)"""

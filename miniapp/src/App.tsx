@@ -5,7 +5,7 @@ import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp, validateInitData, getInitData } from '@/lib/telegram'
 import { isPreviewMode } from '@/lib/tenant'
-import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam, getPendingProGift, acknowledgeProGift, getIncomingLikes } from '@/lib/supabase'
+import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam, getPendingProGift, acknowledgeProGift, getIncomingLikes, updateLastAppOpen } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -712,6 +712,9 @@ const App: React.FC = () => {
         } catch (e) {
           console.warn('Failed to start session:', e)
         }
+
+        // Update last app open for engagement notifications
+        updateLastAppOpen(user.id)
 
         // Get profile if exists
         const profile = await getProfile(user.id)

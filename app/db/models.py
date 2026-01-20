@@ -39,6 +39,19 @@ class User(Base):
     daily_swipes_used: Mapped[int] = mapped_column(Integer, default=0)
     daily_swipes_reset_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+    # Engagement tracking
+    last_app_open_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Engagement notifications sent (timestamps to prevent duplicates)
+    engagement_profile_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    engagement_swipes_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    engagement_inactive_7d_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    engagement_inactive_14d_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    engagement_likes_1_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    engagement_likes_3_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    engagement_likes_5_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    engagement_likes_10_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     posts: Mapped[list[Post]] = relationship(back_populates="author")
     roles: Mapped[list[UserRole]] = relationship(back_populates="user")
     registrations: Mapped[list["EventRegistration"]] = relationship(back_populates="user")

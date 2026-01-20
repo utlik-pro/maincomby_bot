@@ -3503,6 +3503,19 @@ export async function getUserStreakStatus(userId: number): Promise<{
 // SESSION TRACKING
 // ==========================================
 
+// Update last_app_open_at for engagement tracking
+export async function updateLastAppOpen(userId: number): Promise<void> {
+  const supabase = getSupabase()
+  try {
+    await supabase
+      .from('bot_users')
+      .update({ last_app_open_at: new Date().toISOString() })
+      .eq('id', userId)
+  } catch (e) {
+    console.warn('[Supabase] Failed to update last_app_open_at:', e)
+  }
+}
+
 // Start a new session for user
 export async function startSession(userId: number): Promise<number | null> {
   const supabase = getSupabase()

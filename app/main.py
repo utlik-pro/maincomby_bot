@@ -206,6 +206,15 @@ async def main() -> None:
     except Exception as e:
         logger.warning(f"Notification service не инициализирован: {e}")
 
+    # Инициализируем Engagement Notification service
+    engagement_service = None
+    try:
+        from .services.engagement_notifications import init_engagement_service
+        engagement_service = init_engagement_service(bot)
+        logger.info("Engagement notification service initialized")
+    except Exception as e:
+        logger.warning(f"Engagement notification service не инициализирован: {e}")
+
     # Handler для сохранения номера телефона (от Mini App)
     from aiogram.types import ContentType
     from sqlalchemy import select

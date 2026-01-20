@@ -52,6 +52,61 @@ async def send_review_requests_job():
         logger.error(f"Review requests job failed: {e}")
 
 
+# === ENGAGEMENT NOTIFICATION JOBS ===
+
+async def send_engagement_profile_job():
+    """Job to send profile completion reminders (12:00 daily)"""
+    try:
+        from app.services.engagement_notifications import get_engagement_service
+        service = get_engagement_service()
+        if service:
+            async with async_session_maker() as session:
+                count = await service.send_profile_incomplete_batch(session)
+                logger.info(f"Engagement profile job completed: {count} sent")
+    except Exception as e:
+        logger.error(f"Engagement profile job failed: {e}")
+
+
+async def send_engagement_swipes_job():
+    """Job to send networking invitations (12:00 daily)"""
+    try:
+        from app.services.engagement_notifications import get_engagement_service
+        service = get_engagement_service()
+        if service:
+            async with async_session_maker() as session:
+                count = await service.send_no_swipes_batch(session)
+                logger.info(f"Engagement swipes job completed: {count} sent")
+    except Exception as e:
+        logger.error(f"Engagement swipes job failed: {e}")
+
+
+async def send_engagement_inactive_job():
+    """Job to send inactive user reminders (19:00 daily)"""
+    try:
+        from app.services.engagement_notifications import get_engagement_service
+        service = get_engagement_service()
+        if service:
+            async with async_session_maker() as session:
+                count_7d = await service.send_inactive_7d_batch(session)
+                count_14d = await service.send_inactive_14d_batch(session)
+                logger.info(f"Engagement inactive job completed: {count_7d} 7d + {count_14d} 14d sent")
+    except Exception as e:
+        logger.error(f"Engagement inactive job failed: {e}")
+
+
+async def send_engagement_likes_job():
+    """Job to send pending likes notifications (every 4 hours)"""
+    try:
+        from app.services.engagement_notifications import get_engagement_service
+        service = get_engagement_service()
+        if service:
+            async with async_session_maker() as session:
+                count = await service.send_pending_likes_batch(session)
+                logger.info(f"Engagement likes job completed: {count} sent")
+    except Exception as e:
+        logger.error(f"Engagement likes job failed: {e}")
+
+
 def setup_scheduled_jobs(scheduler: AsyncIOScheduler):
     """Setup all scheduled jobs"""
     # Send event reminders every hour (checks for events in 24h window)
@@ -83,6 +138,47 @@ def setup_scheduled_jobs(scheduler: AsyncIOScheduler):
         replace_existing=True
     )
 
-    logger.info("Scheduled jobs configured: event_reminders (hourly), event_starting_soon (every 15 min), review_requests (22:30 daily)")
+    # === ENGAGEMENT NOTIFICATION JOBS ===
+
+    # Profile completion + networking invites at 12:00 daily
+    scheduler.add_job(
+        send_engagement_profile_job,
+        'cron',
+        hour=12,
+        minute=0,
+        id='engagement_profile',
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        send_engagement_swipes_job,
+        'cron',
+        hour=12,
+        minute=5,  # Stagger by 5 minutes
+        id='engagement_swipes',
+        replace_existing=True
+    )
+
+    # Inactive user reminders at 19:00 daily
+    scheduler.add_job(
+        send_engagement_inactive_job,
+        'cron',
+        hour=19,
+        minute=0,
+        id='engagement_inactive',
+        replace_existing=True
+    )
+
+    # Pending likes notifications every 4 hours (8:00, 12:00, 16:00, 20:00)
+    scheduler.add_job(
+        send_engagement_likes_job,
+        'cron',
+        hour='8,12,16,20',
+        minute=10,  # Offset by 10 minutes
+        id='engagement_likes',
+        replace_existing=True
+    )
+
+    logger.info("Scheduled jobs configured: event_reminders (hourly), event_starting_soon (every 15 min), review_requests (22:30 daily), engagement_profile (12:00), engagement_swipes (12:05), engagement_inactive (19:00), engagement_likes (8/12/16/20:10)")
 
 
