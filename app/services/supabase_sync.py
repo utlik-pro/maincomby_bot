@@ -35,7 +35,14 @@ class SupabaseSync:
 
     def __init__(self, session_factory, bot=None):
         if not SUPABASE_KEY:
-            raise ValueError("SUPABASE_ANON_KEY environment variable is not set")
+            # Try fallback to VITE key if main one is missing
+            global SUPABASE_KEY
+            SUPABASE_KEY = os.getenv("VITE_SUPABASE_ANON_KEY", "")
+        
+        if not SUPABASE_KEY:
+             logger.warning("SUPABASE_ANON_KEY environment variable is not set! Sync service will be disabled.")
+             return
+             
         self.session_factory = session_factory
         self.bot = bot  # Telegram bot instance for sending broadcasts
         self.supabase: Optional[AsyncClient] = None
