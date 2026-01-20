@@ -682,7 +682,7 @@ const NetworkScreen: React.FC = () => {
   }
 
   return (
-    <div className={`h-full w-full bg-black flex flex-col overflow-hidden ${activeTab === 'swipe' ? 'pt-24' : ''}`}>
+    <div className={`h-full w-full bg-black flex flex-col overflow-hidden ${activeTab === 'swipe' ? 'pt-[90px]' : ''}`}>
       <div className="flex-shrink-0 bg-zinc-900/50 z-30 px-3 py-2">
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
