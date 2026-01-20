@@ -2694,6 +2694,7 @@ export async function reorderProfilePhotos(
 /**
  * Get approved profiles with photos for swipe feed
  * Falls back to profiles without photos if profile_photos table doesn't exist
+ * When no new profiles available, recycles old ones (excluding matches)
  */
 export async function getApprovedProfilesWithPhotos(
   excludeUserId: number,
@@ -2704,10 +2705,21 @@ export async function getApprovedProfilesWithPhotos(
   // Get swiped user IDs
   const { data: swipedData } = await supabase
     .from('bot_swipes')
-    .select('swiped_id')
+    .select('swiped_id, swiped_at')
     .eq('swiper_id', excludeUserId)
 
   const swipedIds = swipedData?.map(s => s.swiped_id) || []
+
+  // Get matched user IDs (to exclude from recycling)
+  const { data: matchesData } = await supabase
+    .from('bot_matches')
+    .select('user1_id, user2_id')
+    .or(`user1_id.eq.${excludeUserId},user2_id.eq.${excludeUserId}`)
+
+  const matchedIds = new Set<number>()
+  matchesData?.forEach(m => {
+    matchedIds.add(m.user1_id === excludeUserId ? m.user2_id : m.user1_id)
+  })
 
   // Try to get profiles with photos first
   let query = supabase
@@ -2756,19 +2768,34 @@ export async function getApprovedProfilesWithPhotos(
 
   if (error) throw error
 
-  // Filter and transform
-  return (data || [])
-    .filter(p => !swipedIds.includes(p.user_id))
-    .map(p => {
-      const userData = Array.isArray(p.user) ? p.user[0] : p.user
-      const skinData = userData?.active_skin
-      return {
-        profile: p as UserProfile,
-        user: userData as User,
-        photos: ((p.photos || []) as ProfilePhoto[]).sort((a, b) => a.position - b.position),
-        activeSkin: Array.isArray(skinData) ? skinData[0] : skinData
-      }
-    })
+  // Separate new and already-swiped profiles
+  const allProfiles = (data || []).map(p => {
+    const userData = Array.isArray(p.user) ? p.user[0] : p.user
+    const skinData = userData?.active_skin
+    return {
+      profile: p as UserProfile,
+      user: userData as User,
+      photos: ((p.photos || []) as ProfilePhoto[]).sort((a, b) => a.position - b.position),
+      activeSkin: Array.isArray(skinData) ? skinData[0] : skinData,
+      isRecycled: false
+    }
+  })
+
+  const newProfiles = allProfiles.filter(p => !swipedIds.includes(p.profile.user_id))
+
+  // If there are new profiles, return them
+  if (newProfiles.length > 0) {
+    return newProfiles
+  }
+
+  // Otherwise, recycle old profiles (excluding matches, limit to 20)
+  console.log('[getApprovedProfilesWithPhotos] No new profiles, recycling old ones')
+  const recyclableProfiles = allProfiles
+    .filter(p => !matchedIds.has(p.profile.user_id))
+    .map(p => ({ ...p, isRecycled: true }))
+    .slice(0, 20)
+
+  return recyclableProfiles
 }
 
 // ============================================

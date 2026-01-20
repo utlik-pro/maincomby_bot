@@ -129,7 +129,7 @@ const NetworkScreen: React.FC = () => {
       if (!user) return { profiles: [], count: 0 }
       return getIncomingLikes(user.id)
     },
-    enabled: !!user && tier !== 'free',
+    enabled: !!user,
   })
 
   // Calculate daily superlikes remaining
@@ -618,18 +618,18 @@ const NetworkScreen: React.FC = () => {
 
   return (
     <div className="h-[100dvh] w-full bg-black flex flex-col relative overflow-hidden">
-      {/* Persistent Top Bar with glass effect */}
-      <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-safe">
-        <div className="flex items-center justify-between p-4 pt-2">
+      {/* Persistent Top Bar - Sticky */}
+      <div className="sticky top-0 left-0 right-0 z-30 bg-black/95 backdrop-blur-xl border-b border-white/5 pt-safe">
+        <div className="flex items-center justify-between p-3">
           {/* Spacer for symmetry/TG back button area */}
-          <div className="w-10" />
+          <div className="w-12" />
 
           {/* Compact Tabs - Persistent across all views */}
-          <div className="flex gap-1.5 p-1 bg-white/10 backdrop-blur-md rounded-full border border-white/5">
+          <div className="flex gap-1 p-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
             <button
               onClick={() => setActiveTab('swipe')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'swipe'
-                ? 'bg-accent text-bg shadow-lg scale-105'
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${activeTab === 'swipe'
+                ? 'bg-accent text-bg shadow-lg'
                 : 'text-white/70 hover:text-white'
                 }`}
             >
@@ -637,42 +637,43 @@ const NetworkScreen: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('matches')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'matches'
-                ? 'bg-white/20 text-white shadow-lg scale-105'
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'matches'
+                ? 'bg-white/20 text-white shadow-lg'
                 : 'text-white/70 hover:text-white'
                 }`}
             >
               Контакты
               {matches && matches.length > 0 && (
-                <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-success/80 px-1 text-[10px] text-white">
+                <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-success px-1.5 text-xs text-white font-bold">
                   {matches.length}
                 </span>
               )}
             </button>
             <button
               onClick={() => setActiveTab('likes')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'likes'
-                ? 'bg-white/20 text-white shadow-lg scale-105'
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'likes'
+                ? 'bg-white/20 text-white shadow-lg'
                 : 'text-white/70 hover:text-white'
                 }`}
             >
-              <Heart size={12} className={activeTab === 'likes' ? 'text-red-500 fill-red-500' : 'text-red-500'} />
+              <Heart size={14} className="text-red-500 fill-red-500" />
+              Лайки
               {tier === 'free' ? (
-                <Crown size={12} className="text-amber-400" />
+                <Crown size={14} className="text-amber-400" />
               ) : incomingLikes && incomingLikes.profiles.length > 0 ? (
-                <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-pink-500/80 px-1 text-[10px] text-white">
+                <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-pink-500 px-1.5 text-xs text-white font-bold">
                   {incomingLikes.profiles.length}
                 </span>
               ) : null}
             </button>
           </div>
 
-          {/* Superlikes counter or spacer */}
-          <div className="w-10 flex justify-end">
+          {/* Superlikes counter - larger icon */}
+          <div className="w-12 flex justify-end">
             {tier !== 'free' && superlikesRemaining > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-purple-500/30 backdrop-blur-sm rounded-lg border border-purple-500/20">
-                <Star size={10} className="text-purple-300 fill-purple-300" />
-                <span className="text-[10px] text-purple-100 font-bold">{superlikesRemaining}</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-500/20 backdrop-blur-sm rounded-xl border border-blue-500/30">
+                <Star size={16} className="text-blue-400 fill-blue-400" />
+                <span className="text-sm text-blue-100 font-bold">{superlikesRemaining}</span>
               </div>
             )}
           </div>
@@ -680,10 +681,10 @@ const NetworkScreen: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 relative mt-[72px]">
+      <div className="flex-1 relative overflow-hidden">
         {activeTab === 'swipe' && (
           <div className="h-full w-full flex flex-col">
-            <div className="flex-1 relative px-4 pb-24">
+            <div className="flex-1 relative px-4 pb-28">
               {isLoading ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <Skeleton className="w-48 h-64 rounded-3xl bg-white/5" />
