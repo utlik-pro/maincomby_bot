@@ -634,9 +634,9 @@ const NetworkScreen: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
-      {/* Compact Top Bar */}
-      <div className="flex-shrink-0 bg-black z-30 px-3 py-2 border-b border-white/10">
+    <div className="h-full w-full bg-black flex flex-col overflow-hidden">
+      {/* Compact Top Bar - Now BELOW TG header naturally */}
+      <div className="flex-shrink-0 bg-zinc-900/50 z-30 px-3 py-2">
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
           <div className="flex gap-0.5 p-0.5 bg-zinc-900 rounded-full">

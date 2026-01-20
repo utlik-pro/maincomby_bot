@@ -105,16 +105,18 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
         </div>
       </div>
 
-      {/* Top Indicators */}
-      <div className="absolute top-2 left-2 right-2 flex gap-1 z-20 pointer-events-none">
-        {allPhotos.map((_, idx) => (
-          <div
-            key={idx}
-            className={`h-1 flex-1 rounded-full transition-all duration-300 ${idx === currentPhotoIndex ? 'bg-white' : 'bg-white/20'
-              }`}
-          />
-        ))}
-      </div>
+      {/* Top Indicators - only show when multiple photos */}
+      {allPhotos.length > 1 && (
+        <div className="absolute top-2 left-2 right-2 flex gap-1 z-20 pointer-events-none">
+          {allPhotos.map((_, idx) => (
+            <div
+              key={idx}
+              className={`h-0.5 flex-1 rounded-full transition-all duration-300 ${idx === currentPhotoIndex ? 'bg-white' : 'bg-white/30'
+                }`}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Swipe Stamps */}
       <motion.div
