@@ -263,23 +263,33 @@ const HomeScreen: React.FC = () => {
       <div className="px-4 mb-6">
         <Card
           onClick={() => setActiveTab('network')}
-          className="bg-gradient-to-r from-red-500/20 to-red-500/5 border border-red-500/20 cursor-pointer overflow-hidden relative"
+          className="!p-3 bg-gradient-to-r from-red-500/20 to-red-500/5 border border-red-500/20 cursor-pointer overflow-hidden relative"
         >
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center shrink-0">
-              <Flame className="text-red-500" size={24} />
+          <div className="flex items-center gap-3 relative z-10">
+            {/* Icon with notification badges */}
+            <div className="relative shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <Flame className="text-red-500" size={20} />
+              </div>
+              {/* Notification badges */}
+              {(matchesCount > 0 || likesCount > 0) && (
+                <div className="absolute -top-1.5 -right-1.5 flex items-center">
+                  {likesCount > 0 && (
+                    <span className="flex items-center gap-0.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg">
+                      <Heart size={9} className="fill-white" />
+                      {likesCount}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex-1">
-              <div className="font-bold text-white mb-0.5">Networking</div>
-              <div className="text-xs text-gray-400">
-                Знакомься с участниками сообщества, свайпай и находи единомышленников
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-white text-sm">Networking</div>
+              <div className="text-[11px] text-gray-400 leading-tight">
+                Знакомься и находи единомышленников
               </div>
             </div>
-            <ChevronRight size={20} className="text-gray-500" />
-          </div>
-          {/* Decorative background element */}
-          <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
-            <Heart size={80} className="text-red-500" />
+            <ChevronRight size={18} className="text-gray-500 shrink-0" />
           </div>
         </Card>
       </div>

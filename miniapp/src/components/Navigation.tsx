@@ -7,14 +7,16 @@ import { hapticFeedback } from '@/lib/telegram'
 import { getActiveEvents, getIncomingLikes, getUserMatches } from '@/lib/supabase'
 import { useDoubleTapEasterEgg } from '@/lib/easterEggs'
 
-// MVP v1.0: Network tab enabled with red accent
-const tabs = [
-  { id: 'home' as const, icon: Home, label: 'Главная', isNetwork: false },
-  { id: 'events' as const, icon: Calendar, label: 'События', isNetwork: false },
-  { id: 'learn' as const, icon: GraduationCap, label: 'Обучение', isNetwork: false },
-  { id: 'network' as const, icon: Flame, label: 'Нетворк', isNetwork: true },
-  { id: 'achievements' as const, icon: Trophy, label: 'Награды', isNetwork: false },
-  { id: 'profile' as const, icon: User, label: 'Профиль', isNetwork: false },
+// Regular tabs (left and right of the center button)
+const leftTabs = [
+  { id: 'home' as const, icon: Home, label: 'Главная' },
+  { id: 'events' as const, icon: Calendar, label: 'События' },
+]
+
+const rightTabs = [
+  { id: 'learn' as const, icon: GraduationCap, label: 'Обучение' },
+  { id: 'achievements' as const, icon: Trophy, label: 'Награды' },
+  { id: 'profile' as const, icon: User, label: 'Профиль' },
 ]
 
 export const Navigation: React.FC = () => {
@@ -81,73 +83,85 @@ export const Navigation: React.FC = () => {
     return null
   }
 
+  const isNetworkActive = activeTab === 'network'
+  const totalNotifications = matchesCount + likesCount
+
+  // Render a regular tab button
+  const renderTab = (tab: { id: string; icon: React.ElementType; label: string }) => {
+    const isActive = activeTab === tab.id
+    const IconComponent = tab.icon
+    const showEventBadge = tab.id === 'events' && hasNewEvents && !isActive
+
+    return (
+      <motion.button
+        key={tab.id}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => handleTabClick(tab.id as typeof activeTab)}
+        className="flex flex-col items-center gap-1 px-3 py-2 relative flex-1"
+      >
+        <div className="relative">
+          <IconComponent
+            size={22}
+            className={`transition-all duration-200 ${isActive ? 'text-accent' : 'text-gray-500'}`}
+          />
+          {showEventBadge && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full" />
+          )}
+        </div>
+        <span className={`text-[10px] font-semibold transition-colors duration-200 ${isActive ? 'text-accent' : 'text-gray-500'}`}>
+          {tab.label}
+        </span>
+        {isActive && (
+          <motion.div
+            layoutId="activeTab"
+            className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+          />
+        )}
+      </motion.button>
+    )
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-bg border-t border-bg-card z-50 safe-area-bottom">
-      <div className="max-w-lg mx-auto flex justify-around py-2">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id
-          const IconComponent = tab.icon
-          const showEventBadge = tab.id === 'events' && hasNewEvents && !isActive
-          const isNetworkTab = tab.isNetwork
+      <div className="max-w-lg mx-auto flex items-end py-2 px-2">
+        {/* Left tabs */}
+        <div className="flex flex-1">
+          {leftTabs.map(renderTab)}
+        </div>
 
-          // Color classes - red for network tab, accent for others
-          const activeColor = isNetworkTab ? 'text-red-500' : 'text-accent'
-          const indicatorColor = isNetworkTab ? 'bg-red-500' : 'bg-accent'
+        {/* Center Network Button - Tinder style */}
+        <div className="relative -mt-6 mx-2">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => handleTabClick('network')}
+            className={`
+              w-14 h-14 rounded-full flex items-center justify-center
+              shadow-lg shadow-red-500/30
+              ${isNetworkActive
+                ? 'bg-gradient-to-br from-red-500 to-red-600'
+                : 'bg-gradient-to-br from-red-500 to-red-600'
+              }
+            `}
+          >
+            <Flame
+              size={28}
+              className="text-white"
+              strokeWidth={2.5}
+              fill="white"
+            />
+          </motion.button>
+          {/* Notification badge */}
+          {totalNotifications > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-white text-red-500 text-[11px] font-bold px-1.5 rounded-full flex items-center justify-center shadow-md">
+              {totalNotifications > 99 ? '99+' : totalNotifications}
+            </span>
+          )}
+        </div>
 
-          return (
-            <motion.button
-              key={tab.id}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => handleTabClick(tab.id)}
-              className="flex flex-col items-center gap-1 px-3 py-2 relative"
-            >
-              <div className="relative">
-                <IconComponent
-                  size={22}
-                  className={`transition-all duration-200 ${
-                    isActive ? activeColor : 'text-gray-500'
-                  }`}
-                />
-                {/* New events badge */}
-                {showEventBadge && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full" />
-                )}
-                {/* Network tab badges - contacts left, likes right */}
-                {isNetworkTab && (matchesCount > 0 || likesCount > 0) && (
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
-                    {matchesCount > 0 && (
-                      <span className="flex items-center gap-0.5 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full">
-                        <Users size={8} />
-                        {matchesCount}
-                      </span>
-                    )}
-                    {likesCount > 0 && (
-                      <span className="flex items-center gap-0.5 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full">
-                        <Heart size={8} className="fill-white" />
-                        {likesCount}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-              <span
-                className={`text-[10px] font-semibold transition-colors duration-200 ${
-                  isActive ? activeColor : 'text-gray-500'
-                }`}
-              >
-                {tab.label}
-              </span>
-
-              {/* Active indicator */}
-              {isActive && (
-                <motion.div
-                  layoutId="activeTab"
-                  className={`absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${indicatorColor}`}
-                />
-              )}
-            </motion.button>
-          )
-        })}
+        {/* Right tabs */}
+        <div className="flex flex-1">
+          {rightTabs.map(renderTab)}
+        </div>
       </div>
     </nav>
   )
