@@ -16,12 +16,13 @@ import {
   MessageCircle,
   Gift,
   Users,
+  Heart,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Avatar, AvatarWithSkin, Badge, Card, Progress } from '@/components/ui'
 import { RANK_LABELS, AvatarSkin } from '@/types'
 import { useTapEasterEgg } from '@/lib/easterEggs'
-import { getUnreadNotificationsCount, getLeaderboard, getUserStats, requestConsultation, getLatestEventForAnnouncement, getUserActiveSkin, getUserStreakStatus, DAILY_STREAK_REWARDS } from '@/lib/supabase'
+import { getUnreadNotificationsCount, getLeaderboard, getUserStats, requestConsultation, getLatestEventForAnnouncement, getUserActiveSkin, getUserStreakStatus, DAILY_STREAK_REWARDS, getIncomingLikes, getUserMatches } from '@/lib/supabase'
 import { useToastStore } from '@/lib/store'
 import { openTelegramLink } from '@/lib/telegram'
 import NotificationsScreen from './NotificationsScreen'
@@ -104,6 +105,24 @@ const HomeScreen: React.FC = () => {
     enabled: !!user,
     staleTime: 60000,
   })
+
+  // Fetch matches count (contacts) for networking badge
+  const { data: matchesData } = useQuery({
+    queryKey: ['userMatches', user?.id],
+    queryFn: () => (user ? getUserMatches(user.id) : []),
+    enabled: !!user,
+    staleTime: 60000,
+  })
+  const matchesCount = matchesData?.length || 0
+
+  // Fetch incoming likes count for networking badge
+  const { data: likesData } = useQuery({
+    queryKey: ['incomingLikes', user?.id],
+    queryFn: () => (user ? getIncomingLikes(user.id) : { count: 0 }),
+    enabled: !!user,
+    staleTime: 60000,
+  })
+  const likesCount = likesData?.count || 0
 
   // Fetch latest event for announcement
   const { data: announcementEvent } = useQuery({
@@ -240,8 +259,33 @@ const HomeScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Daily Streak Card */}
-      {streakStatus && (
+      {/* Networking Banner */}
+      <div className="px-4 mb-6">
+        <Card
+          onClick={() => setActiveTab('network')}
+          className="bg-gradient-to-r from-red-500/20 to-red-500/5 border border-red-500/20 cursor-pointer overflow-hidden relative"
+        >
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center shrink-0">
+              <Flame className="text-red-500" size={24} />
+            </div>
+            <div className="flex-1">
+              <div className="font-bold text-white mb-0.5">Networking</div>
+              <div className="text-xs text-gray-400">
+                Знакомься с участниками сообщества, свайпай и находи единомышленников
+              </div>
+            </div>
+            <ChevronRight size={20} className="text-gray-500" />
+          </div>
+          {/* Decorative background element */}
+          <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
+            <Heart size={80} className="text-red-500" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Daily Streak Card - временно отключен */}
+      {/* {streakStatus && (
         <div className="px-4 mb-6">
           <Card className="bg-gradient-to-r from-orange-500/20 to-red-500/10 border border-orange-500/20">
             <div className="flex items-center gap-4 mb-3">
@@ -266,7 +310,7 @@ const HomeScreen: React.FC = () => {
               </div>
             </div>
             {/* 7 Day Dots */}
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day, i) => {
                 const isActive = streakStatus.weekActivity?.includes(i)
                 return (
@@ -279,7 +323,7 @@ const HomeScreen: React.FC = () => {
             </div>
           </Card>
         </div>
-      )}
+      )} */}
 
       {/* Invite Hint */}
       <div className="px-4 mb-6">
