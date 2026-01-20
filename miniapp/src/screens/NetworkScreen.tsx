@@ -96,19 +96,37 @@ const NetworkScreen: React.FC = () => {
   }, [deepLinkTarget, setDeepLinkTarget])
 
   // Handle Telegram BackButton
+  // Handle Telegram BackButton - Safer implementation prevents black screen crash
   useEffect(() => {
-    if (showProfileDetail) {
-      backButton.show(() => setShowProfileDetail(null))
-    } else if (activeTab !== 'swipe') {
-      backButton.show(() => setActiveTab('swipe'))
-    } else {
-      // In swipe mode - back to home
-      backButton.show(() => setGlobalActiveTab('home'))
+    const handleBack = () => {
+      try {
+        if (showProfileDetail) {
+          setShowProfileDetail(null)
+        } else if (activeTab !== 'swipe') {
+          setActiveTab('swipe')
+        } else {
+          // Go home safely
+          // Use requestAnimationFrame to detach from current event loop
+          requestAnimationFrame(() => {
+            setGlobalActiveTab('home')
+          })
+        }
+      } catch (e) {
+        console.error('Back button error:', e)
+        // Fallback
+        setGlobalActiveTab('home')
+      }
     }
+
+    backButton.show(handleBack)
+
     return () => {
+      // Clean up cleanly
       backButton.hide()
     }
   }, [activeTab, showProfileDetail, setGlobalActiveTab])
+
+
 
   const tier = getSubscriptionTier()
   const swipesRemaining = getDailySwipesRemaining()
@@ -138,6 +156,13 @@ const NetworkScreen: React.FC = () => {
     },
     enabled: !!user,
   })
+
+  // Force refetch likes when tab changes to 'likes'
+  useEffect(() => {
+    if (activeTab === 'likes') {
+      refetchLikes()
+    }
+  }, [activeTab, refetchLikes])
 
   // Calculate daily superlikes remaining
   const getDailySuperlikesRemaining = () => {
@@ -766,10 +791,10 @@ const NetworkScreen: React.FC = () => {
               )}
             </div>
 
-            {/* Bottom Action Buttons - Always visible */}
+            {/* Bottom Action Buttons - Absolute Bottom Position */}
             {currentProfile && !isLoading && (swipesRemaining > 0 || tier === 'pro') && (
-              <div className="flex-shrink-0 bg-black py-3 px-4">
-                <div className="flex justify-center items-center gap-4 max-w-xs mx-auto">
+              <div className="absolute bottom-0 left-0 right-0 z-50 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none">
+                <div className="flex justify-center items-center gap-4 max-w-xs mx-auto pointer-events-auto">
                   {/* Undo Button */}
                   <div className="w-12 h-12 flex items-center justify-center">
                     <AnimatePresence>
