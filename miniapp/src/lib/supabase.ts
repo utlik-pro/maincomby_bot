@@ -370,13 +370,12 @@ export async function getIncomingLikes(userId: number): Promise<{
     return { profiles: [], count: 0 }
   }
 
-  // Fetch full profile data
+  // Fetch full profile data (without photos join - no FK relationship)
   const { data: profiles, error: profilesError } = await supabase
     .from('bot_profiles')
     .select(`
       *,
-      user:bot_users(*, active_skin:avatar_skins(*)),
-      photos:profile_photos(*)
+      user:bot_users(*, active_skin:avatar_skins(*))
     `)
     .in('user_id', likerIds)
   // .eq('is_visible', true) // Allow seeing hidden profiles if they liked you
@@ -397,7 +396,7 @@ export async function getIncomingLikes(userId: number): Promise<{
     return {
       profile: p as UserProfile,
       user: userData as User,
-      photos: ((p.photos || []) as ProfilePhoto[]).sort((a: ProfilePhoto, b: ProfilePhoto) => a.position - b.position),
+      photos: [], // Photos not loaded for likes view (no FK relationship)
       activeSkin: Array.isArray(skinData) ? skinData[0] : skinData,
       isSuperlike: swipeInfo?.action === 'superlike',
       likedAt: swipeInfo?.swiped_at,
