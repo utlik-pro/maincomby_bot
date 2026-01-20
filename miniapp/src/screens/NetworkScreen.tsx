@@ -143,35 +143,46 @@ const NetworkScreen: React.FC = () => {
   const {
     data: incomingLikes,
     isLoading: likesLoading,
+    error: likesError,
     refetch: refetchLikes
   } = useQuery({
     queryKey: ['incomingLikes', user?.id],
     queryFn: async () => {
-      if (!user?.id) return { profiles: [], count: 0 }
-      console.log('Fetching incoming likes for', user.id)
+      if (!user?.id) {
+        console.log('[incomingLikes] No user ID, returning empty')
+        return { profiles: [], count: 0 }
+      }
+      console.log('[incomingLikes] Fetching for user:', user.id)
       try {
         const result = await getIncomingLikes(user.id)
-        console.log('Incoming likes result:', result)
+        console.log('[incomingLikes] Result:', {
+          profilesCount: result.profiles.length,
+          count: result.count,
+          firstProfile: result.profiles[0]?.profile?.user_id
+        })
         return result
       } catch (err: any) {
-        console.error('Error fetching incoming likes:', err)
-        return { profiles: [], count: 0 }
+        console.error('[incomingLikes] Error:', err?.message || err)
+        throw err // Let React Query handle the error
       }
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
     staleTime: 30000
   })
 
   // Force refetch likes when tab changes to 'likes'
   useEffect(() => {
     if (activeTab === 'likes') {
-      console.log('Refetching likes...')
+      console.log('[incomingLikes] Tab changed to likes, refetching...')
       refetchLikes().then(res => {
-        console.log('Likes refetch result:', res.data)
-        if (!res.data || res.data.count === 0) {
-          console.log('No likes found for user:', user?.id)
-        }
+        console.log('[incomingLikes] Refetch result:', {
+          profilesCount: res.data?.profiles?.length || 0,
+          count: res.data?.count || 0,
+          status: res.status
+        })
+      }).catch(err => {
+        console.error('[incomingLikes] Refetch error:', err)
       })
     }
   }, [activeTab, refetchLikes, user?.id])
@@ -671,7 +682,7 @@ const NetworkScreen: React.FC = () => {
   }
 
   return (
-    <div className={`h-full w-full bg-black flex flex-col overflow-hidden ${activeTab === 'swipe' ? 'pt-16' : ''}`}>
+    <div className={`h-full w-full bg-black flex flex-col overflow-hidden ${activeTab === 'swipe' ? 'pt-20' : ''}`}>
       <div className="flex-shrink-0 bg-zinc-900/50 z-30 px-3 py-2">
         <div className="flex items-center justify-center gap-2">
           {/* Compact Tabs */}
@@ -959,6 +970,14 @@ const NetworkScreen: React.FC = () => {
                   ) : likesLoading ? (
                     <div className="space-y-4 mt-2">
                       {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-2xl bg-white/5" />)}
+                    </div>
+                  ) : likesError ? (
+                    <div className="h-full flex items-center justify-center mt-20">
+                      <EmptyState
+                        icon={<Heart size={48} className="text-red-500/50" />}
+                        title="Ошибка загрузки"
+                        description="Не удалось загрузить лайки. Попробуйте обновить страницу."
+                      />
                     </div>
                   ) : incomingLikes?.profiles.length === 0 ? (
                     <div className="h-full flex items-center justify-center mt-20">
