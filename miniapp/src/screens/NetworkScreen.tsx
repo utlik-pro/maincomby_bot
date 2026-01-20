@@ -730,7 +730,7 @@ const NetworkScreen: React.FC = () => {
         {activeTab === 'swipe' && (
           <div className="h-full flex flex-col">
             {/* Swipe Card Area - constrained height */}
-            <div className="flex-1 min-h-0 flex items-center justify-center p-2 overflow-hidden">
+            <div className="flex-1 min-h-0 flex justify-center pt-2 px-2 overflow-hidden">
               {isLoading ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <Skeleton className="w-48 h-64 rounded-3xl bg-white/5" />
@@ -784,7 +784,7 @@ const NetworkScreen: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className="w-full h-full max-w-sm max-h-[60vh] mx-auto relative overflow-hidden rounded-3xl shadow-2xl border border-white/10">
+                <div className="w-full max-w-sm h-[70vh] mx-auto relative overflow-hidden rounded-3xl shadow-2xl border border-white/10">
                   <SwipeCard
                     profile={currentProfile}
                     onSwipe={handleSwipe}
@@ -871,8 +871,8 @@ const NetworkScreen: React.FC = () => {
         )}
 
         {(activeTab === 'matches' || activeTab === 'likes') && (
-          <div className="h-full w-full flex flex-col px-4">
-            <div className="flex-1 overflow-y-auto pb-safe pt-2 custom-scrollbar">
+          <div className="h-full w-full flex flex-col px-4 pt-4">
+            <div className="flex-1 overflow-y-auto pb-safe custom-scrollbar">
               {activeTab === 'matches' ? (
                 <div className="space-y-3">
                   {matches && matches.length > 0 ? (
