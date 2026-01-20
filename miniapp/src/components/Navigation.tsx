@@ -13,8 +13,8 @@ const leftTabs = [
   { id: 'events' as const, icon: Calendar, label: 'События' },
 ]
 
+// Note: 'learn' tab temporarily moved to HomeScreen card
 const rightTabs = [
-  { id: 'learn' as const, icon: GraduationCap, label: 'Обучение' },
   { id: 'achievements' as const, icon: Trophy, label: 'Награды' },
   { id: 'profile' as const, icon: User, label: 'Профиль' },
 ]
