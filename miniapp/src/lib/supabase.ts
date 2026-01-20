@@ -356,16 +356,23 @@ export async function getIncomingLikes(userId: number): Promise<{
     return { profiles: [], count: 0, totalSwipes: 0 }
   }
 
-  // Get IDs the current user has already swiped (to mark as "processed")
+  // Get IDs the current user has already swiped (these are matches - exclude from likes)
   const { data: alreadySwiped } = await supabase
     .from('bot_swipes')
-    .select('swiped_id')
+    .select('swiped_id, action')
     .eq('swiper_id', userId)
+    .in('action', ['like', 'superlike']) // Only likes/superlikes count as potential matches
 
-  const alreadySwipedIds = new Set(alreadySwiped?.map(s => s.swiped_id) || [])
+  const alreadyLikedIds = new Set(alreadySwiped?.map(s => s.swiped_id) || [])
 
-  // Get ALL liker IDs (no filtering)
-  const likerIds = incomingSwipes.map(s => s.swiper_id)
+  // Filter out users I already liked (they are in Contacts/Matches now)
+  const pendingLikerIds = incomingSwipes
+    .map(s => s.swiper_id)
+    .filter(id => !alreadyLikedIds.has(id))
+
+  console.log('[getIncomingLikes] Total likers:', incomingSwipes.length, 'Pending (not matched):', pendingLikerIds.length)
+
+  const likerIds = pendingLikerIds
 
   if (likerIds.length === 0) {
     return { profiles: [], count: 0, totalSwipes: 0 }
@@ -408,7 +415,7 @@ export async function getIncomingLikes(userId: number): Promise<{
       activeSkin: Array.isArray(skinData) ? skinData[0] : skinData,
       isSuperlike: swipeInfo?.action === 'superlike',
       likedAt: swipeInfo?.swiped_at,
-      isProcessed: alreadySwipedIds.has(p.user_id) // Mark if already swiped
+      isProcessed: false // All remaining are pending (not matched yet)
     }
   })
 
