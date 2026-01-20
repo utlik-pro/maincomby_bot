@@ -978,13 +978,13 @@ const App: React.FC = () => {
 
   return (
     <div
-      className="bg-bg min-h-screen text-white max-w-lg mx-auto"
+      className="bg-bg min-h-screen text-white max-w-lg mx-auto flex flex-col"
       {...swipeHandlers}
     >
       {!hideHeader && <LogoHeader />}
       <ToastContainer />
 
-      <div key={activeTab}>
+      <div key={activeTab} className="flex-1 w-full relative">
         <React.Suspense fallback={<LoadingScreen />}>
           {renderScreen()}
         </React.Suspense>
