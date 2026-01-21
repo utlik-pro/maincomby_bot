@@ -280,10 +280,17 @@ class NotificationService:
     async def send_event_reminders_batch(self, session: AsyncSession) -> int:
         """Send reminders for events happening in ~24 hours"""
         try:
-            # Find events happening in 23-25 hours
-            now = datetime.now()
-            reminder_start = now + timedelta(hours=23)
-            reminder_end = now + timedelta(hours=25)
+            # ВАЖНО: event_date в БД хранится по времени Минска (UTC+3), но без timezone
+            # Поэтому используем время Минска для сравнения
+            minsk_offset = timedelta(hours=3)
+            now_utc = datetime.utcnow()
+            now_minsk = now_utc + minsk_offset
+
+            # Find events happening in 23-25 hours (Minsk time)
+            reminder_start = now_minsk + timedelta(hours=23)
+            reminder_end = now_minsk + timedelta(hours=25)
+
+            logger.info(f"Checking event reminders: now_minsk={now_minsk}, window={reminder_start} - {reminder_end}")
 
             # Get events in reminder window
             events_query = select(Event).where(
@@ -296,17 +303,22 @@ class NotificationService:
             events_result = await session.execute(events_query)
             events = events_result.scalars().all()
 
+            logger.info(f"Found {len(events)} events in reminder window")
+
             sent_count = 0
             for event in events:
-                # Get registered users for this event
+                # Get registered users for this event who haven't received reminder yet
                 regs_query = select(EventRegistration).where(
                     and_(
                         EventRegistration.event_id == event.id,
-                        EventRegistration.status == 'registered'
+                        EventRegistration.status == 'registered',
+                        EventRegistration.reminder_sent == False  # Не отправляли ещё
                     )
                 )
                 regs_result = await session.execute(regs_query)
                 registrations = regs_result.scalars().all()
+
+                logger.info(f"Event {event.id} '{event.title}': {len(registrations)} users need reminder")
 
                 for reg in registrations:
                     # Get user's telegram ID
@@ -317,7 +329,12 @@ class NotificationService:
                     if user and user.tg_user_id:
                         success = await self.send_event_reminder(user.tg_user_id, event)
                         if success:
+                            # Mark reminder as sent
+                            reg.reminder_sent = True
+                            reg.reminder_sent_at = datetime.utcnow()
+                            await session.commit()
                             sent_count += 1
+                            logger.info(f"Sent reminder to user {user.tg_user_id} for event {event.id}")
 
             logger.info(f"Sent {sent_count} event reminders")
             return sent_count
@@ -431,10 +448,16 @@ class NotificationService:
     async def send_event_starting_soon_batch(self, session: AsyncSession) -> int:
         """Send reminders for events starting in ~1 hour"""
         try:
-            # Find events starting in 45-75 minutes
-            now = datetime.now()
-            reminder_start = now + timedelta(minutes=45)
-            reminder_end = now + timedelta(minutes=75)
+            # ВАЖНО: event_date в БД хранится по времени Минска (UTC+3), но без timezone
+            minsk_offset = timedelta(hours=3)
+            now_utc = datetime.utcnow()
+            now_minsk = now_utc + minsk_offset
+
+            # Find events starting in 45-75 minutes (Minsk time)
+            reminder_start = now_minsk + timedelta(minutes=45)
+            reminder_end = now_minsk + timedelta(minutes=75)
+
+            logger.info(f"Checking 'starting soon': now_minsk={now_minsk}, window={reminder_start} - {reminder_end}")
 
             # Get events in reminder window
             events_query = select(Event).where(
@@ -447,9 +470,13 @@ class NotificationService:
             events_result = await session.execute(events_query)
             events = events_result.scalars().all()
 
+            logger.info(f"Found {len(events)} events starting soon")
+
             sent_count = 0
             for event in events:
                 # Get registered users for this event
+                # NOTE: No deduplication for 'starting soon' - window is short (30 min)
+                # and job runs every 15 min, so duplicates are unlikely
                 regs_query = select(EventRegistration).where(
                     and_(
                         EventRegistration.event_id == event.id,
@@ -458,6 +485,8 @@ class NotificationService:
                 )
                 regs_result = await session.execute(regs_query)
                 registrations = regs_result.scalars().all()
+
+                logger.info(f"Event {event.id} '{event.title}': {len(registrations)} users for starting soon")
 
                 for reg in registrations:
                     # Get user's telegram ID

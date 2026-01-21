@@ -89,25 +89,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-// Escape special characters for Telegram Markdown
+// Escape special characters for Telegram Markdown (not MarkdownV2)
+// Only these 4 characters need escaping in regular Markdown mode
 function escapeMarkdown(text: string): string {
   return text
-    .replace(/_/g, '\\_')
     .replace(/\*/g, '\\*')
-    .replace(/\[/g, '\\[')
-    .replace(/\]/g, '\\]')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)')
-    .replace(/~/g, '\\~')
+    .replace(/_/g, '\\_')
     .replace(/`/g, '\\`')
-    .replace(/>/g, '\\>')
-    .replace(/#/g, '\\#')
-    .replace(/\+/g, '\\+')
-    .replace(/\-/g, '\\-')
-    .replace(/=/g, '\\=')
-    .replace(/\|/g, '\\|')
-    .replace(/\{/g, '\\{')
-    .replace(/\}/g, '\\}')
-    .replace(/\./g, '\\.')
-    .replace(/!/g, '\\!')
+    .replace(/\[/g, '\\[')
 }
