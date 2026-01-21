@@ -132,17 +132,17 @@ export const PromptSubmitModal: React.FC<PromptSubmitScreenProps> = ({
     }
 
     return (
-        <div className="fixed inset-0 z-50 bg-bg flex flex-col">
+        <div className="fixed inset-0 z-50 bg-bg flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="sticky top-0 bg-bg/95 backdrop-blur-sm border-b border-border px-4 py-3 z-10">
+            <div className="flex-shrink-0 bg-bg/95 backdrop-blur-sm border-b border-border px-4 py-3 z-10">
                 <div className="flex items-center justify-center">
                     <h1 className="text-lg font-bold">Добавить промпт</h1>
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="p-4 space-y-4">
+            {/* Content - scrollable */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="p-4 space-y-4 pb-24">
                     {/* Image upload */}
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -215,7 +215,7 @@ export const PromptSubmitModal: React.FC<PromptSubmitScreenProps> = ({
             </div>
 
             {/* Footer with submit button */}
-            <div className="sticky bottom-0 bg-bg border-t border-border p-4 pb-6">
+            <div className="flex-shrink-0 bg-bg border-t border-border p-4 pb-6">
                 <button
                     onClick={handleSubmit}
                     disabled={!canSubmit}
