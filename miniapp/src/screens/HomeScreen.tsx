@@ -18,6 +18,7 @@ import {
   Users,
   Heart,
   GraduationCap,
+  Sparkles,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Avatar, AvatarWithSkin, Badge, Card, Progress } from '@/components/ui'
@@ -347,6 +348,31 @@ const HomeScreen: React.FC = () => {
           {/* Decorative background element */}
           <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
             <Flame size={80} className="text-red-400" />
+          </div>
+        </Card>
+      </div>
+
+      {/* AI Prompts Gallery Section */}
+      <div className="px-4 mb-6">
+        <Card
+          onClick={() => setActiveTab('prompts')}
+          className="bg-gradient-to-r from-cyan-500/20 to-cyan-500/5 border border-cyan-500/20 cursor-pointer overflow-hidden relative"
+        >
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 flex items-center justify-center shrink-0">
+              <Sparkles className="text-cyan-400" size={24} />
+            </div>
+            <div className="flex-1">
+              <div className="font-bold text-white mb-0.5">AI Промпты</div>
+              <div className="text-xs text-gray-400">
+                Галерея промптов от сообщества
+              </div>
+            </div>
+            <ChevronRight size={20} className="text-gray-500" />
+          </div>
+          {/* Decorative background element */}
+          <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
+            <Sparkles size={80} className="text-cyan-400" />
           </div>
         </Card>
       </div>

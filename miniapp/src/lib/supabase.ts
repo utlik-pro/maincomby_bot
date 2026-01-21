@@ -4875,3 +4875,304 @@ export async function getRecentAdminActions() {
   }
   return data
 }
+
+// ============================================
+// Community Prompts (AI Image Gallery)
+// ============================================
+
+import type { CommunityPrompt, PromptStatus } from '@/types'
+
+/**
+ * Get approved prompts for gallery (public view)
+ */
+export async function getApprovedPrompts(options?: {
+  limit?: number
+  offset?: number
+  userId?: number // to check if liked
+}): Promise<CommunityPrompt[]> {
+  const supabase = getSupabase()
+  const { limit = 20, offset = 0, userId } = options || {}
+
+  const { data, error } = await supabase
+    .from('community_prompts')
+    .select(`
+      *,
+      author:bot_users!user_id(
+        id,
+        username,
+        first_name,
+        last_name,
+        profile:bot_profiles(photo_url)
+      )
+    `)
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    console.error('[getApprovedPrompts] Error:', error)
+    return []
+  }
+
+  // If userId provided, check which prompts are liked
+  if (userId && data && data.length > 0) {
+    const promptIds = data.map(p => p.id)
+    const { data: likes } = await supabase
+      .from('community_prompt_likes')
+      .select('prompt_id')
+      .eq('user_id', userId)
+      .in('prompt_id', promptIds)
+
+    const likedIds = new Set(likes?.map(l => l.prompt_id) || [])
+    return data.map(p => ({ ...p, is_liked: likedIds.has(p.id) }))
+  }
+
+  return data || []
+}
+
+/**
+ * Get single prompt by ID
+ */
+export async function getPromptById(promptId: number, userId?: number): Promise<CommunityPrompt | null> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('community_prompts')
+    .select(`
+      *,
+      author:bot_users!user_id(
+        id,
+        username,
+        first_name,
+        last_name,
+        profile:bot_profiles(photo_url)
+      )
+    `)
+    .eq('id', promptId)
+    .single()
+
+  if (error) {
+    console.error('[getPromptById] Error:', error)
+    return null
+  }
+
+  // Check if liked by user
+  if (userId && data) {
+    const { data: like } = await supabase
+      .from('community_prompt_likes')
+      .select('id')
+      .eq('prompt_id', promptId)
+      .eq('user_id', userId)
+      .single()
+
+    return { ...data, is_liked: !!like }
+  }
+
+  return data
+}
+
+/**
+ * Submit new prompt (pending moderation)
+ */
+export async function submitPrompt(userId: number, promptText: string, imageUrl: string): Promise<CommunityPrompt | null> {
+  const { data, error } = await getSupabase()
+    .from('community_prompts')
+    .insert({
+      user_id: userId,
+      prompt_text: promptText,
+      image_url: imageUrl,
+      status: 'pending'
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[submitPrompt] Error:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Like/unlike a prompt
+ */
+export async function togglePromptLike(promptId: number, userId: number): Promise<boolean> {
+  const supabase = getSupabase()
+
+  // Check if already liked
+  const { data: existing } = await supabase
+    .from('community_prompt_likes')
+    .select('id')
+    .eq('prompt_id', promptId)
+    .eq('user_id', userId)
+    .single()
+
+  if (existing) {
+    // Unlike
+    const { error } = await supabase
+      .from('community_prompt_likes')
+      .delete()
+      .eq('prompt_id', promptId)
+      .eq('user_id', userId)
+
+    return !error
+  } else {
+    // Like
+    const { error } = await supabase
+      .from('community_prompt_likes')
+      .insert({ prompt_id: promptId, user_id: userId })
+
+    return !error
+  }
+}
+
+/**
+ * Increment copy count when user copies prompt
+ */
+export async function incrementPromptCopies(promptId: number): Promise<void> {
+  const supabase = getSupabase()
+
+  // Get current count and increment
+  const { data } = await supabase
+    .from('community_prompts')
+    .select('copies_count')
+    .eq('id', promptId)
+    .single()
+
+  if (data) {
+    await supabase
+      .from('community_prompts')
+      .update({ copies_count: (data.copies_count || 0) + 1 })
+      .eq('id', promptId)
+  }
+}
+
+/**
+ * Get user's own prompts (any status)
+ */
+export async function getUserPrompts(userId: number): Promise<CommunityPrompt[]> {
+  const { data, error } = await getSupabase()
+    .from('community_prompts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[getUserPrompts] Error:', error)
+    return []
+  }
+
+  return data || []
+}
+
+// ============================================
+// Admin: Prompt Moderation
+// ============================================
+
+/**
+ * Get prompts pending moderation (admin only)
+ */
+export async function getPendingPrompts(): Promise<CommunityPrompt[]> {
+  const { data, error } = await getSupabase()
+    .from('community_prompts')
+    .select(`
+      *,
+      author:bot_users!user_id(
+        id,
+        username,
+        first_name,
+        last_name,
+        profile:bot_profiles(photo_url)
+      )
+    `)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('[getPendingPrompts] Error:', error)
+    return []
+  }
+
+  return data || []
+}
+
+/**
+ * Approve or reject a prompt (admin only)
+ */
+export async function moderatePrompt(
+  promptId: number,
+  status: 'approved' | 'rejected',
+  moderatorId: number,
+  rejectionReason?: string
+): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('community_prompts')
+    .update({
+      status,
+      moderated_by: moderatorId,
+      moderated_at: new Date().toISOString(),
+      rejection_reason: status === 'rejected' ? rejectionReason : null
+    })
+    .eq('id', promptId)
+
+  if (error) {
+    console.error('[moderatePrompt] Error:', error)
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Get all prompts for admin view (any status)
+ */
+export async function getAllPromptsAdmin(status?: PromptStatus): Promise<CommunityPrompt[]> {
+  const supabase = getSupabase()
+
+  let query = supabase
+    .from('community_prompts')
+    .select(`
+      *,
+      author:bot_users!user_id(
+        id,
+        username,
+        first_name,
+        last_name,
+        profile:bot_profiles(photo_url)
+      )
+    `)
+    .order('created_at', { ascending: false })
+
+  if (status) {
+    query = query.eq('status', status)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[getAllPromptsAdmin] Error:', error)
+    return []
+  }
+
+  return data || []
+}
+
+/**
+ * Get count of pending prompts (for admin badge)
+ */
+export async function getPendingPromptsCount(): Promise<number> {
+  const supabase = getSupabase()
+
+  const { count, error } = await supabase
+    .from('community_prompts')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+
+  if (error) {
+    console.error('[getPendingPromptsCount] Error:', error)
+    return 0
+  }
+
+  return count || 0
+}

@@ -45,7 +45,7 @@ interface AppState {
   isLoading: boolean
 
   // UI state
-  activeTab: 'home' | 'events' | 'learn' | 'network' | 'achievements' | 'profile'
+  activeTab: 'home' | 'events' | 'learn' | 'network' | 'achievements' | 'profile' | 'prompts'
   hideNavigation: boolean
   hideHeader: boolean
   isVolunteerMode: boolean

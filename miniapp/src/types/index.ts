@@ -990,3 +990,48 @@ export const BROADCAST_STATUS_CONFIG: Record<BroadcastStatus, { label: string; c
   cancelled: { label: 'Отменено', color: 'bg-gray-500' },
   failed: { label: 'Ошибка', color: 'bg-red-500' },
 }
+
+// ============================================
+// Community Prompts (AI Image Gallery)
+// ============================================
+
+export type PromptStatus = 'pending' | 'approved' | 'rejected'
+
+export interface CommunityPrompt {
+  id: number
+  user_id: number
+  prompt_text: string
+  image_url: string
+  status: PromptStatus
+  moderated_by: number | null
+  moderated_at: string | null
+  rejection_reason: string | null
+  likes_count: number
+  copies_count: number
+  created_at: string
+  updated_at: string
+  // Joined data
+  author?: {
+    id: number
+    username: string | null
+    first_name: string | null
+    last_name: string | null
+    profile?: {
+      photo_url: string | null
+    }
+  }
+  is_liked?: boolean
+}
+
+export interface PromptLike {
+  id: number
+  prompt_id: number
+  user_id: number
+  created_at: string
+}
+
+export const PROMPT_STATUS_CONFIG: Record<PromptStatus, { label: string; color: string }> = {
+  pending: { label: 'На модерации', color: 'bg-yellow-500' },
+  approved: { label: 'Одобрено', color: 'bg-green-500' },
+  rejected: { label: 'Отклонено', color: 'bg-red-500' },
+}

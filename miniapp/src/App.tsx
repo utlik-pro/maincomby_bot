@@ -29,6 +29,7 @@ const ChangelogSheet = React.lazy(() => import('@/components/ChangelogSheet'))
 const ReviewBottomSheet = React.lazy(() => import('@/components/ReviewBottomSheet').then(m => ({ default: m.ReviewBottomSheet })))
 const ProGiftModal = React.lazy(() => import('@/components/ProGiftModal').then(m => ({ default: m.ProGiftModal })))
 const NetworkingPromoSheet = React.lazy(() => import('@/components/NetworkingPromoSheet').then(m => ({ default: m.NetworkingPromoSheet })))
+const PromptsGalleryScreen = React.lazy(() => import('@/screens/PromptsGalleryScreen'))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -1003,6 +1004,8 @@ const App: React.FC = () => {
         return <AchievementsScreen />
       case 'profile':
         return <ProfileScreen />
+      case 'prompts':
+        return <PromptsGalleryScreen onBack={() => setActiveTab('home')} />
       default:
         return <HomeScreen />
     }
