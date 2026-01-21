@@ -97,7 +97,7 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
         >
             {/* Image area - with safe area padding top */}
             <div
-                className="flex-1 flex items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))]"
+                className="flex-1 flex flex-col items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))]"
                 onClick={onClose}
             >
                 <motion.img
@@ -105,9 +105,21 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
                     animate={{ scale: 1 }}
                     src={prompt.image_url}
                     alt="AI generated"
-                    className="max-w-full max-h-[60vh] object-contain rounded-xl"
+                    className="max-w-full max-h-[55vh] object-contain rounded-xl"
                     onClick={(e) => e.stopPropagation()}
                 />
+
+                {/* Share button under image */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        handleShare()
+                    }}
+                    className="mt-4 flex items-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-colors"
+                >
+                    <Share2 size={18} />
+                    <span className="font-medium">Поделиться</span>
+                </button>
             </div>
 
             {/* Bottom Sheet */}
@@ -201,19 +213,10 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
                         </span>
                     </button>
 
-                    {/* Share button */}
-                    <button
-                        onClick={handleShare}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-bg rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
-                    >
-                        <Share2 size={16} />
-                        <span>Поделиться</span>
-                    </button>
-
                     {/* Copy count */}
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                         <Copy size={14} />
-                        <span>{prompt.copies_count}</span>
+                        <span>{prompt.copies_count} копий</span>
                     </div>
                 </div>
             </motion.div>
