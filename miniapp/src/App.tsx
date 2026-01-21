@@ -29,6 +29,7 @@ const ChangelogSheet = React.lazy(() => import('@/components/ChangelogSheet'))
 const ReviewBottomSheet = React.lazy(() => import('@/components/ReviewBottomSheet').then(m => ({ default: m.ReviewBottomSheet })))
 const ProGiftModal = React.lazy(() => import('@/components/ProGiftModal').then(m => ({ default: m.ProGiftModal })))
 const NetworkingPromoSheet = React.lazy(() => import('@/components/NetworkingPromoSheet').then(m => ({ default: m.NetworkingPromoSheet })))
+const PromptsPromoSheet = React.lazy(() => import('@/components/PromptsPromoSheet').then(m => ({ default: m.PromptsPromoSheet })))
 const PromptsGalleryScreen = React.lazy(() => import('@/screens/PromptsGalleryScreen'))
 
 // Loading screen
@@ -111,6 +112,9 @@ const App: React.FC = () => {
   const [showNetworkingPromo, setShowNetworkingPromo] = useState(false)
   const [networkingLikesCount, setNetworkingLikesCount] = useState(0)
 
+  // Prompts promo state
+  const [showPromptsPromo, setShowPromptsPromo] = useState(false)
+
   // Check if should show What's New after loading
   useEffect(() => {
     if (!isLoading && isAuthenticated && !shouldShowOnboarding() && shouldShowWhatsNew()) {
@@ -183,6 +187,23 @@ const App: React.FC = () => {
 
     checkLikesForPromo()
   }, [user?.id, isLoading, showChangelog, showReviewPrompt, showProGiftModal])
+
+  // Check if should show prompts promo for new users
+  useEffect(() => {
+    // Don't show if other modals are active or conditions not met
+    if (!user?.id || isLoading || showChangelog || showReviewPrompt || showProGiftModal || showNetworkingPromo) return
+
+    // Check if user has already seen prompts promo
+    const hasSeenPromo = localStorage.getItem('promptsPromoSeen')
+    if (hasSeenPromo) return
+
+    // Show promo with delay (after other modal checks have completed)
+    const timeoutId = setTimeout(() => {
+      setShowPromptsPromo(true)
+    }, 2500)
+
+    return () => clearTimeout(timeoutId)
+  }, [user?.id, isLoading, showChangelog, showReviewPrompt, showProGiftModal, showNetworkingPromo])
 
   // Global user data refresh - sync team_role and other critical fields
   const { data: freshUserData } = useQuery({
@@ -1103,6 +1124,22 @@ const App: React.FC = () => {
             setShowNetworkingPromo(false)
             localStorage.setItem('networkingPromoLastShown', new Date().toDateString())
             setActiveTab('network')
+          }}
+        />
+      </React.Suspense>
+
+      {/* Prompts Promo Sheet */}
+      <React.Suspense fallback={null}>
+        <PromptsPromoSheet
+          isOpen={showPromptsPromo}
+          onClose={() => {
+            setShowPromptsPromo(false)
+            localStorage.setItem('promptsPromoSeen', 'true')
+          }}
+          onOpenPrompts={() => {
+            setShowPromptsPromo(false)
+            localStorage.setItem('promptsPromoSeen', 'true')
+            setActiveTab('prompts')
           }}
         />
       </React.Suspense>

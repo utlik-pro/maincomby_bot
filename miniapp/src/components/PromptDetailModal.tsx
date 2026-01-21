@@ -23,17 +23,10 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
     const [copied, setCopied] = useState(false)
     const [isLiking, setIsLiking] = useState(false)
 
-    // Build author name: "First Last, @username" or just name/username
-    const authorName = (() => {
-        const parts: string[] = []
-        if (prompt.author?.first_name) parts.push(prompt.author.first_name)
-        if (prompt.author?.last_name) parts.push(prompt.author.last_name)
-        const fullName = parts.join(' ')
-        if (fullName && prompt.author?.username) {
-            return `${fullName}, ${prompt.author.username}`
-        }
-        return fullName || prompt.author?.username || 'Anonymous'
-    })()
+    // Build author name: "First Last" only
+    const authorName = [prompt.author?.first_name, prompt.author?.last_name]
+        .filter(Boolean)
+        .join(' ') || 'Anonymous'
     const authorAvatar = prompt.author?.profile?.photo_url
 
     const handleLike = async () => {
@@ -102,23 +95,11 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
             className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm"
             onClick={onClose}
         >
-            {/* Header with Share button */}
-            <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        handleShare()
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-bg-card/80 backdrop-blur-sm rounded-full text-white hover:bg-bg-card transition-colors"
-                >
-                    <Share2 size={18} />
-                    <span className="font-medium">Share</span>
-                </button>
-                <div /> {/* Spacer */}
-            </div>
-
-            {/* Image */}
-            <div className="flex-1 flex items-center justify-center p-4" onClick={onClose}>
+            {/* Image area - with safe area padding top */}
+            <div
+                className="flex-1 flex items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))]"
+                onClick={onClose}
+            >
                 <motion.img
                     initial={{ scale: 0.9 }}
                     animate={{ scale: 1 }}
@@ -153,7 +134,7 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
                         )}
                         <div>
                             <div className="font-semibold text-white">{authorName}</div>
-                            <div className="text-xs text-gray-400">Author</div>
+                            <div className="text-xs text-gray-400">Автор</div>
                         </div>
                     </div>
 
@@ -171,7 +152,7 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 text-gray-400">
                             <SlidersHorizontal size={16} />
-                            <span className="text-sm font-semibold uppercase">Prompt</span>
+                            <span className="text-sm font-semibold uppercase">Промпт</span>
                         </div>
                         <button
                             onClick={handleCopy}
@@ -184,12 +165,12 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
                             {copied ? (
                                 <span className="flex items-center gap-1">
                                     <Check size={14} />
-                                    Copied
+                                    Скопировано
                                 </span>
                             ) : (
                                 <span className="flex items-center gap-1">
                                     <Copy size={14} />
-                                    Copy
+                                    Копировать
                                 </span>
                             )}
                         </button>
@@ -220,10 +201,19 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
                         </span>
                     </button>
 
+                    {/* Share button */}
+                    <button
+                        onClick={handleShare}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-bg rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                        <Share2 size={16} />
+                        <span>Поделиться</span>
+                    </button>
+
                     {/* Copy count */}
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                         <Copy size={14} />
-                        <span>{prompt.copies_count} copies</span>
+                        <span>{prompt.copies_count}</span>
                     </div>
                 </div>
             </motion.div>

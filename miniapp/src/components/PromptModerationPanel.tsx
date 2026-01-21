@@ -61,14 +61,9 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
     }
 
     const getAuthorName = (prompt: CommunityPrompt) => {
-        const parts: string[] = []
-        if (prompt.author?.first_name) parts.push(prompt.author.first_name)
-        if (prompt.author?.last_name) parts.push(prompt.author.last_name)
-        const fullName = parts.join(' ')
-        if (fullName && prompt.author?.username) {
-            return `${fullName}, ${prompt.author.username}`
-        }
-        return fullName || prompt.author?.username || 'Unknown'
+        return [prompt.author?.first_name, prompt.author?.last_name]
+            .filter(Boolean)
+            .join(' ') || 'Unknown'
     }
 
     const getStatusBadge = (status: PromptStatus) => {
