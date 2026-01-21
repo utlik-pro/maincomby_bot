@@ -779,45 +779,6 @@ const EventsScreen: React.FC = () => {
     }
   }, [deepLinkTarget, setDeepLinkTarget])
 
-  // Handle deep link to ticket (QR code)
-  useEffect(() => {
-    if (!registrations || registrations.length === 0) return
-
-    if (deepLinkTarget === 'ticket' || deepLinkTarget?.startsWith('ticket_')) {
-      let targetRegistration: EventRegistration | undefined
-
-      if (deepLinkTarget === 'ticket') {
-        // Find nearest upcoming event registration
-        const now = new Date()
-        const upcomingRegs = registrations
-          .filter(reg =>
-            reg.status === 'registered' &&
-            reg.event &&
-            new Date(reg.event.event_date) > now
-          )
-          .sort((a, b) =>
-            new Date(a.event!.event_date).getTime() - new Date(b.event!.event_date).getTime()
-          )
-        targetRegistration = upcomingRegs[0]
-      } else {
-        // ticket_{eventId} - find specific event registration
-        const eventId = parseInt(deepLinkTarget.replace('ticket_', ''), 10)
-        if (!isNaN(eventId)) {
-          targetRegistration = registrations.find(
-            reg => reg.event_id === eventId && reg.status === 'registered'
-          )
-        }
-      }
-
-      if (targetRegistration && targetRegistration.event) {
-        setShowTicket({ registration: targetRegistration, event: targetRegistration.event })
-      }
-
-      // Clear deep link target
-      setDeepLinkTarget(null)
-    }
-  }, [deepLinkTarget, registrations, setDeepLinkTarget])
-
   // Fetch events
   const { data: events, isLoading } = useQuery({
     queryKey: ['events'],
@@ -830,6 +791,49 @@ const EventsScreen: React.FC = () => {
     queryFn: () => (user ? getUserRegistrations(user.id) : []),
     enabled: !!user,
   })
+
+  // Handle deep link to ticket (QR code)
+  useEffect(() => {
+    if (!registrations || registrations.length === 0) return
+
+    if (deepLinkTarget === 'ticket' || deepLinkTarget?.startsWith('ticket_')) {
+      // Type assertion: registrations from getUserRegistrations include joined event
+      type RegWithEvent = typeof registrations[number] & { event?: Event }
+      const regsWithEvent = registrations as RegWithEvent[]
+
+      let targetReg: RegWithEvent | undefined
+
+      if (deepLinkTarget === 'ticket') {
+        // Find nearest upcoming event registration
+        const now = new Date()
+        const upcomingRegs = regsWithEvent
+          .filter(reg =>
+            reg.status === 'registered' &&
+            reg.event &&
+            new Date(reg.event.event_date) > now
+          )
+          .sort((a, b) =>
+            new Date(a.event!.event_date).getTime() - new Date(b.event!.event_date).getTime()
+          )
+        targetReg = upcomingRegs[0]
+      } else {
+        // ticket_{eventId} - find specific event registration
+        const eventId = parseInt(deepLinkTarget.replace('ticket_', ''), 10)
+        if (!isNaN(eventId)) {
+          targetReg = regsWithEvent.find(
+            reg => reg.event_id === eventId && reg.status === 'registered'
+          )
+        }
+      }
+
+      if (targetReg && targetReg.event) {
+        setShowTicket({ registration: targetReg, event: targetReg.event })
+      }
+
+      // Clear deep link target
+      setDeepLinkTarget(null)
+    }
+  }, [deepLinkTarget, registrations, setDeepLinkTarget])
 
   // Fetch event checkins (for core team/volunteers)
   const { data: checkins, isLoading: checkinsLoading } = useQuery({
