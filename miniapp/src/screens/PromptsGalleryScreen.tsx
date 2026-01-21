@@ -69,8 +69,8 @@ export const PromptsGalleryScreen: React.FC<{ onBack: () => void }> = ({ onBack 
         }
     })
 
-    // Show placeholder in right column if there's an odd number of prompts
-    const showRightPlaceholder = prompts.length > 0 && prompts.length % 2 === 1
+    // Always show placeholder to encourage adding more (in shorter column)
+    const showPlaceholder = prompts.length > 0
 
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
@@ -162,15 +162,15 @@ export const PromptsGalleryScreen: React.FC<{ onBack: () => void }> = ({ onBack 
                                     onClick={() => setSelectedPrompt(prompt)}
                                 />
                             ))}
-                            {/* Dashed placeholder for adding more */}
-                            {showRightPlaceholder && (
+                            {/* Dashed placeholder for adding more - always show */}
+                            {showPlaceholder && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-gray-600 cursor-pointer hover:border-accent/50 hover:text-gray-400 transition-colors"
+                                    className="aspect-square rounded-xl border-2 border-dashed border-accent/30 flex flex-col items-center justify-center text-accent/50 cursor-pointer hover:border-accent hover:text-accent/80 transition-colors"
                                     onClick={() => setShowSubmitModal(true)}
                                 >
-                                    <ImagePlus size={32} className="mb-2 opacity-50" />
+                                    <ImagePlus size={32} className="mb-2" />
                                     <span className="text-xs font-medium">Добавить</span>
                                 </motion.div>
                             )}

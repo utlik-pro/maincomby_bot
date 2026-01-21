@@ -406,7 +406,7 @@ export interface NotificationPayload {
 }
 
 // Deep link screens
-export type DeepLinkScreen = 'home' | 'events' | 'network' | 'matches' | 'achievements' | 'profile' | 'notifications'
+export type DeepLinkScreen = 'home' | 'events' | 'network' | 'matches' | 'achievements' | 'profile' | 'notifications' | 'prompts'
 
 // ============ EDGE FUNCTION CLIENT ============
 

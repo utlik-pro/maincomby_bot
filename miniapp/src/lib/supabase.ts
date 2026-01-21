@@ -4972,6 +4972,49 @@ export async function getPromptById(promptId: number, userId?: number): Promise<
 }
 
 /**
+ * Upload prompt image to storage
+ */
+export async function uploadPromptImage(userId: number, file: File): Promise<{ success: boolean; url?: string; error?: string }> {
+  const supabase = getSupabase()
+
+  // Validate file size (10MB max)
+  const maxSize = 10 * 1024 * 1024
+  if (file.size > maxSize) {
+    return { success: false, error: 'Файл слишком большой (макс. 10MB)' }
+  }
+
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    return { success: false, error: 'Неподдерживаемый формат. Используйте JPEG, PNG или WebP' }
+  }
+
+  // Generate unique filename
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const filename = `prompts/${userId}/${Date.now()}.${ext}`
+
+  // Upload to storage
+  const { error: uploadError } = await supabase.storage
+    .from('profile-photos')
+    .upload(filename, file, {
+      cacheControl: '3600',
+      upsert: false
+    })
+
+  if (uploadError) {
+    console.error('[uploadPromptImage] Upload error:', uploadError)
+    return { success: false, error: uploadError.message || 'Ошибка загрузки файла' }
+  }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('profile-photos')
+    .getPublicUrl(filename)
+
+  return { success: true, url: publicUrl }
+}
+
+/**
  * Submit new prompt (pending moderation)
  */
 export async function submitPrompt(userId: number, promptText: string, imageUrl: string): Promise<CommunityPrompt | null> {
@@ -4991,17 +5034,28 @@ export async function submitPrompt(userId: number, promptText: string, imageUrl:
     return null
   }
 
-  // Notify core team about new prompt for moderation
+  // Notify core team about new prompt for moderation (both in-app and push)
   try {
     const coreTeam = await getCoreTeamUsers()
     for (const member of coreTeam) {
-      if (member.id !== userId) {
+      if (member.id !== userId && member.telegram_id) {
+        // In-app notification
         await createNotification(
           member.id,
           'system',
           'Новый промпт на модерации',
           'Поступил новый AI промпт для проверки',
           { type: 'prompt_moderation', prompt_id: data.id }
+        )
+        // Telegram push notification
+        await sendPushNotification(
+          member.telegram_id,
+          {
+            type: 'system',
+            title: 'Новый промпт на модерации',
+            message: 'Поступил новый AI промпт для проверки'
+          },
+          { screen: 'prompts', buttonText: 'Открыть' }
         )
       }
     }

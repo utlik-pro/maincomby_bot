@@ -961,7 +961,7 @@ export interface BroadcastStats {
 }
 
 // Deep link screens for broadcasts
-export type DeepLinkScreen = 'home' | 'events' | 'network' | 'matches' | 'achievements' | 'profile' | 'notifications'
+export type DeepLinkScreen = 'home' | 'events' | 'network' | 'matches' | 'achievements' | 'profile' | 'notifications' | 'prompts'
 
 export const DEEP_LINK_SCREENS: { value: DeepLinkScreen; label: string }[] = [
   { value: 'home', label: 'Главная' },
@@ -971,6 +971,7 @@ export const DEEP_LINK_SCREENS: { value: DeepLinkScreen; label: string }[] = [
   { value: 'achievements', label: 'Достижения' },
   { value: 'profile', label: 'Профиль' },
   { value: 'notifications', label: 'Уведомления' },
+  { value: 'prompts', label: 'AI Промпты' },
 ]
 
 export const AUDIENCE_TYPE_LABELS: Record<BroadcastAudienceType, string> = {

@@ -1,47 +1,97 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { X, ImagePlus, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
-import { submitPrompt } from '@/lib/supabase'
+import { ImagePlus, Loader2, CheckCircle, Camera, X } from 'lucide-react'
+import { submitPrompt, uploadPromptImage } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, useBackButton } from '@/lib/telegram'
+import { resizeImageForProfile, isValidImageFile } from '@/lib/imageUtils'
 
-interface PromptSubmitModalProps {
+interface PromptSubmitScreenProps {
     onClose: () => void
     onSubmitted: () => void
 }
 
-export const PromptSubmitModal: React.FC<PromptSubmitModalProps> = ({
+export const PromptSubmitModal: React.FC<PromptSubmitScreenProps> = ({
     onClose,
     onSubmitted
 }) => {
     const { user } = useAppStore()
-    const [imageUrl, setImageUrl] = useState('')
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [promptText, setPromptText] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isUploading, setIsUploading] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [imageError, setImageError] = useState(false)
-    const [imageLoaded, setImageLoaded] = useState(false)
 
-    const isValidUrl = (url: string) => {
-        try {
-            new URL(url)
-            return url.startsWith('http://') || url.startsWith('https://')
-        } catch {
-            return false
+    // Use Telegram system back button
+    useBackButton(onClose)
+
+    const canSubmit = selectedFile && promptText.trim() && !isSubmitting && !isUploading
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Validate file
+        if (!isValidImageFile(file)) {
+            setError('Неподдерживаемый формат. Используйте JPEG, PNG или WebP')
+            hapticFeedback.error()
+            return
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            setError('Файл слишком большой (макс. 10MB)')
+            hapticFeedback.error()
+            return
+        }
+
+        setError(null)
+        hapticFeedback.light()
+
+        // Create preview
+        const url = URL.createObjectURL(file)
+        setPreviewUrl(url)
+        setSelectedFile(file)
+    }
+
+    const handleRemoveImage = () => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl)
+        }
+        setPreviewUrl(null)
+        setSelectedFile(null)
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
         }
     }
 
-    const canSubmit = imageUrl.trim() && promptText.trim() && isValidUrl(imageUrl) && !imageError && imageLoaded
-
     const handleSubmit = async () => {
-        if (!user?.id || !canSubmit || isSubmitting) return
+        if (!user?.id || !selectedFile || !canSubmit) return
 
         setIsSubmitting(true)
+        setIsUploading(true)
         setError(null)
 
         try {
-            const result = await submitPrompt(user.id, promptText.trim(), imageUrl.trim())
+            // Resize image before upload
+            const resizedFile = await resizeImageForProfile(selectedFile, {
+                maxWidth: 1600,
+                maxHeight: 1600,
+                quality: 0.9
+            })
+
+            // Upload image
+            const uploadResult = await uploadPromptImage(user.id, resizedFile)
+            setIsUploading(false)
+
+            if (!uploadResult.success || !uploadResult.url) {
+                throw new Error(uploadResult.error || 'Ошибка загрузки')
+            }
+
+            // Submit prompt
+            const result = await submitPrompt(user.id, promptText.trim(), uploadResult.url)
 
             if (result) {
                 hapticFeedback.success()
@@ -50,124 +100,88 @@ export const PromptSubmitModal: React.FC<PromptSubmitModalProps> = ({
                     onSubmitted()
                 }, 2000)
             } else {
-                throw new Error('Failed to submit')
+                throw new Error('Не удалось отправить промпт')
             }
         } catch (err) {
             console.error('Submit error:', err)
-            setError('Не удалось отправить. Попробуйте ещё раз.')
+            setError(err instanceof Error ? err.message : 'Не удалось отправить. Попробуйте ещё раз.')
             hapticFeedback.error()
         } finally {
             setIsSubmitting(false)
+            setIsUploading(false)
         }
-    }
-
-    const handleImageUrlChange = (url: string) => {
-        setImageUrl(url)
-        setImageError(false)
-        setImageLoaded(false)
     }
 
     if (showSuccess) {
         return (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-            >
+            <div className="fixed inset-0 z-50 bg-bg flex items-center justify-center p-6">
                 <motion.div
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                    className="bg-bg-card rounded-2xl p-8 text-center max-w-sm w-full"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="text-center"
                 >
-                    <CheckCircle size={64} className="mx-auto text-green-500 mb-4" />
-                    <h3 className="text-xl font-bold mb-2">Отправлено!</h3>
-                    <p className="text-gray-400">
-                        Ваш промпт отправлен на модерацию. После одобрения он появится в галерее.
+                    <CheckCircle size={80} className="mx-auto text-green-500 mb-6" />
+                    <h3 className="text-2xl font-bold mb-3">Отправлено!</h3>
+                    <p className="text-gray-400 text-lg">
+                        Ваш промпт отправлен на модерацию.
+                        <br />После одобрения он появится в галерее.
                     </p>
                 </motion.div>
-            </motion.div>
+            </div>
         )
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm"
-            onClick={onClose}
-        >
-            <motion.div
-                initial={{ y: 100 }}
-                animate={{ y: 0 }}
-                exit={{ y: 100 }}
-                className="bg-bg-card w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Header */}
-                <div className="sticky top-0 bg-bg-card border-b border-border p-4 flex items-center justify-between">
-                    <h2 className="text-lg font-bold">Добавить промпт</h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white">
-                        <X size={24} />
-                    </button>
+        <div className="fixed inset-0 z-50 bg-bg flex flex-col">
+            {/* Header */}
+            <div className="sticky top-0 bg-bg/95 backdrop-blur-sm border-b border-border px-4 py-3 z-10">
+                <div className="flex items-center justify-center">
+                    <h1 className="text-lg font-bold">Добавить промпт</h1>
                 </div>
+            </div>
 
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
                 <div className="p-4 space-y-4">
-                    {/* Image URL input */}
+                    {/* Image upload */}
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">
-                            Ссылка на изображение
+                            Изображение
                         </label>
+
+                        {previewUrl ? (
+                            <div className="relative">
+                                <img
+                                    src={previewUrl}
+                                    alt="Preview"
+                                    className="w-full rounded-xl object-cover max-h-72"
+                                />
+                                <button
+                                    onClick={handleRemoveImage}
+                                    className="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full flex items-center justify-center text-white"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="w-full aspect-video bg-bg-card rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-gray-500 hover:border-accent/50 hover:text-gray-400 transition-colors"
+                            >
+                                <Camera size={48} className="mb-3 opacity-50" />
+                                <span className="text-sm font-medium">Выбрать изображение</span>
+                                <span className="text-xs text-gray-600 mt-1">JPEG, PNG, WebP до 10MB</span>
+                            </button>
+                        )}
+
                         <input
-                            type="url"
-                            value={imageUrl}
-                            onChange={(e) => handleImageUrlChange(e.target.value)}
-                            placeholder="https://..."
-                            className="w-full px-4 py-3 bg-bg rounded-xl border border-border focus:border-accent focus:outline-none text-white placeholder-gray-500"
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={handleFileSelect}
+                            className="hidden"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Вставьте прямую ссылку на изображение (jpg, png, webp)
-                        </p>
                     </div>
-
-                    {/* Image preview */}
-                    {imageUrl && isValidUrl(imageUrl) && (
-                        <div className="relative">
-                            {!imageLoaded && !imageError && (
-                                <div className="aspect-square bg-bg rounded-xl flex items-center justify-center">
-                                    <Loader2 size={32} className="animate-spin text-accent" />
-                                </div>
-                            )}
-                            {imageError && (
-                                <div className="aspect-square bg-bg rounded-xl flex flex-col items-center justify-center text-red-400">
-                                    <AlertCircle size={32} className="mb-2" />
-                                    <span className="text-sm">Не удалось загрузить изображение</span>
-                                </div>
-                            )}
-                            <img
-                                src={imageUrl}
-                                alt="Preview"
-                                className={`w-full rounded-xl object-cover max-h-64 ${imageLoaded && !imageError ? 'block' : 'hidden'}`}
-                                onLoad={() => {
-                                    setImageLoaded(true)
-                                    setImageError(false)
-                                }}
-                                onError={() => {
-                                    setImageError(true)
-                                    setImageLoaded(false)
-                                }}
-                            />
-                        </div>
-                    )}
-
-                    {/* Empty state for image */}
-                    {!imageUrl && (
-                        <div className="aspect-video bg-bg rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-gray-500">
-                            <ImagePlus size={48} className="mb-2 opacity-50" />
-                            <span className="text-sm">Превью изображения</span>
-                        </div>
-                    )}
 
                     {/* Prompt text */}
                     <div>
@@ -178,8 +192,8 @@ export const PromptSubmitModal: React.FC<PromptSubmitModalProps> = ({
                             value={promptText}
                             onChange={(e) => setPromptText(e.target.value)}
                             placeholder="Опишите промпт, который использовали для генерации..."
-                            rows={4}
-                            className="w-full px-4 py-3 bg-bg rounded-xl border border-border focus:border-accent focus:outline-none text-white placeholder-gray-500 resize-none"
+                            rows={5}
+                            className="w-full px-4 py-3 bg-bg-card rounded-xl border border-border focus:border-accent focus:outline-none text-white placeholder-gray-500 resize-none"
                         />
                         <p className="text-xs text-gray-500 mt-1 text-right">
                             {promptText.length} / 2000
@@ -197,29 +211,36 @@ export const PromptSubmitModal: React.FC<PromptSubmitModalProps> = ({
                     <div className="p-3 bg-accent/10 rounded-xl text-sm text-accent/80">
                         После отправки ваш промпт будет проверен модератором перед публикацией.
                     </div>
-
-                    {/* Submit button */}
-                    <button
-                        onClick={handleSubmit}
-                        disabled={!canSubmit || isSubmitting}
-                        className={`w-full py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2 ${
-                            canSubmit && !isSubmitting
-                                ? 'bg-accent text-black hover:bg-accent/90'
-                                : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                        }`}
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <Loader2 size={20} className="animate-spin" />
-                                Отправка...
-                            </>
-                        ) : (
-                            'Отправить на модерацию'
-                        )}
-                    </button>
                 </div>
-            </motion.div>
-        </motion.div>
+            </div>
+
+            {/* Footer with submit button */}
+            <div className="sticky bottom-0 bg-bg border-t border-border p-4 pb-6">
+                <button
+                    onClick={handleSubmit}
+                    disabled={!canSubmit}
+                    className={`w-full py-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2 ${
+                        canSubmit
+                            ? 'bg-accent text-black hover:bg-accent/90'
+                            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    }`}
+                >
+                    {isUploading ? (
+                        <>
+                            <Loader2 size={20} className="animate-spin" />
+                            Загрузка...
+                        </>
+                    ) : isSubmitting ? (
+                        <>
+                            <Loader2 size={20} className="animate-spin" />
+                            Отправка...
+                        </>
+                    ) : (
+                        'Отправить на модерацию'
+                    )}
+                </button>
+            </div>
+        </div>
     )
 }
 
