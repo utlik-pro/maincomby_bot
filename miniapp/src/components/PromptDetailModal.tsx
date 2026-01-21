@@ -97,29 +97,31 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
         >
             {/* Image area - with safe area padding top */}
             <div
-                className="flex-1 flex flex-col items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))]"
+                className="flex-1 flex items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))]"
                 onClick={onClose}
             >
-                <motion.img
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                    src={prompt.image_url}
-                    alt="AI generated"
-                    className="max-w-full max-h-[55vh] object-contain rounded-xl"
-                    onClick={(e) => e.stopPropagation()}
-                />
+                <div className="relative">
+                    <motion.img
+                        initial={{ scale: 0.9 }}
+                        animate={{ scale: 1 }}
+                        src={prompt.image_url}
+                        alt="AI generated"
+                        className="max-w-full max-h-[60vh] object-contain rounded-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    />
 
-                {/* Share button under image */}
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        handleShare()
-                    }}
-                    className="mt-4 flex items-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-colors"
-                >
-                    <Share2 size={18} />
-                    <span className="font-medium">Поделиться</span>
-                </button>
+                    {/* Share button overlay - bottom right of image */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            handleShare()
+                        }}
+                        className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 bg-black/60 backdrop-blur-sm rounded-full text-white hover:bg-black/80 transition-colors"
+                    >
+                        <Share2 size={16} />
+                        <span className="text-sm font-medium">Поделиться</span>
+                    </button>
+                </div>
             </div>
 
             {/* Bottom Sheet */}
