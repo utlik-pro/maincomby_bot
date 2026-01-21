@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.11] - 2026-01-21
+
+[0;34mGenerating changelog from v1.1.10 to HEAD[0m
+### Added
+- add engagement notification analytics dashboard
+- add engagement notification system for user retention
+- add glowing animation to Network and Learning icons
+- add duration selector for PRO gifts (3/7/30 days)
+- add networking engagement system with push notifications and promo sheet
+- style Networking card like Learning card with heart icon
+- move Learning to HomeScreen card, remove from nav
+- redesign networking UI with Tinder-style navigation button
+- add networking banner and enable network tab with red styling
+- add city filter bypass + swipe diagnostics
+- grid layout for contacts + likes diagnostics
+- add admin action history with status tracking
+- beautiful PRO gift in-app modal with thank you button
+- personalized PRO gift notifications
+- PRO gifting feature - admin can gift PRO subscriptions
+- sticky menu with Лайки text, recycled profiles when empty, bigger icons
+- show ALL historical likes in Who Liked Me section
+
+### Fixed
+- remove duplicate networking banner with English text
+- change Networking card icon from heart to flame
+- filter out matched users from Likes tab
+- remove profile_photos join from getIncomingLikes (no FK relationship)
+- show actual error message in likes error state
+- set swipe tab padding to 90px
+- improve likes loading with better logging and error handling
+- increase swipe tab padding to pt-24 (96px)
+- increase swipe tab padding to pt-20 (80px)
+- increase swipe tab padding to pt-16
+- conditional padding for network tabs (swipe vs contacts/likes)
+- increase network header padding (pt-20)
+- add top padding to network screen for Telegram header
+- repair likes display and swipe card layout
+- restore scrolling, fix user manager build, disable text selection
+- restore proper layout, add padding for header, fix scrolling
+- make SupabaseSync robust against missing env vars
+- restore content visibility with flex layout
+- remove PageTransition (crash fix), add proper error display for debug
+- remove unused import causing startup crash
 ## [1.1.10] - 2026-01-20
 
 [0;34mGenerating changelog from v1.1.9 to HEAD[0m

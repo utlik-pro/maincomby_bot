@@ -5,6 +5,174 @@
   "repository": "https://github.com/maincomby/maincomby_bot",
   "releases": [
     {
+      "version": "1.1.11",
+      "date": "2026-01-21",
+      "tag": "v1.1.11",
+      "type": "patch",
+      "summary": "\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f v1.1.11",
+      "highlights": [
+        "add engagement notification analytics dashboard",
+        "add engagement notification system for user retent...",
+        "add glowing animation to Network and Learning icon...",
+        "add duration selector for PRO gifts (3/7/30 days)",
+        "add networking engagement system with push notific..."
+      ],
+      "features": [
+        {
+          "description": "add engagement notification analytics dashboard",
+          "scope": "all"
+        },
+        {
+          "description": "add engagement notification system for user retention",
+          "scope": "all"
+        },
+        {
+          "description": "add glowing animation to Network and Learning icons",
+          "scope": "all"
+        },
+        {
+          "description": "add duration selector for PRO gifts (3/7/30 days)",
+          "scope": "all"
+        },
+        {
+          "description": "add networking engagement system with push notifications and promo sheet",
+          "scope": "all"
+        },
+        {
+          "description": "style Networking card like Learning card with heart icon",
+          "scope": "all"
+        },
+        {
+          "description": "move Learning to HomeScreen card, remove from nav",
+          "scope": "all"
+        },
+        {
+          "description": "redesign networking UI with Tinder-style navigation button",
+          "scope": "all"
+        },
+        {
+          "description": "add networking banner and enable network tab with red styling",
+          "scope": "all"
+        },
+        {
+          "description": "add city filter bypass + swipe diagnostics",
+          "scope": "all"
+        },
+        {
+          "description": "grid layout for contacts + likes diagnostics",
+          "scope": "all"
+        },
+        {
+          "description": "add admin action history with status tracking",
+          "scope": "all"
+        },
+        {
+          "description": "beautiful PRO gift in-app modal with thank you button",
+          "scope": "all"
+        },
+        {
+          "description": "personalized PRO gift notifications",
+          "scope": "all"
+        },
+        {
+          "description": "PRO gifting feature - admin can gift PRO subscriptions",
+          "scope": "all"
+        },
+        {
+          "description": "sticky menu with \u041b\u0430\u0439\u043a\u0438 text, recycled profiles when empty, bigger icons",
+          "scope": "all"
+        },
+        {
+          "description": "show ALL historical likes in Who Liked Me section",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "remove duplicate networking banner with English text",
+          "scope": "all"
+        },
+        {
+          "description": "change Networking card icon from heart to flame",
+          "scope": "all"
+        },
+        {
+          "description": "filter out matched users from Likes tab",
+          "scope": "all"
+        },
+        {
+          "description": "remove profile_photos join from getIncomingLikes (no FK relationship)",
+          "scope": "all"
+        },
+        {
+          "description": "show actual error message in likes error state",
+          "scope": "all"
+        },
+        {
+          "description": "set swipe tab padding to 90px",
+          "scope": "all"
+        },
+        {
+          "description": "improve likes loading with better logging and error handling",
+          "scope": "all"
+        },
+        {
+          "description": "increase swipe tab padding to pt-24 (96px)",
+          "scope": "all"
+        },
+        {
+          "description": "increase swipe tab padding to pt-20 (80px)",
+          "scope": "all"
+        },
+        {
+          "description": "increase swipe tab padding to pt-16",
+          "scope": "all"
+        },
+        {
+          "description": "conditional padding for network tabs (swipe vs contacts/likes)",
+          "scope": "all"
+        },
+        {
+          "description": "increase network header padding (pt-20)",
+          "scope": "all"
+        },
+        {
+          "description": "add top padding to network screen for Telegram header",
+          "scope": "all"
+        },
+        {
+          "description": "repair likes display and swipe card layout",
+          "scope": "all"
+        },
+        {
+          "description": "restore scrolling, fix user manager build, disable text selection",
+          "scope": "all"
+        },
+        {
+          "description": "restore proper layout, add padding for header, fix scrolling",
+          "scope": "all"
+        },
+        {
+          "description": "make SupabaseSync robust against missing env vars",
+          "scope": "all"
+        },
+        {
+          "description": "restore content visibility with flex layout",
+          "scope": "all"
+        },
+        {
+          "description": "remove PageTransition (crash fix), add proper error display for debug",
+          "scope": "all"
+        },
+        {
+          "description": "remove unused import causing startup crash",
+          "scope": "all"
+        }
+      ],
+      "improvements": [],
+      "breaking": []
+    },
+    {
       "version": "1.1.10",
       "date": "2026-01-20",
       "tag": "v1.1.10",
