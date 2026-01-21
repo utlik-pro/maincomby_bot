@@ -214,8 +214,8 @@ export const PromptSubmitModal: React.FC<PromptSubmitScreenProps> = ({
                 </div>
             </div>
 
-            {/* Footer with submit button */}
-            <div className="flex-shrink-0 bg-bg border-t border-border p-4 pb-6">
+            {/* Footer with submit button - extra padding for nav bar */}
+            <div className="flex-shrink-0 bg-bg border-t border-border p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom)+60px)]">
                 <button
                     onClick={handleSubmit}
                     disabled={!canSubmit}

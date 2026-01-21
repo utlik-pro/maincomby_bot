@@ -153,8 +153,8 @@ export const PromptsGalleryScreen: React.FC<{ onBack: () => void }> = ({ onBack 
                             ))}
                         </div>
 
-                        {/* Right Column */}
-                        <div className="flex-1 flex flex-col gap-3">
+                        {/* Right Column - offset for masonry effect */}
+                        <div className="flex-1 flex flex-col gap-3 mt-8">
                             {rightColumn.map((prompt) => (
                                 <PromptCard
                                     key={prompt.id}
