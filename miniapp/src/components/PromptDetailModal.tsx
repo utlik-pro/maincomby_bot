@@ -23,7 +23,17 @@ export const PromptDetailModal: React.FC<PromptDetailModalProps> = ({
     const [copied, setCopied] = useState(false)
     const [isLiking, setIsLiking] = useState(false)
 
-    const authorName = prompt.author?.first_name || prompt.author?.username || 'Anonymous'
+    // Build author name: "First Last, @username" or just name/username
+    const authorName = (() => {
+        const parts: string[] = []
+        if (prompt.author?.first_name) parts.push(prompt.author.first_name)
+        if (prompt.author?.last_name) parts.push(prompt.author.last_name)
+        const fullName = parts.join(' ')
+        if (fullName && prompt.author?.username) {
+            return `${fullName}, ${prompt.author.username}`
+        }
+        return fullName || prompt.author?.username || 'Anonymous'
+    })()
     const authorAvatar = prompt.author?.profile?.photo_url
 
     const handleLike = async () => {
