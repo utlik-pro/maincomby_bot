@@ -929,6 +929,13 @@ const App: React.FC = () => {
         return
       }
 
+      // Handle ticket deep link: ticket or ticket_{eventId}
+      if (deepLinkValue === 'ticket' || deepLinkValue.startsWith('ticket_')) {
+        setActiveTab('events')
+        setDeepLinkTarget(deepLinkValue)
+        return
+      }
+
       // Map parameter to tab
       const screenMap: Record<string, typeof activeTab> = {
         'home': 'home',
