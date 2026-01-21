@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Plus, Loader2, Shield } from 'lucide-react'
+import { Plus, Loader2, Shield, ImagePlus } from 'lucide-react'
 import { getApprovedPrompts, getPendingPromptsCount } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
+import { useBackButton } from '@/lib/telegram'
 import type { CommunityPrompt } from '@/types'
 import { PromptDetailModal } from '@/components/PromptDetailModal'
 import { PromptSubmitModal } from '@/components/PromptSubmitModal'
@@ -16,6 +17,9 @@ export const PromptsGalleryScreen: React.FC<{ onBack: () => void }> = ({ onBack 
     const [selectedPrompt, setSelectedPrompt] = useState<CommunityPrompt | null>(null)
     const [showSubmitModal, setShowSubmitModal] = useState(false)
     const [showModerationPanel, setShowModerationPanel] = useState(false)
+
+    // Use Telegram system back button
+    useBackButton(onBack)
 
     // Check if user is admin (core team)
     const isAdmin = user?.team_role === 'core'
@@ -65,6 +69,9 @@ export const PromptsGalleryScreen: React.FC<{ onBack: () => void }> = ({ onBack 
         }
     })
 
+    // Show placeholder in right column if there's an odd number of prompts
+    const showRightPlaceholder = prompts.length > 0 && prompts.length % 2 === 1
+
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
         if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasNextPage && !isFetchingNextPage) {
@@ -82,12 +89,7 @@ export const PromptsGalleryScreen: React.FC<{ onBack: () => void }> = ({ onBack 
             {/* Header */}
             <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur-sm border-b border-border px-4 py-3">
                 <div className="flex items-center justify-between">
-                    <button
-                        onClick={onBack}
-                        className="p-2 -ml-2 text-gray-400 hover:text-white"
-                    >
-                        <ArrowLeft size={24} />
-                    </button>
+                    <div className="w-10" /> {/* Spacer for balance */}
                     <h1 className="text-lg font-bold uppercase tracking-wide">
                         Inspired by Community
                     </h1>
@@ -160,6 +162,18 @@ export const PromptsGalleryScreen: React.FC<{ onBack: () => void }> = ({ onBack 
                                     onClick={() => setSelectedPrompt(prompt)}
                                 />
                             ))}
+                            {/* Dashed placeholder for adding more */}
+                            {showRightPlaceholder && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-gray-600 cursor-pointer hover:border-accent/50 hover:text-gray-400 transition-colors"
+                                    onClick={() => setShowSubmitModal(true)}
+                                >
+                                    <ImagePlus size={32} className="mb-2 opacity-50" />
+                                    <span className="text-xs font-medium">Добавить</span>
+                                </motion.div>
+                            )}
                         </div>
                     </div>
                 )}

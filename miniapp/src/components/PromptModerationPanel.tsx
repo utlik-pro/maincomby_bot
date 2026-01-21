@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, XCircle, Loader2, ChevronLeft, Eye, Sparkles } from 'lucide-react'
-import { getPendingPrompts, getAllPromptsAdmin, moderatePrompt } from '@/lib/supabase'
+import { X, Check, XCircle, Loader2, Eye, Sparkles } from 'lucide-react'
+import { getAllPromptsAdmin, moderatePrompt } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
 import type { CommunityPrompt, PromptStatus } from '@/types'
@@ -16,10 +16,8 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
     const queryClient = useQueryClient()
     const [filter, setFilter] = useState<PromptStatus | 'all'>('pending')
     const [selectedPrompt, setSelectedPrompt] = useState<CommunityPrompt | null>(null)
-    const [rejectionReason, setRejectionReason] = useState('')
-    const [showRejectForm, setShowRejectForm] = useState(false)
 
-    const { data: prompts = [], isLoading, refetch } = useQuery({
+    const { data: prompts = [], isLoading } = useQuery({
         queryKey: ['adminPrompts', filter],
         queryFn: () => filter === 'all'
             ? getAllPromptsAdmin()
@@ -36,21 +34,21 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
         onSuccess: () => {
             hapticFeedback.success()
             queryClient.invalidateQueries({ queryKey: ['adminPrompts'] })
+            queryClient.invalidateQueries({ queryKey: ['pendingPromptsCount'] })
             setSelectedPrompt(null)
         }
     })
 
     const rejectMutation = useMutation({
-        mutationFn: async ({ promptId, reason }: { promptId: number; reason?: string }) => {
+        mutationFn: async (promptId: number) => {
             if (!user?.id) throw new Error('Not authenticated')
-            return moderatePrompt(promptId, 'rejected', user.id, reason)
+            return moderatePrompt(promptId, 'rejected', user.id)
         },
         onSuccess: () => {
             hapticFeedback.success()
             queryClient.invalidateQueries({ queryKey: ['adminPrompts'] })
+            queryClient.invalidateQueries({ queryKey: ['pendingPromptsCount'] })
             setSelectedPrompt(null)
-            setShowRejectForm(false)
-            setRejectionReason('')
         }
     })
 
@@ -59,7 +57,7 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
     }
 
     const handleReject = (promptId: number) => {
-        rejectMutation.mutate({ promptId, reason: rejectionReason || undefined })
+        rejectMutation.mutate(promptId)
     }
 
     const getAuthorName = (prompt: CommunityPrompt) => {
@@ -91,12 +89,10 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
                 {/* Header */}
                 <div className="p-4 border-b border-border bg-cyan-500/10">
                     <div className="flex justify-between items-center">
-                        <button onClick={onClose} className="text-gray-400 hover:text-white">
-                            <ChevronLeft size={24} />
-                        </button>
+                        <div /> {/* Spacer */}
                         <h2 className="text-lg font-bold flex items-center gap-2 text-cyan-400">
                             <Sparkles size={20} />
-                            Модерация промптов
+                            Модерация
                             {pendingCount > 0 && (
                                 <span className="bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full">
                                     {pendingCount}
@@ -189,10 +185,7 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
                                                             OK
                                                         </button>
                                                         <button
-                                                            onClick={() => {
-                                                                setSelectedPrompt(prompt)
-                                                                setShowRejectForm(true)
-                                                            }}
+                                                            onClick={() => handleReject(prompt.id)}
                                                             disabled={rejectMutation.isPending}
                                                             className="flex items-center gap-1 px-2 py-1 bg-red-500/20 rounded text-xs text-red-400 hover:bg-red-500/30"
                                                         >
@@ -218,7 +211,7 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
 
             {/* Detail/Preview Modal */}
             <AnimatePresence>
-                {selectedPrompt && !showRejectForm && (
+                {selectedPrompt && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -262,11 +255,15 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
                                             Одобрить
                                         </button>
                                         <button
-                                            onClick={() => setShowRejectForm(true)}
+                                            onClick={() => handleReject(selectedPrompt.id)}
                                             disabled={rejectMutation.isPending}
                                             className="flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
                                         >
-                                            <XCircle size={18} />
+                                            {rejectMutation.isPending ? (
+                                                <Loader2 size={18} className="animate-spin" />
+                                            ) : (
+                                                <XCircle size={18} />
+                                            )}
                                             Отклонить
                                         </button>
                                     </div>
@@ -280,61 +277,6 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
                                         Закрыть
                                     </button>
                                 )}
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Reject Form Modal */}
-            <AnimatePresence>
-                {showRejectForm && selectedPrompt && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/90"
-                        onClick={() => {
-                            setShowRejectForm(false)
-                            setRejectionReason('')
-                        }}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0.9 }}
-                            className="bg-bg-card max-w-sm w-full rounded-2xl p-4"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h3 className="text-lg font-bold mb-4 text-red-400">Отклонить промпт</h3>
-                            <textarea
-                                value={rejectionReason}
-                                onChange={(e) => setRejectionReason(e.target.value)}
-                                placeholder="Причина отклонения (опционально)"
-                                rows={3}
-                                className="w-full px-4 py-3 bg-bg rounded-xl border border-border focus:border-red-500 focus:outline-none text-white placeholder-gray-500 resize-none mb-4"
-                            />
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => {
-                                        setShowRejectForm(false)
-                                        setRejectionReason('')
-                                    }}
-                                    className="flex-1 py-3 bg-gray-700 text-white rounded-xl font-semibold"
-                                >
-                                    Отмена
-                                </button>
-                                <button
-                                    onClick={() => handleReject(selectedPrompt.id)}
-                                    disabled={rejectMutation.isPending}
-                                    className="flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
-                                >
-                                    {rejectMutation.isPending ? (
-                                        <Loader2 size={18} className="animate-spin" />
-                                    ) : (
-                                        'Отклонить'
-                                    )}
-                                </button>
                             </div>
                         </motion.div>
                     </motion.div>

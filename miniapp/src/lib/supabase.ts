@@ -4991,6 +4991,24 @@ export async function submitPrompt(userId: number, promptText: string, imageUrl:
     return null
   }
 
+  // Notify core team about new prompt for moderation
+  try {
+    const coreTeam = await getCoreTeamUsers()
+    for (const member of coreTeam) {
+      if (member.id !== userId) {
+        await createNotification(
+          member.id,
+          'system',
+          'Новый промпт на модерации',
+          'Поступил новый AI промпт для проверки',
+          { type: 'prompt_moderation', prompt_id: data.id }
+        )
+      }
+    }
+  } catch (err) {
+    console.error('[submitPrompt] Failed to notify core team:', err)
+  }
+
   return data
 }
 
@@ -5103,16 +5121,14 @@ export async function getPendingPrompts(): Promise<CommunityPrompt[]> {
 export async function moderatePrompt(
   promptId: number,
   status: 'approved' | 'rejected',
-  moderatorId: number,
-  rejectionReason?: string
+  moderatorId: number
 ): Promise<boolean> {
   const { error } = await getSupabase()
     .from('community_prompts')
     .update({
       status,
       moderated_by: moderatorId,
-      moderated_at: new Date().toISOString(),
-      rejection_reason: status === 'rejected' ? rejectionReason : null
+      moderated_at: new Date().toISOString()
     })
     .eq('id', promptId)
 
