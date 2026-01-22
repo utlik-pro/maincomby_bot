@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { ArrowLeft, Shield, FileText, Mail } from 'lucide-react'
-import { hapticFeedback, openTelegramLink } from '@/lib/telegram'
+import { hapticFeedback, openTelegramLink, backButton } from '@/lib/telegram'
 import { Card } from '@/components/ui'
 
 type LegalType = 'privacy' | 'terms'
@@ -261,10 +261,22 @@ const LEGAL_CONTENT: Record<LegalType, { title: string; icon: React.ReactNode; c
 export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
   const { title, icon, content } = LEGAL_CONTENT[type]
 
+  // Handle Telegram BackButton
+  useEffect(() => {
+    backButton.show(() => {
+      hapticFeedback.light()
+      onClose()
+    })
+
+    return () => {
+      backButton.hide()
+    }
+  }, [onClose])
+
   return (
-    <div className="pb-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-bg-card">
+    <div className="min-h-screen bg-bg overflow-y-auto">
+      {/* Header - fixed */}
+      <div className="sticky top-0 z-10 bg-bg flex items-center gap-3 p-4 border-b border-bg-card">
         <button
           onClick={() => {
             hapticFeedback.light()
@@ -280,8 +292,8 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 pt-4">
+      {/* Content - scrollable */}
+      <div className="px-4 py-4 pb-8">
         <Card className="bg-bg-card/50">
           {content}
         </Card>
