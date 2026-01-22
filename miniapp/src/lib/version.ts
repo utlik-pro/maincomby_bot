@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.11'
+export const APP_VERSION = '1.1.12'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 15
+export const CURRENT_APP_VERSION = 16
 
 export interface ReleaseHighlight {
   title: string
@@ -29,23 +29,23 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.11',
-  date: '2026-01-21',
-  summary: 'Исправления и улучшения v1.1.11',
+  version: '1.1.12',
+  date: '2026-01-22',
+  summary: 'Исправления и улучшения v1.1.12',
   highlights: [
-    { title: 'add engagement notificati...', description: 'Подробнее в changelog' },
-    { title: 'add engagement notificati...', description: 'Подробнее в changelog' },
-    { title: 'add glowing animation to ...', description: 'Подробнее в changelog' },
+    { title: 'add ticket deep link supp...', description: 'Подробнее в changelog' },
+    { title: 'add prompts promo sheet a...', description: 'Подробнее в changelog' },
+    { title: 'improve prompt submission...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'add engagement notification analytics dashboard',
-    'add engagement notification system for user retention',
-    'add glowing animation to Network and Learning icons',
+    'add ticket deep link support for direct QR code access',
+    'add prompts promo sheet and fix detail modal layout',
+    'improve prompt submission with file upload and push notifications',
   ],
   fixes: [
-    'remove duplicate networking banner with English text',
-    'change Networking card icon from heart to flame',
-    'filter out matched users from Likes tab',
+    'move ticket deep link handler after registrations query',
+    'event reminders timezone + escapeMarkdown for notifications',
+    'improve prompts gallery layout and submit button visibility',
   ],
 }
 

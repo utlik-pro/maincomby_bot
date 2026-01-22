@@ -5,6 +5,75 @@
   "repository": "https://github.com/maincomby/maincomby_bot",
   "releases": [
     {
+      "version": "1.1.12",
+      "date": "2026-01-22",
+      "tag": "v1.1.12",
+      "type": "patch",
+      "summary": "\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f v1.1.12",
+      "highlights": [
+        "add ticket deep link support for direct QR code ac...",
+        "add prompts promo sheet and fix detail modal layou...",
+        "improve prompt submission with file upload and pus...",
+        "improve prompts gallery UX and moderation workflow",
+        "add community AI prompts gallery with moderation s..."
+      ],
+      "features": [
+        {
+          "description": "add ticket deep link support for direct QR code access",
+          "scope": "all"
+        },
+        {
+          "description": "add prompts promo sheet and fix detail modal layout",
+          "scope": "all"
+        },
+        {
+          "description": "improve prompt submission with file upload and push notifications",
+          "scope": "all"
+        },
+        {
+          "description": "improve prompts gallery UX and moderation workflow",
+          "scope": "all"
+        },
+        {
+          "description": "add community AI prompts gallery with moderation system",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "move ticket deep link handler after registrations query",
+          "scope": "all"
+        },
+        {
+          "description": "event reminders timezone + escapeMarkdown for notifications",
+          "scope": "all"
+        },
+        {
+          "description": "improve prompts gallery layout and submit button visibility",
+          "scope": "all"
+        },
+        {
+          "description": "show full author name with username in prompts",
+          "scope": "all"
+        },
+        {
+          "description": "enable scrolling in prompt submit screen",
+          "scope": "all"
+        }
+      ],
+      "improvements": [
+        {
+          "description": "position Share button on image bottom-right corner",
+          "scope": "all"
+        },
+        {
+          "description": "move Share button under image in PromptDetailModal",
+          "scope": "all"
+        }
+      ],
+      "breaking": []
+    },
+    {
       "version": "1.1.11",
       "date": "2026-01-21",
       "tag": "v1.1.11",

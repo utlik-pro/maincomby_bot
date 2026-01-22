@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.12] - 2026-01-22
+
+[0;34mGenerating changelog from v1.1.11 to HEAD[0m
+### Added
+- add ticket deep link support for direct QR code access
+- add prompts promo sheet and fix detail modal layout
+- improve prompt submission with file upload and push notifications
+- improve prompts gallery UX and moderation workflow
+- add community AI prompts gallery with moderation system
+
+### Fixed
+- move ticket deep link handler after registrations query
+- event reminders timezone + escapeMarkdown for notifications
+- improve prompts gallery layout and submit button visibility
+- show full author name with username in prompts
+- enable scrolling in prompt submit screen
+
+### Changed
+- position Share button on image bottom-right corner
+- move Share button under image in PromptDetailModal
 ## [1.1.11] - 2026-01-21
 
 [0;34mGenerating changelog from v1.1.10 to HEAD[0m
