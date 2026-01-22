@@ -108,7 +108,10 @@ const LEGAL_CONTENT: Record<LegalType, { title: string; icon: React.ReactNode; c
             По вопросам обработки персональных данных обращайтесь:
           </p>
           <p className="text-gray-400 text-sm mt-2">
-            <b className="text-white">Telegram:</b> @yana_martynen
+            <b className="text-white">Контактное лицо:</b> Дмитрий Утлик
+          </p>
+          <p className="text-gray-400 text-sm mt-1">
+            <b className="text-white">Telegram:</b> @dmitryutlik
           </p>
           <p className="text-gray-400 text-sm mt-1">
             <b className="text-white">Срок ответа:</b> 15 рабочих дней
@@ -238,7 +241,10 @@ const LEGAL_CONTENT: Record<LegalType, { title: string; icon: React.ReactNode; c
             По вопросам использования сервиса обращайтесь:
           </p>
           <p className="text-gray-400 text-sm mt-2">
-            <b className="text-white">Telegram:</b> @yana_martynen
+            <b className="text-white">Контактное лицо:</b> Дмитрий Утлик
+          </p>
+          <p className="text-gray-400 text-sm mt-1">
+            <b className="text-white">Telegram:</b> @dmitryutlik
           </p>
         </section>
 
@@ -283,7 +289,7 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
         {/* Support button */}
         <button
           className="w-full text-center text-gray-500 py-4 flex items-center justify-center gap-2 text-sm mt-4"
-          onClick={() => openTelegramLink('https://t.me/yana_martynen')}
+          onClick={() => openTelegramLink('https://t.me/dmitryutlik')}
         >
           <Mail size={14} />
           Связаться с поддержкой

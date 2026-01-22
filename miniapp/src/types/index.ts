@@ -224,6 +224,10 @@ export interface User {
   warns: number
   banned: boolean
   bot_started: boolean // User pressed /start, can receive notifications
+  // Policies consent
+  policies_accepted: boolean
+  policies_accepted_at: string | null
+  policies_version: number
   source: string | null
   // Invite system
   invites_remaining: number

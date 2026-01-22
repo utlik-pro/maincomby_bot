@@ -6,6 +6,9 @@ import { CURRENT_APP_VERSION } from '@/lib/version'
 // Onboarding version - increment this to show onboarding to all users again
 export const CURRENT_ONBOARDING_VERSION = 3
 
+// Policies version - increment this to require consent again when policies change
+export const CURRENT_POLICIES_VERSION = 1
+
 // Calculate rank from XP
 export function calculateRank(xp: number): UserRank {
   if (xp >= RANK_THRESHOLDS.founder) return 'founder'

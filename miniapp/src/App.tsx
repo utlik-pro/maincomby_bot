@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
-import { useAppStore, useToastStore, calculateRank } from '@/lib/store'
+import { useAppStore, useToastStore, calculateRank, CURRENT_POLICIES_VERSION } from '@/lib/store'
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp, validateInitData, getInitData } from '@/lib/telegram'
 import { isPreviewMode } from '@/lib/tenant'
@@ -32,6 +32,7 @@ const NetworkingPromoSheet = React.lazy(() => import('@/components/NetworkingPro
 const PromptsPromoSheet = React.lazy(() => import('@/components/PromptsPromoSheet').then(m => ({ default: m.PromptsPromoSheet })))
 const PromptsGalleryScreen = React.lazy(() => import('@/screens/PromptsGalleryScreen'))
 const BotStartBanner = React.lazy(() => import('@/components/BotStartBanner').then(m => ({ default: m.BotStartBanner })))
+const PolicyConsentScreen = React.lazy(() => import('@/screens/PolicyConsentScreen').then(m => ({ default: m.PolicyConsentScreen })))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -312,6 +313,9 @@ const App: React.FC = () => {
             warns: 0,
             banned: false,
             bot_started: true,
+            policies_accepted: true,
+            policies_accepted_at: new Date().toISOString(),
+            policies_version: 1,
             source: 'miniapp',
             subscription_tier: 'pro' as const,
             subscription_expires_at: '2025-12-31T23:59:59Z',
@@ -1033,6 +1037,25 @@ const App: React.FC = () => {
       <div className="bg-bg min-h-screen text-white max-w-lg mx-auto">
         <React.Suspense fallback={<LoadingScreen />}>
           <OnboardingScreen />
+        </React.Suspense>
+      </div>
+    )
+  }
+
+  // Show policy consent if user hasn't accepted or has old version
+  const needsPolicyConsent = user && (
+    !user.policies_accepted ||
+    (user.policies_version ?? 0) < CURRENT_POLICIES_VERSION
+  )
+
+  if (needsPolicyConsent) {
+    return (
+      <div className="bg-bg min-h-screen text-white max-w-lg mx-auto">
+        <React.Suspense fallback={<LoadingScreen />}>
+          <PolicyConsentScreen onAccepted={() => {
+            // User state is already updated in the component
+            // This callback is just to trigger a re-render
+          }} />
         </React.Suspense>
       </div>
     )

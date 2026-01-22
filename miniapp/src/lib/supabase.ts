@@ -124,6 +124,20 @@ export async function updateProfileVisibility(userId: number, isVisible: boolean
   return data
 }
 
+// Accept policies consent
+export async function acceptPolicies(userId: number, version: number): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('bot_users')
+    .update({
+      policies_accepted: true,
+      policies_accepted_at: new Date().toISOString(),
+      policies_version: version
+    })
+    .eq('id', userId)
+
+  return !error
+}
+
 export async function createProfile(userId: number, profileData: {
   bio?: string | null
   occupation?: string | null
