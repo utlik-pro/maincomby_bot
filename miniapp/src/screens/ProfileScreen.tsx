@@ -68,6 +68,7 @@ import NotificationsScreen from './NotificationsScreen'
 import WebLoginScreen from './WebLoginScreen'
 import { ChangelogSheet } from '@/components/ChangelogSheet'
 import { ProfilePreviewCard } from '@/components/ProfilePreviewCard'
+import { LegalScreen } from './LegalScreen'
 
 // Icon mapping for ranks
 const RANK_ICONS: Record<UserRank, React.ReactNode> = {
@@ -187,6 +188,8 @@ const ProfileScreen: React.FC = () => {
   const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [showNetworkingGuide, setShowNetworkingGuide] = useState(false)
   const [showChangelog, setShowChangelog] = useState(false)
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
+  const [showTermsOfService, setShowTermsOfService] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
@@ -205,6 +208,8 @@ const ProfileScreen: React.FC = () => {
     showSkinAdmin ? 'skinAdmin' :
     showAdminPanel ? 'admin' :
     showNetworkingGuide ? 'guide' :
+    showPrivacyPolicy ? 'privacy' :
+    showTermsOfService ? 'terms' :
     showDebug ? 'debug' :
     isEditing ? 'editing' : null
 
@@ -218,9 +223,11 @@ const ProfileScreen: React.FC = () => {
     else if (showSkinAdmin) setShowSkinAdmin(false)
     else if (showAdminPanel) setShowAdminPanel(false)
     else if (showNetworkingGuide) setShowNetworkingGuide(false)
+    else if (showPrivacyPolicy) setShowPrivacyPolicy(false)
+    else if (showTermsOfService) setShowTermsOfService(false)
     else if (showDebug) setShowDebug(false)
     else if (isEditing) setIsEditing(false)
-  }, [showNotifications, showTeamSection, showSettings, showWebLogin, showSkinSelector, showSkinAdmin, showAdminPanel, showNetworkingGuide, showDebug, isEditing])
+  }, [showNotifications, showTeamSection, showSettings, showWebLogin, showSkinSelector, showSkinAdmin, showAdminPanel, showNetworkingGuide, showPrivacyPolicy, showTermsOfService, showDebug, isEditing])
 
   useEffect(() => {
     if (activeSubScreen) {
@@ -686,6 +693,16 @@ const ProfileScreen: React.FC = () => {
     return <NetworkingGuide onClose={() => setShowNetworkingGuide(false)} />
   }
 
+  // Privacy Policy
+  if (showPrivacyPolicy) {
+    return <LegalScreen type="privacy" onClose={() => setShowPrivacyPolicy(false)} />
+  }
+
+  // Terms of Service
+  if (showTermsOfService) {
+    return <LegalScreen type="terms" onClose={() => setShowTermsOfService(false)} />
+  }
+
   if (showAdminPanel) {
     return <AdminSettingsPanel onClose={() => setShowAdminPanel(false)} />
   }
@@ -903,6 +920,28 @@ const ProfileScreen: React.FC = () => {
               <div className="flex justify-between">
                 <span>Telegram версия</span>
                 <span>{window.Telegram?.WebApp?.version || 'N/A'}</span>
+              </div>
+              <div className="border-t border-bg pt-2 mt-2 space-y-2">
+                <button
+                  onClick={() => {
+                    hapticFeedback.light()
+                    setShowPrivacyPolicy(true)
+                  }}
+                  className="flex justify-between items-center w-full hover:text-white transition-colors"
+                >
+                  <span>Политика конфиденциальности</span>
+                  <ChevronRight size={14} />
+                </button>
+                <button
+                  onClick={() => {
+                    hapticFeedback.light()
+                    setShowTermsOfService(true)
+                  }}
+                  className="flex justify-between items-center w-full hover:text-white transition-colors"
+                >
+                  <span>Пользовательское соглашение</span>
+                  <ChevronRight size={14} />
+                </button>
               </div>
             </div>
           </Card>
@@ -1373,7 +1412,7 @@ const ProfileScreen: React.FC = () => {
           className="text-center text-gray-600 text-xs mt-2 cursor-pointer select-none"
           onClick={handleDebugTap}
         >
-          v1.0.0
+          v{APP_VERSION}
         </p>
       </div>
 
