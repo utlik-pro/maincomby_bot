@@ -505,6 +505,102 @@ class NotificationService:
             logger.error(f"Failed to send 'starting soon' reminders batch: {e}")
             return 0
 
+    async def send_ticket_reminder(self, user_id: int, event: Event) -> bool:
+        """Send ticket reminder at 18:30 on event day"""
+        try:
+            event_time = event.event_date.strftime("%H:%M")
+            text = (
+                f"🎫 <b>Не забудьте про билет!</b>\n\n"
+                f"Сегодня в {event_time} состоится:\n"
+                f"<b>{event.title}</b>\n\n"
+                f"📍 {event.location}\n\n"
+                f"Откройте билет заранее — покажите QR-код на входе!"
+            )
+
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="🎟 Открыть билет",
+                    url=f"https://t.me/maincomapp_bot?startapp=ticket_{event.id}"
+                )]
+            ])
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode="HTML",
+                reply_markup=keyboard
+            )
+            logger.info(f"Sent ticket reminder to user {user_id} for event {event.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send ticket reminder to {user_id}: {e}")
+            return False
+
+    async def send_ticket_reminders_batch(self, session: AsyncSession) -> int:
+        """Send ticket reminders for events happening today (called at 18:30 Minsk time)"""
+        try:
+            # event_date stored in Minsk time (UTC+3), no timezone
+            minsk_offset = timedelta(hours=3)
+            now_utc = datetime.utcnow()
+            now_minsk = now_utc + minsk_offset
+
+            # Find events happening today (Minsk time)
+            today_start = now_minsk.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = now_minsk.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+            logger.info(f"Checking ticket reminders: now_minsk={now_minsk}, window={today_start} - {today_end}")
+
+            # Get events happening today that haven't started yet
+            events_query = select(Event).where(
+                and_(
+                    Event.event_date >= today_start,
+                    Event.event_date <= today_end,
+                    Event.event_date > now_minsk,  # Event hasn't started yet
+                    Event.is_active == True
+                )
+            )
+            events_result = await session.execute(events_query)
+            events = events_result.scalars().all()
+
+            logger.info(f"Found {len(events)} events today for ticket reminders")
+
+            sent_count = 0
+            for event in events:
+                # Get registered users who haven't received ticket reminder yet
+                regs_query = select(EventRegistration).where(
+                    and_(
+                        EventRegistration.event_id == event.id,
+                        EventRegistration.status == 'registered',
+                        EventRegistration.ticket_reminder_sent == False
+                    )
+                )
+                regs_result = await session.execute(regs_query)
+                registrations = regs_result.scalars().all()
+
+                logger.info(f"Event {event.id} '{event.title}': {len(registrations)} users need ticket reminder")
+
+                for reg in registrations:
+                    # Get user's telegram ID
+                    user_query = select(User).where(User.id == reg.user_id)
+                    user_result = await session.execute(user_query)
+                    user = user_result.scalar_one_or_none()
+
+                    if user and user.tg_user_id:
+                        success = await self.send_ticket_reminder(user.tg_user_id, event)
+                        if success:
+                            # Mark ticket reminder as sent
+                            reg.ticket_reminder_sent = True
+                            reg.ticket_reminder_sent_at = datetime.utcnow()
+                            await session.commit()
+                            sent_count += 1
+                            logger.info(f"Sent ticket reminder to user {user.tg_user_id} for event {event.id}")
+
+            logger.info(f"Sent {sent_count} ticket reminders")
+            return sent_count
+        except Exception as e:
+            logger.error(f"Failed to send ticket reminders batch: {e}")
+            return 0
+
     async def send_review_request(self, user_id: int, event: Event) -> bool:
         """Send request to leave a review after attending an event"""
         try:

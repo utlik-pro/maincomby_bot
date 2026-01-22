@@ -52,6 +52,19 @@ async def send_review_requests_job():
         logger.error(f"Review requests job failed: {e}")
 
 
+async def send_ticket_reminders_job():
+    """Job to send ticket reminders at 18:30 on event day"""
+    try:
+        from app.services.notifications import get_notification_service
+        service = get_notification_service()
+        if service:
+            async with async_session_maker() as session:
+                count = await service.send_ticket_reminders_batch(session)
+                logger.info(f"Ticket reminders job completed: {count} sent")
+    except Exception as e:
+        logger.error(f"Ticket reminders job failed: {e}")
+
+
 # === ENGAGEMENT NOTIFICATION JOBS ===
 
 async def send_engagement_profile_job():
@@ -138,6 +151,17 @@ def setup_scheduled_jobs(scheduler: AsyncIOScheduler):
         replace_existing=True
     )
 
+    # Send ticket reminders at 18:30 Minsk time on event day
+    scheduler.add_job(
+        send_ticket_reminders_job,
+        'cron',
+        hour=18,
+        minute=30,
+        timezone='Europe/Minsk',
+        id='ticket_reminders',
+        replace_existing=True
+    )
+
     # === ENGAGEMENT NOTIFICATION JOBS ===
 
     # Profile completion + networking invites at 12:00 daily
@@ -179,6 +203,6 @@ def setup_scheduled_jobs(scheduler: AsyncIOScheduler):
         replace_existing=True
     )
 
-    logger.info("Scheduled jobs configured: event_reminders (hourly), event_starting_soon (every 15 min), review_requests (22:30 daily), engagement_profile (12:00), engagement_swipes (12:05), engagement_inactive (19:00), engagement_likes (8/12/16/20:10)")
+    logger.info("Scheduled jobs configured: event_reminders (hourly), event_starting_soon (every 15 min), review_requests (22:30 daily), ticket_reminders (18:30 Minsk), engagement_profile (12:00), engagement_swipes (12:05), engagement_inactive (19:00), engagement_likes (8/12/16/20:10)")
 
 

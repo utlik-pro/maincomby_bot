@@ -184,6 +184,10 @@ class EventRegistration(Base):
     reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # Отправлено ли напоминание
     reminder_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Когда отправлено напоминание
 
+    # Tracking ticket reminders (sent at 18:30 on event day)
+    ticket_reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # Отправлено ли напоминание о билете
+    ticket_reminder_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Когда отправлено
+
     event: Mapped[Event] = relationship(back_populates="registrations")
     user: Mapped[User] = relationship(back_populates="registrations")
 
