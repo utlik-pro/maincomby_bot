@@ -223,6 +223,7 @@ export interface User {
   points: number
   warns: number
   banned: boolean
+  bot_started: boolean // User pressed /start, can receive notifications
   source: string | null
   // Invite system
   invites_remaining: number

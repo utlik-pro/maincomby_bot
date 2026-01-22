@@ -31,6 +31,7 @@ const ProGiftModal = React.lazy(() => import('@/components/ProGiftModal').then(m
 const NetworkingPromoSheet = React.lazy(() => import('@/components/NetworkingPromoSheet').then(m => ({ default: m.NetworkingPromoSheet })))
 const PromptsPromoSheet = React.lazy(() => import('@/components/PromptsPromoSheet').then(m => ({ default: m.PromptsPromoSheet })))
 const PromptsGalleryScreen = React.lazy(() => import('@/screens/PromptsGalleryScreen'))
+const BotStartBanner = React.lazy(() => import('@/components/BotStartBanner').then(m => ({ default: m.BotStartBanner })))
 
 // Loading screen
 const LoadingScreen: React.FC = () => (
@@ -114,6 +115,9 @@ const App: React.FC = () => {
 
   // Prompts promo state
   const [showPromptsPromo, setShowPromptsPromo] = useState(false)
+
+  // Bot start banner state (notifications enablement)
+  const [showBotStartBanner, setShowBotStartBanner] = useState(false)
 
   // Check if should show What's New after loading
   useEffect(() => {
@@ -205,6 +209,22 @@ const App: React.FC = () => {
     return () => clearTimeout(timeoutId)
   }, [user?.id, isLoading, showChangelog, showReviewPrompt, showProGiftModal, showNetworkingPromo])
 
+  // Check if should show bot start banner (notifications enablement)
+  useEffect(() => {
+    if (!user || isLoading) return
+
+    // Show banner if user hasn't started the bot
+    if (user.bot_started === false) {
+      // Check if dismissed this session
+      const dismissedThisSession = sessionStorage.getItem('botStartBannerDismissed')
+      if (!dismissedThisSession) {
+        setShowBotStartBanner(true)
+      }
+    } else {
+      setShowBotStartBanner(false)
+    }
+  }, [user, isLoading])
+
   // Global user data refresh - sync team_role and other critical fields
   const { data: freshUserData } = useQuery({
     queryKey: ['globalUserRefresh', user?.id],
@@ -291,6 +311,7 @@ const App: React.FC = () => {
             points: 25000,
             warns: 0,
             banned: false,
+            bot_started: true,
             source: 'miniapp',
             subscription_tier: 'pro' as const,
             subscription_expires_at: '2025-12-31T23:59:59Z',
@@ -1055,6 +1076,26 @@ const App: React.FC = () => {
           } ${!hideNavigation && !isFixedScreen ? 'pb-[90px]' : ''
           } ${isFixedScreen ? 'overflow-hidden' : 'overflow-y-auto overscroll-contain'}`}
       >
+        {/* Bot Start Banner (notifications enablement) - inside scroll area */}
+        {showBotStartBanner && (
+          <React.Suspense fallback={null}>
+            <BotStartBanner
+              isVisible={showBotStartBanner}
+              onDismiss={() => {
+                setShowBotStartBanner(false)
+                sessionStorage.setItem('botStartBannerDismissed', 'true')
+              }}
+              onEnableNotifications={() => {
+                // Open Telegram chat with the bot
+                const tg = getTelegramWebApp()
+                if (tg) {
+                  tg.openTelegramLink('https://t.me/maincomapp_bot')
+                }
+              }}
+            />
+          </React.Suspense>
+        )}
+
         <React.Suspense fallback={<LoadingScreen />}>
           {renderScreen()}
         </React.Suspense>

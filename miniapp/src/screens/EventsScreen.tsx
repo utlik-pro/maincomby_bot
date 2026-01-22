@@ -28,7 +28,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton, shareUrl } from '@/lib/telegram'
+import { hapticFeedback, requestContact, showQrScanner, isQrScannerSupported, backButton, shareUrl, getTelegramWebApp } from '@/lib/telegram'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PhoneDialog } from '@/components/PhoneDialog'
 import { StarRating } from '@/components/StarRating'
@@ -744,6 +744,10 @@ const EventsScreen: React.FC = () => {
     show: false,
     eventId: null,
   })
+  const [botStartDialog, setBotStartDialog] = useState<{ show: boolean; eventId: number | null }>({
+    show: false,
+    eventId: null,
+  })
 
   // Handle Telegram BackButton
   useEffect(() => {
@@ -1053,8 +1057,15 @@ const EventsScreen: React.FC = () => {
     setCancelConfirm({ show: false, registrationId: null })
   }
 
-  // Handle registration - check phone first
+  // Handle registration - check bot_started and phone first
   const handleRegister = (eventId: number) => {
+    // First check if user has started the bot (can receive notifications)
+    if (user?.bot_started === false) {
+      // Show bot start dialog
+      setBotStartDialog({ show: true, eventId })
+      return
+    }
+
     if (!user?.phone_number) {
       // Show phone dialog
       setPhoneDialog({ show: true, eventId })
@@ -1181,6 +1192,22 @@ const EventsScreen: React.FC = () => {
           onSubmit={handlePhoneManual}
           onCancel={() => setPhoneDialog({ show: false, eventId: null })}
           onUseTelegram={handlePhoneFromTelegram}
+        />
+        {/* Bot Start Dialog - enable notifications */}
+        <ConfirmDialog
+          isOpen={botStartDialog.show}
+          title="Включите уведомления"
+          message="Чтобы получить билет и напоминания о событии, напишите /start боту. После этого вернитесь и зарегистрируйтесь."
+          confirmText="Открыть бота"
+          cancelText="Позже"
+          onConfirm={() => {
+            const tg = getTelegramWebApp()
+            if (tg) {
+              tg.openTelegramLink('https://t.me/maincomapp_bot')
+            }
+            setBotStartDialog({ show: false, eventId: null })
+          }}
+          onCancel={() => setBotStartDialog({ show: false, eventId: null })}
         />
         <EventDetail
           event={selectedEvent}

@@ -24,6 +24,7 @@ class User(Base):
     points: Mapped[int] = mapped_column(Integer, default=0)
     warns: Mapped[int] = mapped_column(Integer, default=0)
     banned: Mapped[bool] = mapped_column(Boolean, default=False)
+    bot_started: Mapped[bool] = mapped_column(Boolean, default=False)  # User pressed /start, can receive notifications
 
     # Отслеживание источников
     source: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)  # Откуда пришел (telegram, instagram, website)

@@ -259,6 +259,12 @@ async def cmd_start_handler(message: Message, command: CommandObject, bot: Bot, 
             referrer=referrer,
         )
 
+        # Mark that user has started the bot (can receive notifications)
+        if not user.bot_started:
+            user.bot_started = True
+            await session.commit()
+            logger.info(f"User {user.tg_user_id} marked as bot_started=True")
+
         # Загружаем настройки для получения webapp_url
         settings = load_settings()
 
