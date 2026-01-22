@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { Shield, FileText, Mail } from 'lucide-react'
-import { hapticFeedback, backButton, disableVerticalSwipes, enableVerticalSwipes, requestFullscreen } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import { Card } from '@/components/ui'
 
 type LegalType = 'privacy' | 'terms'
@@ -255,14 +255,8 @@ const LEGAL_CONTENT: Record<LegalType, { title: string; icon: React.ReactNode; c
 export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
   const { title, icon, content } = LEGAL_CONTENT[type]
 
-  // Handle Telegram BackButton, fullscreen, and disable swipes
+  // Handle Telegram BackButton
   useEffect(() => {
-    // Enter fullscreen to hide Telegram header (X, menu buttons)
-    requestFullscreen()
-
-    // Disable vertical swipes as backup
-    disableVerticalSwipes()
-
     backButton.show(() => {
       hapticFeedback.light()
       onClose()
@@ -270,8 +264,6 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
 
     return () => {
       backButton.hide()
-      enableVerticalSwipes()
-      // Don't exit fullscreen - keep fullscreen mode for entire app
     }
   }, [onClose])
 

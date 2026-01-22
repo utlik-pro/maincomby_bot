@@ -191,6 +191,9 @@ export const initTelegramApp = () => {
     // Request fullscreen to hide Telegram header (v8.0+ only)
     requestFullscreen()
 
+    // Disable vertical swipes to prevent closing app by swipe (v7.7+ only)
+    disableVerticalSwipes()
+
     // Set theme colors
     document.documentElement.style.setProperty('--tg-theme-bg-color', webApp.themeParams.bg_color || '#0a0a0a')
     document.documentElement.style.setProperty('--tg-theme-text-color', webApp.themeParams.text_color || '#ffffff')
