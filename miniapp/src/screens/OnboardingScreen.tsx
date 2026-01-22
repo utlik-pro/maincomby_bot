@@ -76,10 +76,10 @@ const OnboardingScreen: React.FC = () => {
   const slide = slides[currentSlide]
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg">
-      {/* Skip button */}
+    <div className="min-h-screen flex flex-col bg-bg" style={{ overscrollBehavior: 'none' }}>
+      {/* Skip button - positioned below Telegram header */}
       {!isLastSlide && (
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-[100px] right-4 z-10">
           <button
             onClick={handleSkip}
             className="text-gray-500 text-sm px-3 py-1"

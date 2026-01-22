@@ -85,7 +85,7 @@ const AccessGateScreen: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-6 text-center" style={{ overscrollBehavior: 'none' }}>
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

@@ -51,6 +51,17 @@ body {
   overscroll-behavior: none;
 }
 
+/* Prevent overscroll/pull-to-refresh on ALL scrollable elements (Tailwind classes) */
+.overflow-y-auto,
+.overflow-y-scroll,
+.overflow-auto,
+.overflow-scroll,
+[class*="overflow-y-auto"],
+[class*="overflow-auto"] {
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Main scrollable content area */
 .screen-scroll {
   height: calc(100dvh - 80px); /* viewport minus navigation */

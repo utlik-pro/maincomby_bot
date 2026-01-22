@@ -124,7 +124,7 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onClose }) =>
       </div>
 
       {/* Content */}
-      <div className="h-[calc(100vh-60px)] overflow-y-auto p-4">
+      <div className="h-[calc(100dvh-60px)] overflow-y-auto p-4">
         {isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-20" />
