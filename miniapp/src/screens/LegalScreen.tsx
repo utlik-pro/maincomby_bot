@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { ArrowLeft, Shield, FileText, Mail } from 'lucide-react'
-import { hapticFeedback, openTelegramLink, backButton } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import { Card } from '@/components/ui'
 
 type LegalType = 'privacy' | 'terms'
@@ -108,10 +108,7 @@ const LEGAL_CONTENT: Record<LegalType, { title: string; icon: React.ReactNode; c
             По вопросам обработки персональных данных обращайтесь:
           </p>
           <p className="text-gray-400 text-sm mt-2">
-            <b className="text-white">Контактное лицо:</b> Дмитрий Утлик
-          </p>
-          <p className="text-gray-400 text-sm mt-1">
-            <b className="text-white">Telegram:</b> @dmitryutlik
+            <b className="text-white">Email:</b> reflecta.by@gmail.com
           </p>
           <p className="text-gray-400 text-sm mt-1">
             <b className="text-white">Срок ответа:</b> 15 рабочих дней
@@ -241,10 +238,7 @@ const LEGAL_CONTENT: Record<LegalType, { title: string; icon: React.ReactNode; c
             По вопросам использования сервиса обращайтесь:
           </p>
           <p className="text-gray-400 text-sm mt-2">
-            <b className="text-white">Контактное лицо:</b> Дмитрий Утлик
-          </p>
-          <p className="text-gray-400 text-sm mt-1">
-            <b className="text-white">Telegram:</b> @dmitryutlik
+            <b className="text-white">Email:</b> reflecta.by@gmail.com
           </p>
         </section>
 
@@ -300,13 +294,13 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
           </Card>
 
           {/* Support button */}
-          <button
+          <a
+            href="mailto:reflecta.by@gmail.com"
             className="w-full text-center text-gray-500 py-4 flex items-center justify-center gap-2 text-sm mt-4"
-            onClick={() => openTelegramLink('https://t.me/dmitryutlik')}
           >
             <Mail size={14} />
             Связаться с поддержкой
-          </button>
+          </a>
         </div>
       </div>
     </div>
