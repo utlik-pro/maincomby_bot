@@ -99,6 +99,21 @@ export const backButton = {
   },
 }
 
+// Vertical swipes control (prevent app closing by swipe)
+export const disableVerticalSwipes = () => {
+  const webApp = getTelegramWebApp()
+  if (webApp && typeof webApp.disableVerticalSwipes === 'function') {
+    webApp.disableVerticalSwipes()
+  }
+}
+
+export const enableVerticalSwipes = () => {
+  const webApp = getTelegramWebApp()
+  if (webApp && typeof webApp.enableVerticalSwipes === 'function') {
+    webApp.enableVerticalSwipes()
+  }
+}
+
 // React hook for BackButton
 export function useBackButton(onBack: () => void, enabled: boolean = true) {
   useEffect(() => {

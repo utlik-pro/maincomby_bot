@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { Shield, FileText, Mail } from 'lucide-react'
-import { hapticFeedback, backButton } from '@/lib/telegram'
+import { hapticFeedback, backButton, disableVerticalSwipes, enableVerticalSwipes } from '@/lib/telegram'
 import { Card } from '@/components/ui'
 
 type LegalType = 'privacy' | 'terms'
@@ -255,8 +255,11 @@ const LEGAL_CONTENT: Record<LegalType, { title: string; icon: React.ReactNode; c
 export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
   const { title, icon, content } = LEGAL_CONTENT[type]
 
-  // Handle Telegram BackButton
+  // Handle Telegram BackButton and disable swipes
   useEffect(() => {
+    // Disable vertical swipes to prevent closing
+    disableVerticalSwipes()
+
     backButton.show(() => {
       hapticFeedback.light()
       onClose()
@@ -264,11 +267,15 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
 
     return () => {
       backButton.hide()
+      enableVerticalSwipes()
     }
   }, [onClose])
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col pt-16">
+    <div
+      className="fixed left-0 right-0 bottom-0 z-50 bg-bg flex flex-col"
+      style={{ top: 'calc(env(safe-area-inset-top, 0px) + 44px)' }}
+    >
       {/* Header */}
       <div className="flex-shrink-0 bg-bg flex items-center gap-3 px-4 py-3 border-b border-bg-card">
         <div className="flex items-center gap-2">

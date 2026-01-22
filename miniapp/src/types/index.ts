@@ -631,6 +631,8 @@ export interface TelegramWebApp {
   isFullscreen: boolean
   requestFullscreen: () => void
   exitFullscreen: () => void
+  disableVerticalSwipes: () => void
+  enableVerticalSwipes: () => void
 }
 
 declare global {
