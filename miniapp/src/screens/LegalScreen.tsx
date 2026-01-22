@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { ArrowLeft, Shield, FileText, Mail } from 'lucide-react'
+import { Shield, FileText, Mail } from 'lucide-react'
 import { hapticFeedback, backButton } from '@/lib/telegram'
 import { Card } from '@/components/ui'
 
@@ -268,18 +268,9 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 bg-bg flex flex-col">
-      {/* Header - fixed */}
-      <div className="flex-shrink-0 bg-bg flex items-center gap-3 p-4 border-b border-bg-card">
-        <button
-          onClick={() => {
-            hapticFeedback.light()
-            onClose()
-          }}
-          className="text-gray-400"
-        >
-          <ArrowLeft size={20} />
-        </button>
+    <div className="fixed inset-0 z-50 bg-bg flex flex-col pt-2">
+      {/* Header */}
+      <div className="flex-shrink-0 bg-bg flex items-center gap-3 px-4 py-3 border-b border-bg-card">
         <div className="flex items-center gap-2">
           {icon}
           <h1 className="font-semibold">{title}</h1>
