@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { Shield, FileText, Mail } from 'lucide-react'
-import { hapticFeedback, backButton, disableVerticalSwipes, enableVerticalSwipes, requestFullscreen, exitFullscreen } from '@/lib/telegram'
+import { hapticFeedback, backButton, disableVerticalSwipes, enableVerticalSwipes, requestFullscreen } from '@/lib/telegram'
 import { Card } from '@/components/ui'
 
 type LegalType = 'privacy' | 'terms'
@@ -271,14 +271,14 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
     return () => {
       backButton.hide()
       enableVerticalSwipes()
-      exitFullscreen()
+      // Don't exit fullscreen - keep fullscreen mode for entire app
     }
   }, [onClose])
 
   return (
     <div
       className="fixed left-0 right-0 bottom-0 z-50 bg-bg flex flex-col"
-      style={{ top: 'calc(env(safe-area-inset-top, 0px) + 56px)' }}
+      style={{ top: 'calc(env(safe-area-inset-top, 0px) + 86px)' }}
     >
       {/* Header */}
       <div className="flex-shrink-0 bg-bg flex items-center gap-3 px-4 py-3 border-b border-bg-card">
