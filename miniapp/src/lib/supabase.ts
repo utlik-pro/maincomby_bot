@@ -843,7 +843,7 @@ export async function checkInByTicketCode(ticketCode: string, volunteerId: numbe
   if (registration.status === 'attended') throw new Error('Билет уже использован')
   if (registration.status === 'cancelled') throw new Error('Регистрация отменена')
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('bot_registrations')
     .update({
       status: 'attended',
@@ -851,8 +851,6 @@ export async function checkInByTicketCode(ticketCode: string, volunteerId: numbe
       checked_in_by: volunteerId,
     })
     .eq('id', registration.id)
-    .select()
-    .single()
 
   if (error) throw error
 
@@ -864,7 +862,15 @@ export async function checkInByTicketCode(ticketCode: string, volunteerId: numbe
     console.warn('[CheckIn] XP award failed:', e)
   }
 
-  return { registration: data, event: registration.event }
+  // Return the updated registration data
+  const updatedRegistration = {
+    ...registration,
+    status: 'attended' as const,
+    checked_in_at: new Date().toISOString(),
+    checked_in_by: volunteerId,
+  }
+
+  return { registration: updatedRegistration, event: registration.event }
 }
 
 // Rank thresholds (same as store.ts)
@@ -958,8 +964,28 @@ export async function addXP(userId: number, amount: number, reason: string, skip
 
     newPoints = updateData?.points || newPoints
     console.log(`[XP] Success via direct update! User ${userId} now has ${newPoints} points`)
+  } else if (rpcData === null) {
+    // RPC returned null - user not found or UPDATE didn't match any rows
+    console.warn(`[XP] RPC returned null for user ${userId}, trying direct update`)
+
+    // Fallback: direct update with existence check
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('bot_users')
+      .update({ points: Math.max(0, oldPoints + amount) })
+      .eq('id', userId)
+      .select('points')
+      .single()
+
+    if (fallbackError) {
+      console.error(`[XP] Direct update also failed for user ${userId}:`, fallbackError)
+      // Don't create notification if XP wasn't added - return early
+      return oldPoints
+    }
+
+    newPoints = fallbackData?.points || newPoints
+    console.log(`[XP] Success via direct update (after RPC null)! User ${userId} now has ${newPoints} points`)
   } else {
-    newPoints = rpcData || newPoints
+    newPoints = rpcData
     console.log(`[XP] Success via RPC! User ${userId} now has ${newPoints} points`)
   }
 
@@ -1352,7 +1378,13 @@ export async function useInviteAndCreateUser(
   await supabase.rpc('create_user_invites', { p_user_id: newUser.id, p_count: 5 })
 
   // 5. Reward inviter (+50 XP)
-  await addXP(invite.inviter_id, 50, 'FRIEND_INVITE')
+  try {
+    const newInviterPoints = await addXP(invite.inviter_id, 50, 'FRIEND_INVITE')
+    console.log(`[Referral] Inviter ${invite.inviter_id} rewarded, new points: ${newInviterPoints}`)
+  } catch (e) {
+    console.error(`[Referral] Failed to reward inviter ${invite.inviter_id}:`, e)
+    // Don't fail the whole operation - user was still created successfully
+  }
 
   // 6. Reward new user (already got 50 points, but let's log transaction)
   await supabase
