@@ -268,7 +268,7 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 bg-bg flex flex-col pt-2">
+    <div className="fixed inset-0 z-50 bg-bg flex flex-col" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 48px)' }}>
       {/* Header */}
       <div className="flex-shrink-0 bg-bg flex items-center gap-3 px-4 py-3 border-b border-bg-card">
         <div className="flex items-center gap-2">
