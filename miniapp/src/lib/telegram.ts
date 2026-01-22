@@ -181,6 +181,53 @@ export const expandApp = () => {
   webApp?.expand()
 }
 
+// Prevent pull-to-refresh with touch event handling
+const preventPullToRefresh = () => {
+  let touchStartY = 0
+
+  document.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY
+  }, { passive: true })
+
+  document.addEventListener('touchmove', (e) => {
+    const touchY = e.touches[0].clientY
+    const touchDiff = touchY - touchStartY
+
+    // Find the scrollable element
+    const target = e.target as HTMLElement
+    const scrollableParent = findScrollableParent(target)
+
+    // If pulling down at the top of page/scrollable element - prevent
+    if (touchDiff > 0) {
+      if (!scrollableParent || scrollableParent.scrollTop <= 0) {
+        e.preventDefault()
+      }
+    }
+
+    // If pulling up at the bottom - also prevent overscroll
+    if (touchDiff < 0 && scrollableParent) {
+      const isAtBottom = scrollableParent.scrollTop + scrollableParent.clientHeight >= scrollableParent.scrollHeight - 1
+      if (isAtBottom) {
+        e.preventDefault()
+      }
+    }
+  }, { passive: false })
+}
+
+// Find closest scrollable parent element
+const findScrollableParent = (element: HTMLElement | null): HTMLElement | null => {
+  while (element && element !== document.body) {
+    const style = window.getComputedStyle(element)
+    const overflowY = style.overflowY
+
+    if ((overflowY === 'auto' || overflowY === 'scroll') && element.scrollHeight > element.clientHeight) {
+      return element
+    }
+    element = element.parentElement
+  }
+  return null
+}
+
 // Initialize app
 export const initTelegramApp = () => {
   const webApp = getTelegramWebApp()
@@ -198,6 +245,9 @@ export const initTelegramApp = () => {
     document.documentElement.style.setProperty('--tg-theme-bg-color', webApp.themeParams.bg_color || '#0a0a0a')
     document.documentElement.style.setProperty('--tg-theme-text-color', webApp.themeParams.text_color || '#ffffff')
   }
+
+  // Prevent pull-to-refresh via JavaScript (works better in WebView than CSS)
+  preventPullToRefresh()
 }
 
 // Check if add to home screen is supported (requires version 8.0+)
