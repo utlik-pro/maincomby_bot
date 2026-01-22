@@ -274,9 +274,9 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
   }, [onClose])
 
   return (
-    <div className="min-h-screen bg-bg overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-bg flex flex-col">
       {/* Header - fixed */}
-      <div className="sticky top-0 z-10 bg-bg flex items-center gap-3 p-4 border-b border-bg-card">
+      <div className="flex-shrink-0 bg-bg flex items-center gap-3 p-4 border-b border-bg-card">
         <button
           onClick={() => {
             hapticFeedback.light()
@@ -293,19 +293,21 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onClose }) => {
       </div>
 
       {/* Content - scrollable */}
-      <div className="px-4 py-4 pb-8">
-        <Card className="bg-bg-card/50">
-          {content}
-        </Card>
+      <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="px-4 py-4 pb-8">
+          <Card className="bg-bg-card/50">
+            {content}
+          </Card>
 
-        {/* Support button */}
-        <button
-          className="w-full text-center text-gray-500 py-4 flex items-center justify-center gap-2 text-sm mt-4"
-          onClick={() => openTelegramLink('https://t.me/dmitryutlik')}
-        >
-          <Mail size={14} />
-          Связаться с поддержкой
-        </button>
+          {/* Support button */}
+          <button
+            className="w-full text-center text-gray-500 py-4 flex items-center justify-center gap-2 text-sm mt-4"
+            onClick={() => openTelegramLink('https://t.me/dmitryutlik')}
+          >
+            <Mail size={14} />
+            Связаться с поддержкой
+          </button>
+        </div>
       </div>
     </div>
   )
