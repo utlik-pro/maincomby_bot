@@ -33,6 +33,8 @@ async def run_migrations(engine: AsyncEngine) -> None:
         ("bot_users", "subscription_expires_at", "ALTER TABLE bot_users ADD COLUMN subscription_expires_at DATETIME"),
         ("bot_users", "daily_swipes_used", "ALTER TABLE bot_users ADD COLUMN daily_swipes_used INTEGER DEFAULT 0"),
         ("bot_users", "daily_swipes_reset_at", "ALTER TABLE bot_users ADD COLUMN daily_swipes_reset_at DATETIME"),
+        # Add is_test column to bot_events for QA testing
+        ("bot_events", "is_test", "ALTER TABLE bot_events ADD COLUMN is_test BOOLEAN DEFAULT 0"),
     ]
 
     async with engine.begin() as conn:

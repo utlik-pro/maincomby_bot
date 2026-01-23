@@ -28,8 +28,8 @@ export const Navigation: React.FC = () => {
 
   // Fetch events to check for new ones
   const { data: events } = useQuery({
-    queryKey: ['events'],
-    queryFn: getActiveEvents,
+    queryKey: ['events', user?.tg_user_id],
+    queryFn: () => getActiveEvents(user?.tg_user_id),
     staleTime: 60000, // 1 minute
   })
 

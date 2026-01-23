@@ -162,7 +162,11 @@ async def main() -> None:
     await init_models(engine)
     await run_migrations(engine)  # Auto-add missing columns
     session_factory = create_session_factory(engine)
-    
+
+    # Initialize database session factory for scheduler jobs
+    from .db.database import set_session_factory as set_db_session_factory
+    set_db_session_factory(session_factory)
+
     # Инициализируем сессию в хендлерах
     from .handlers.news_moderation import set_session_factory as set_news_session_factory
     from .handlers.qa import set_session_factory as set_qa_session_factory

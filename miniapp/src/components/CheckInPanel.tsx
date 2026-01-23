@@ -49,8 +49,8 @@ const CheckInPanel: React.FC<CheckInPanelProps> = ({ onClose }) => {
 
   // Get active events
   const { data: events = [], isLoading: eventsLoading } = useQuery({
-    queryKey: ['activeEvents'],
-    queryFn: getActiveEvents,
+    queryKey: ['activeEvents', user?.tg_user_id],
+    queryFn: () => getActiveEvents(user?.tg_user_id),
   })
 
   // Get registrations for selected event

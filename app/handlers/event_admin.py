@@ -58,10 +58,28 @@ async def cmd_create_event_start(message: Message, state: FSMContext):
         await message.reply("Только администраторы могут создавать мероприятия.")
         return
 
+    await state.update_data(is_test=False)
     await state.set_state(CreateEventStates.title)
     await message.answer(
         "Создание нового мероприятия.\n\n"
         "Шаг 1/9: Введите название мероприятия:"
+    )
+
+
+@router.message(Command("create_test_event"))
+async def cmd_create_test_event_start(message: Message, state: FSMContext):
+    """Начинает процесс создания ТЕСТОВОГО мероприятия (видно только тестировщикам)."""
+    if not await is_admin(message.from_user.id):
+        await message.reply("Только администраторы могут создавать мероприятия.")
+        return
+
+    await state.update_data(is_test=True)
+    await state.set_state(CreateEventStates.title)
+    await message.answer(
+        "🧪 <b>Создание ТЕСТОВОГО мероприятия</b>\n\n"
+        "⚠️ Это событие будет видно только тестировщикам (TESTER_IDS).\n\n"
+        "Шаг 1/9: Введите название мероприятия:",
+        parse_mode="HTML"
     )
 
 
@@ -196,6 +214,7 @@ async def cmd_create_event_deadline(message: Message, state: FSMContext):
     # Создаем мероприятие
     async with get_session() as session:
         try:
+            is_test = data.get("is_test", False)
             event = Event(
                 title=data["title"],
                 description=data.get("description"),
@@ -207,19 +226,22 @@ async def cmd_create_event_deadline(message: Message, state: FSMContext):
                 max_participants=data.get("max_participants"),
                 registration_deadline=data.get("registration_deadline"),
                 is_active=True,
+                is_test=is_test,
                 created_by=message.from_user.id,
             )
             session.add(event)
             await session.commit()
             await session.refresh(event)
 
+            test_badge = "🧪 [ТЕСТ] " if is_test else ""
+            test_note = "\n\n⚠️ Это тестовое событие, видно только тестировщикам." if is_test else ""
             await message.answer(
-                f"✅ Мероприятие создано!\n\n"
+                f"✅ {test_badge}Мероприятие создано!\n\n"
                 f"<b>{event.title}</b>\n"
                 f"ID: {event.id}\n"
                 f"Дата: {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n\n"
                 f"🔗 Ссылка для регистрации:\n"
-                f"<code>https://t.me/maincomapp_bot?startapp=event_{event.id}</code>",
+                f"<code>https://t.me/maincomapp_bot?startapp=event_{event.id}</code>{test_note}",
                 parse_mode="HTML"
             )
 
@@ -252,9 +274,12 @@ async def cmd_list_events(message: Message):
 
         for event in events:
             status = "✅ Активно" if event.is_active else "❌ Неактивно"
-            response += f"<b>ID {event.id}:</b> {event.title}\n"
+            test_badge = "🧪 " if getattr(event, 'is_test', False) else ""
+            response += f"<b>ID {event.id}:</b> {test_badge}{event.title}\n"
             response += f"Город: {event.city}\n"
             response += f"Статус: {status}\n"
+            if getattr(event, 'is_test', False):
+                response += f"⚠️ Тестовое событие\n"
             response += f"Дата: {event.event_date.strftime('%d.%m.%Y в %H:%M')}\n"
 
             # Получаем количество зарегистрированных

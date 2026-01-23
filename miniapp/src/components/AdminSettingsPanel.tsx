@@ -71,7 +71,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     const loadEvents = async () => {
         setEventsLoading(true)
         try {
-            const data = await getActiveEvents()
+            const data = await getActiveEvents(user?.tg_user_id)
             setEvents(data || [])
         } catch (e) {
             console.error(e)

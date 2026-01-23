@@ -159,6 +159,7 @@ class Event(Base):
     max_participants: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Макс. участников
     registration_deadline: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Дедлайн регистрации
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)  # Активно ли мероприятие
+    is_test: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # Тестовое событие (видно только тестировщикам)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     created_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Кто создал (admin user_id)
 

@@ -34,6 +34,45 @@ export const supabase = {
   storage: getSupabase().storage,
 }
 
+// Tester IDs cache
+let _testerIds: number[] | null = null
+let _testerIdsFetchedAt: number = 0
+const TESTER_IDS_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Get list of tester IDs from API.
+ * Testers can see test events and have unlimited swipes.
+ */
+export async function getTesterIds(): Promise<number[]> {
+  const now = Date.now()
+  if (_testerIds !== null && now - _testerIdsFetchedAt < TESTER_IDS_CACHE_TTL) {
+    return _testerIds
+  }
+
+  try {
+    const response = await fetch('/api/testers')
+    if (response.ok) {
+      const data = await response.json()
+      const ids: number[] = data.testerIds || []
+      _testerIds = ids
+      _testerIdsFetchedAt = now
+      return ids
+    }
+  } catch (e) {
+    console.warn('[Supabase] Failed to fetch tester IDs:', e)
+  }
+
+  return _testerIds ?? []
+}
+
+/**
+ * Check if a user is a tester
+ */
+export async function isTester(tgUserId: number): Promise<boolean> {
+  const testerIds = await getTesterIds()
+  return testerIds.includes(tgUserId)
+}
+
 // Helper functions for common operations
 
 // Users
@@ -587,17 +626,26 @@ export async function getUserMatches(userId: number) {
 }
 
 // Events
-export async function getActiveEvents() {
+export async function getActiveEvents(tgUserId?: number) {
   // Show events for the entire current day (not just future times)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const { data, error } = await getSupabase()
+  // Check if user is a tester (can see test events)
+  const userIsTester = tgUserId ? await isTester(tgUserId) : false
+
+  let query = getSupabase()
     .from('bot_events')
     .select('*')
     .eq('is_active', true)
     .gte('event_date', today.toISOString())
-    .order('event_date', { ascending: true })
+
+  // Non-testers don't see test events
+  if (!userIsTester) {
+    query = query.or('is_test.is.null,is_test.eq.false')
+  }
+
+  const { data, error } = await query.order('event_date', { ascending: true })
 
   if (error) throw error
   return data

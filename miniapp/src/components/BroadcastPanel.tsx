@@ -119,10 +119,10 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
     enabled: isSuperAdmin && audienceType === 'city',
   })
 
-  // Fetch events for dropdown
+  // Fetch events for dropdown (admins see all events including test ones)
   const { data: events = [] } = useQuery({
-    queryKey: ['activeEvents'],
-    queryFn: getActiveEvents,
+    queryKey: ['activeEvents', user?.tg_user_id],
+    queryFn: () => getActiveEvents(user?.tg_user_id),
     enabled: isSuperAdmin && audienceType === 'event_not_registered',
   })
 

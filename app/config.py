@@ -16,6 +16,7 @@ class Settings:
 
     admin_ids: List[int]
 
+    tester_ids: List[int]  # QA testers who can see test events and have unlimited access
 
     database_url: str
 
@@ -87,9 +88,12 @@ def load_settings() -> Settings:
 
 
     # Отладочный лог
-
-
     print(f"[CONFIG] Loaded admin_ids: {admin_ids} (raw: {admin_ids_raw})")
+
+    # Load tester IDs for QA testing
+    tester_ids_raw = os.getenv("TESTER_IDS", "")
+    tester_ids = [int(x) for x in tester_ids_raw.split(",") if x.strip().isdigit()]
+    print(f"[CONFIG] Loaded tester_ids: {tester_ids} (raw: {tester_ids_raw})")
 
 
 
@@ -170,7 +174,7 @@ def load_settings() -> Settings:
 
 
         admin_ids=admin_ids,
-
+        tester_ids=tester_ids,
 
         database_url=database_url,
 

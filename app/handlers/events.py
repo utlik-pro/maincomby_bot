@@ -106,18 +106,30 @@ async def notify_admins_about_registration(
             logger.error(f"Не удалось отправить уведомление администратору {admin_id}: {e}")
 
 
-async def get_nearest_event(session: AsyncSession) -> Event | None:
-    """Получает ближайшее активное мероприятие."""
-    result = await session.execute(
-        select(Event)
-        .where(
-            and_(
-                Event.is_active == True,
-                Event.event_date > datetime.utcnow()
-            )
+async def get_nearest_event(session: AsyncSession, tg_user_id: int | None = None) -> Event | None:
+    """Получает ближайшее активное мероприятие.
+
+    Args:
+        session: Database session
+        tg_user_id: Telegram user ID. If provided, checks if user is a tester
+                   to show test events. Non-testers don't see test events.
+    """
+    settings = load_settings()
+    is_tester = tg_user_id in settings.tester_ids if tg_user_id else False
+
+    query = select(Event).where(
+        and_(
+            Event.is_active == True,
+            Event.event_date > datetime.utcnow()
         )
-        .order_by(Event.event_date)
-        .limit(1)
+    )
+
+    # Non-testers don't see test events
+    if not is_tester:
+        query = query.where(Event.is_test == False)
+
+    result = await session.execute(
+        query.order_by(Event.event_date).limit(1)
     )
     return result.scalar_one_or_none()
 

@@ -5,7 +5,7 @@ import { useAppStore, useToastStore, calculateRank, CURRENT_POLICIES_VERSION } f
 import { CURRENT_APP_VERSION } from '@/lib/version'
 import { initTelegramApp, getTelegramUser, isTelegramWebApp, getTelegramWebApp, validateInitData, getInitData } from '@/lib/telegram'
 import { isPreviewMode } from '@/lib/tenant'
-import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam, getPendingProGift, acknowledgeProGift, getIncomingLikes, updateLastAppOpen } from '@/lib/supabase'
+import { getUserByTelegramId, getUserById, createOrUpdateUser, getProfile, updateProfile, createProfile, isInviteRequired, checkUserAccess, getPendingReviewEvents, getEventById, checkAndUpdateDailyStreak, startSession, sessionHeartbeat, endSession, getShowFunnelForTeam, getPendingProGift, acknowledgeProGift, getIncomingLikes, updateLastAppOpen, isTester as checkIsTester } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { ToastContainer } from '@/components/ToastContainer'
 import { LogoHeader } from '@/components/LogoHeader'
@@ -84,7 +84,7 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 )
 
 const App: React.FC = () => {
-  const { activeTab, isLoading, setLoading, setUser, setProfile, isAuthenticated, shouldShowOnboarding, shouldShowWhatsNew, setLastSeenAppVersion, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired, showInvites, setShowInvites, setShowFunnelForTeam, hideNavigation, hideHeader } = useAppStore()
+  const { activeTab, isLoading, setLoading, setUser, setProfile, setIsTester, isAuthenticated, shouldShowOnboarding, shouldShowWhatsNew, setLastSeenAppVersion, profile, setActiveTab, setDeepLinkTarget, accessDenied, setAccessDenied, setPendingInviteCode, setInviteRequired, showInvites, setShowInvites, setShowFunnelForTeam, hideNavigation, hideHeader } = useAppStore()
   const { addToast } = useToastStore()
 
   // What's New changelog sheet state
@@ -728,6 +728,17 @@ const App: React.FC = () => {
         }
 
         setUser(user)
+
+        // Check if user is a tester (for unlimited swipes and test events)
+        try {
+          const testerStatus = await checkIsTester(user.tg_user_id)
+          setIsTester(testerStatus)
+          if (testerStatus) {
+            console.log('[App] User is a tester - unlimited access enabled')
+          }
+        } catch (e) {
+          console.warn('Failed to check tester status:', e)
+        }
 
         // Fetch app settings (show_funnel_for_team)
         try {

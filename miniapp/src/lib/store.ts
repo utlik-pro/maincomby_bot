@@ -46,6 +46,7 @@ interface AppState {
   profile: UserProfile | null
   isAuthenticated: boolean
   isLoading: boolean
+  isTester: boolean // QA tester - can see test events, unlimited swipes
 
   // UI state
   activeTab: 'home' | 'events' | 'learn' | 'network' | 'achievements' | 'profile' | 'prompts'
@@ -69,6 +70,7 @@ interface AppState {
   setUser: (user: User | null) => void
   setProfile: (profile: UserProfile | null) => void
   setLoading: (loading: boolean) => void
+  setIsTester: (isTester: boolean) => void
   setActiveTab: (tab: AppState['activeTab']) => void
   setHideNavigation: (hide: boolean) => void
   setHideHeader: (hide: boolean) => void
@@ -106,6 +108,7 @@ export const useAppStore = create<AppState>()(
       profile: null,
       isAuthenticated: false,
       isLoading: true,
+      isTester: false,
       activeTab: 'home',
       hideNavigation: false,
       hideHeader: false,
@@ -136,6 +139,7 @@ export const useAppStore = create<AppState>()(
       },
       setProfile: (profile) => set({ profile }),
       setLoading: (isLoading) => set({ isLoading }),
+      setIsTester: (isTester) => set({ isTester }),
       setActiveTab: (activeTab) => set({ activeTab }),
       setHideNavigation: (hideNavigation) => set({ hideNavigation }),
       setHideHeader: (hideHeader) => set({ hideHeader }),
@@ -183,8 +187,11 @@ export const useAppStore = create<AppState>()(
         return user.subscription_tier || 'free'
       },
       getDailySwipesRemaining: () => {
-        const { user } = get()
+        const { user, isTester } = get()
         if (!user) return 0
+
+        // Testers have unlimited swipes
+        if (isTester) return Infinity
 
         const tier = get().getSubscriptionTier()
         const limits = {

@@ -17,12 +17,12 @@ interface EventsBlockProps {
 
 export function EventsBlock({ block }: EventsBlockProps) {
   const config = block.config as EventsBlockConfig
-  const { setActiveTab } = useAppStore()
+  const { setActiveTab, user } = useAppStore()
   const limit = config.limit || 3
 
   const { data: events = [] } = useQuery({
-    queryKey: ['events', 'upcoming', limit],
-    queryFn: getActiveEvents,
+    queryKey: ['events', 'upcoming', limit, user?.tg_user_id],
+    queryFn: () => getActiveEvents(user?.tg_user_id),
   })
 
   if (events.length === 0) return null

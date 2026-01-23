@@ -783,10 +783,10 @@ const EventsScreen: React.FC = () => {
     }
   }, [deepLinkTarget, setDeepLinkTarget])
 
-  // Fetch events
+  // Fetch events (pass tgUserId so testers can see test events)
   const { data: events, isLoading } = useQuery({
-    queryKey: ['events'],
-    queryFn: getActiveEvents,
+    queryKey: ['events', user?.tg_user_id],
+    queryFn: () => getActiveEvents(user?.tg_user_id),
   })
 
   // Fetch user registrations
