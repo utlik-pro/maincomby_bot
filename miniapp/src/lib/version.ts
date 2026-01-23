@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.12'
+export const APP_VERSION = '1.1.13'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 16
+export const CURRENT_APP_VERSION = 17
 
 export interface ReleaseHighlight {
   title: string
@@ -29,23 +29,23 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.12',
-  date: '2026-01-22',
-  summary: 'Исправления и улучшения v1.1.12',
+  version: '1.1.13',
+  date: '2026-01-23',
+  summary: 'Исправления и улучшения v1.1.13',
   highlights: [
-    { title: 'add ticket deep link supp...', description: 'Подробнее в changelog' },
-    { title: 'add prompts promo sheet a...', description: 'Подробнее в changelog' },
-    { title: 'improve prompt submission...', description: 'Подробнее в changelog' },
+    { title: 'disable vertical swipes g...', description: 'Подробнее в changelog' },
+    { title: 'enable fullscreen mode fo...', description: 'Подробнее в changelog' },
+    { title: 'add mandatory policy cons...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'add ticket deep link support for direct QR code access',
-    'add prompts promo sheet and fix detail modal layout',
-    'improve prompt submission with file upload and push notifications',
+    'disable vertical swipes globally at app init',
+    'enable fullscreen mode for legal screens',
+    'add mandatory policy consent screen per Belarus Law №99-З',
   ],
   fixes: [
-    'move ticket deep link handler after registrations query',
-    'event reminders timezone + escapeMarkdown for notifications',
-    'improve prompts gallery layout and submit button visibility',
+    'make check-in more robust by removing .select().single()',
+    'add JS-based pull-to-refresh prevention for iOS WebView',
+    'aggressive overscroll prevention on all elements',
   ],
 }
 

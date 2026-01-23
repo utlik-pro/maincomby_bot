@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.13] - 2026-01-23
+
+[0;34mGenerating changelog from v1.1.12 to HEAD[0m
+### Added
+- disable vertical swipes globally at app init
+- enable fullscreen mode for legal screens
+- add mandatory policy consent screen per Belarus Law №99-З
+- add legal pages (Privacy Policy, Terms) per Belarus law + fix version
+- add bot_started tracking and notification enablement prompts
+- add ticket reminder notifications at 18:30 on event day
+
+### Fixed
+- make check-in more robust by removing .select().single()
+- add JS-based pull-to-refresh prevention for iOS WebView
+- aggressive overscroll prevention on all elements
+- global overscroll prevention across all screens
+- keep fullscreen mode on exit and increase offset to 86px
+- restore proper top offset for legal screen header (56px)
+- proper legal screen layout with swipe prevention
+- use standard padding for legal screen header (pt-16)
+- increase top padding for Telegram back button
+- add safe-area padding for iPhone status bar on legal pages
+- remove arrow icon from legal pages header
+- proper full-screen layout for legal pages
+- scrolling and Telegram back button on legal pages
+
+### Changed
+- update contacts to email only
 ## [1.1.12] - 2026-01-22
 
 [0;34mGenerating changelog from v1.1.11 to HEAD[0m
