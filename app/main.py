@@ -486,6 +486,110 @@ async def main() -> None:
         )
         await cmd_pending_registrations(fake_msg)
 
+    @dp.message(F.text == "/engagement_stats")
+    async def cmd_engagement_stats(message: Message):
+        """Статистика engagement уведомлений."""
+        from .config import load_settings
+        settings = load_settings()
+        if message.from_user.id not in settings.admin_ids:
+            return
+
+        from datetime import datetime, timedelta
+        from sqlalchemy import select, and_, func
+        from .db.models import User as DBUser
+
+        async with session_factory() as session:
+            now = datetime.utcnow()
+            cutoff_24h = now - timedelta(hours=24)
+            cutoff_48h = now - timedelta(hours=48)
+            cutoff_7d = now - timedelta(days=7)
+
+            # Total users
+            total = await session.execute(select(func.count(DBUser.id)))
+            total_count = total.scalar()
+
+            # Profile: registered >24h, not sent yet
+            profile_query = select(func.count(DBUser.id)).where(
+                and_(
+                    DBUser.first_seen_at <= cutoff_24h,
+                    DBUser.banned == False,
+                    DBUser.engagement_profile_sent_at.is_(None)
+                )
+            )
+            profile_pending = (await session.execute(profile_query)).scalar()
+
+            profile_sent_query = select(func.count(DBUser.id)).where(
+                DBUser.engagement_profile_sent_at.isnot(None)
+            )
+            profile_sent = (await session.execute(profile_sent_query)).scalar()
+
+            # Swipes: registered >48h, not sent yet
+            swipes_query = select(func.count(DBUser.id)).where(
+                and_(
+                    DBUser.first_seen_at <= cutoff_48h,
+                    DBUser.banned == False,
+                    DBUser.engagement_swipes_sent_at.is_(None)
+                )
+            )
+            swipes_pending = (await session.execute(swipes_query)).scalar()
+
+            swipes_sent_query = select(func.count(DBUser.id)).where(
+                DBUser.engagement_swipes_sent_at.isnot(None)
+            )
+            swipes_sent = (await session.execute(swipes_sent_query)).scalar()
+
+            # Inactive 7d
+            inactive_7d_query = select(func.count(DBUser.id)).where(
+                and_(
+                    DBUser.banned == False,
+                    DBUser.engagement_inactive_7d_sent_at.is_(None),
+                    (
+                        (DBUser.last_app_open_at.is_(None) & (DBUser.first_seen_at <= cutoff_7d)) |
+                        (DBUser.last_app_open_at <= cutoff_7d)
+                    )
+                )
+            )
+            inactive_7d_pending = (await session.execute(inactive_7d_query)).scalar()
+
+            inactive_7d_sent_query = select(func.count(DBUser.id)).where(
+                DBUser.engagement_inactive_7d_sent_at.isnot(None)
+            )
+            inactive_7d_sent = (await session.execute(inactive_7d_sent_query)).scalar()
+
+            # Likes tiers
+            likes_1_sent = (await session.execute(
+                select(func.count(DBUser.id)).where(DBUser.engagement_likes_1_sent_at.isnot(None))
+            )).scalar()
+            likes_3_sent = (await session.execute(
+                select(func.count(DBUser.id)).where(DBUser.engagement_likes_3_sent_at.isnot(None))
+            )).scalar()
+            likes_5_sent = (await session.execute(
+                select(func.count(DBUser.id)).where(DBUser.engagement_likes_5_sent_at.isnot(None))
+            )).scalar()
+            likes_10_sent = (await session.execute(
+                select(func.count(DBUser.id)).where(DBUser.engagement_likes_10_sent_at.isnot(None))
+            )).scalar()
+
+            await message.answer(
+                f"📊 <b>Engagement Statistics</b>\n\n"
+                f"👥 Всего пользователей: {total_count}\n\n"
+                f"<b>Profile incomplete:</b>\n"
+                f"  • Ожидают: {profile_pending}\n"
+                f"  • Отправлено: {profile_sent}\n\n"
+                f"<b>No swipes:</b>\n"
+                f"  • Ожидают: {swipes_pending}\n"
+                f"  • Отправлено: {swipes_sent}\n\n"
+                f"<b>Inactive 7d:</b>\n"
+                f"  • Ожидают: {inactive_7d_pending}\n"
+                f"  • Отправлено: {inactive_7d_sent}\n\n"
+                f"<b>Likes notifications:</b>\n"
+                f"  • 1 like: {likes_1_sent}\n"
+                f"  • 3 likes: {likes_3_sent}\n"
+                f"  • 5 likes: {likes_5_sent}\n"
+                f"  • 10 likes: {likes_10_sent}",
+                parse_mode="HTML"
+            )
+
     @dp.message(F.text == "/trigger_reminders")
     async def cmd_trigger_reminders(message: Message):
         """Ручной запуск всех notification jobs (только для админов)."""
