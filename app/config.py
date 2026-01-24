@@ -99,7 +99,15 @@ def load_settings() -> Settings:
 
 
 
-    database_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./bot.db")
+    # PostgreSQL connection string from Supabase
+    # Format: postgresql+asyncpg://user:password@host:port/database
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError(
+            "DATABASE_URL is required. "
+            "Set it to your Supabase PostgreSQL connection string: "
+            "postgresql+asyncpg://postgres.xxx:PASSWORD@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+        )
 
 
     news_rss_feeds = [u.strip() for u in os.getenv("NEWS_RSS_FEEDS", "").split(",") if u.strip()]

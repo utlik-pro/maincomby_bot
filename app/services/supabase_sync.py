@@ -1,15 +1,16 @@
 """
 Supabase Sync Service
-Synchronizes data between local SQLite and Supabase PostgreSQL via REST API.
+Handles synchronization between bot database and web admin tables.
 
-This service runs in the background and syncs:
-- New users to Supabase
-- Event registrations
-- Feedback
-- Questions
-- Security logs
+Now that the bot uses Supabase PostgreSQL directly (same database),
+this service only handles:
+- Pulling events from web admin 'events' table to 'bot_events'
+- Processing broadcast queue
+- Processing admin actions (Gift PRO, etc.)
+- Syncing registrations to web leads table
 
-Web admin events are synced via webhook or periodic pull.
+The push functions (_sync_*) are no longer used since bot writes
+directly to PostgreSQL.
 """
 
 import asyncio
@@ -31,7 +32,12 @@ SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 
 
 class SupabaseSync:
-    """Syncs data between SQLite and Supabase (async version)"""
+    """Syncs data between bot database and web admin tables.
+
+    Now that bot uses PostgreSQL directly, this primarily handles:
+    - Pulling web admin events to bot_events table
+    - Processing broadcasts and admin actions
+    """
 
     def __init__(self, session_factory, bot=None):
         if not SUPABASE_KEY:
@@ -76,41 +82,31 @@ class SupabaseSync:
             await asyncio.sleep(self._sync_interval)
 
     async def sync_all(self):
-        """Sync all data to Supabase"""
+        """Sync data with Supabase.
+
+        Now that the bot uses PostgreSQL directly (same DB as Supabase),
+        we only need to:
+        1. Pull web admin events to bot_events table
+        2. Process broadcasts and admin actions
+
+        The _sync_* push functions are no longer needed since
+        bot writes directly to the same PostgreSQL database.
+        """
         async with self.session_factory() as session:
-            # Pull events from web admin (Supabase → SQLite)
+            # Pull events from web admin (events → bot_events)
             await self._pull_web_events(session)
 
-            # Pull last_app_open_at from Supabase (Mini App writes there)
+            # Pull last_app_open_at from Supabase profiles
             await self._pull_last_app_open(session)
 
             # Process pending broadcasts from web admin
             await self._process_broadcasts(session)
 
-            # Push bot data to Supabase (SQLite → Supabase)
-            await self._sync_users(session)
-            await self._sync_events(session)
-            await self._sync_registrations(session)
-            await self._sync_feedback(session)
-            await self._sync_questions(session)
-            await self._sync_security_logs(session)
-            await self._sync_profiles(session)
-            await self._sync_swipes(session)
-            await self._sync_matches(session)
-
             # Process admin actions from Mini App (Gift PRO etc)
             await self._process_admin_actions(session)
 
-            await self._sync_security_logs(session)
-            await self._sync_profiles(session)
-            await self._sync_swipes(session)
-            await self._sync_matches(session)
-
-            # Also sync registrations to web leads table
+            # Sync registrations to web leads table (still needed for web admin)
             await self._sync_registrations_to_leads(session)
-
-            # Send event reminders (24h before events)
-            await self._send_event_reminders(session)
 
     async def sync_user(self, user: User):
         """Sync a single user to Supabase (call after user creation/update)"""
@@ -182,7 +178,7 @@ class SupabaseSync:
             logger.debug(f"Failed to sync registration {reg.id}: {e}")
 
     async def _pull_web_events(self, session: AsyncSession):
-        """Pull events from web admin (events table) to local SQLite"""
+        """Pull events from web admin 'events' table to 'bot_events' table."""
         try:
             # Fetch events from web admin table
             web_events = await self.supabase.table("events").select("*").eq("is_published", True).execute()
@@ -263,7 +259,7 @@ class SupabaseSync:
             logger.error(f"Error pulling web events: {e}")
 
     async def _pull_last_app_open(self, session: AsyncSession):
-        """Pull last_app_open_at from Supabase to SQLite (Mini App writes there)"""
+        """Pull last_app_open_at from Supabase REST API to update bot_users table."""
         try:
             # Get users with last_app_open_at set in Supabase
             result = await self.supabase.table("bot_users") \

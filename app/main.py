@@ -157,7 +157,7 @@ async def main() -> None:
         )
         return await handler(event, data)
 
-    # DB init (SQLite/Async)
+    # DB init (PostgreSQL via Supabase)
     engine = create_engine()
     await init_models(engine)
     await run_migrations(engine)  # Auto-add missing columns

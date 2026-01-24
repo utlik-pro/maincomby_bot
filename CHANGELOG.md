@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Bot now uses Supabase PostgreSQL directly instead of SQLite
+  - Requires `DATABASE_URL` environment variable (PostgreSQL connection string)
+  - Removed SQLite fallback - bot will fail if DATABASE_URL is not set
+  - SupabaseSync no longer pushes data (bot writes directly to PostgreSQL)
+  - Fixed: Notifications were showing 0 because SQLite was empty
+
 ## [1.1.13] - 2026-01-23
 
 [0;34mGenerating changelog from v1.1.12 to HEAD[0m
@@ -37,7 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - update contacts to email only
 ## [1.1.12] - 2026-01-22
 
-[0;34mGenerating changelog from v1.1.11 to HEAD[0m
 ### Added
 - add ticket deep link support for direct QR code access
 - add prompts promo sheet and fix detail modal layout
@@ -55,9 +61,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - position Share button on image bottom-right corner
 - move Share button under image in PromptDetailModal
+
+### Documentation
+- update README with actual metrics (910+ users, 807+ registrations)
+- update hosting info: VPS → Render.com
+- archive old README to docs/archive/
+- add README актуальность checklist
+- update ROADMAP_2026.md with current architecture
+
 ## [1.1.11] - 2026-01-21
 
-[0;34mGenerating changelog from v1.1.10 to HEAD[0m
 ### Added
 - add engagement notification analytics dashboard
 - add engagement notification system for user retention
@@ -100,7 +113,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - remove unused import causing startup crash
 ## [1.1.10] - 2026-01-20
 
-[0;34mGenerating changelog from v1.1.9 to HEAD[0m
 ### Added
 - implement tinder-like immersive swipe card
 - fullscreen Tinder-style swipe UI
@@ -120,7 +132,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - increase rate limit from 5 to 60 req/min
 ## [1.1.9] - 2026-01-18
 
-[0;34mGenerating changelog from v1.1.8 to HEAD[0m
 ### Added
 - harden Mini App API security
 - add Team page with 7 specialist roles
@@ -139,7 +150,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - sync full release details to landing page
 ## [1.1.7] - 2026-01-16
 
-[0;34mGenerating changelog from v1.1.6 to HEAD[0m
 ### Added
 - Add Prompt Engineering course module
 - add trusted by partners marquee section
@@ -159,7 +169,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - trigger redeploy for cases page
 ## [1.1.6] - 2026-01-15
 
-[0;34mGenerating changelog from v1.1.5 to HEAD[0m
 ### Added
 - implement Telegram Login and Fix Deep Links
 - add learning module with prompting basics course
@@ -173,7 +182,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add verbose debugging for login flow
 ## [1.1.5] - 2026-01-13
 
-[0;34mGenerating changelog from v1.1.4 to HEAD[0m
 ### Added
 - add event funnel stats for team + leads/checkins modals
 - add speaker ratings and analytics
@@ -193,7 +201,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - smaller crown + text labels (фри/лайт/про)
 ## [1.1.4] - 2026-01-12
 
-[0;34mGenerating changelog from v1.1.3 to HEAD[0m
 ### Added
 - add session tracking and analytics for super admin
 - add streak progress UI card on HomeScreen
@@ -203,12 +210,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - daily streak shows on day 1 + disable XP notification spam
 ## [1.1.3] - 2026-01-11
 
-[0;34mGenerating changelog from v1.1.2 to HEAD[0m
 ### Fixed
 - improve LATEST_RELEASE update reliability
 ## [1.1.2] - 2026-01-11
 
-[0;34mGenerating changelog from v1.1.1 to HEAD[0m
 ### Added
 - auto-update LATEST_RELEASE in version.ts on release
 
@@ -217,7 +222,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add RLS migration for xp_transactions insert
 ## [1.1.1] - 2026-01-11
 
-[1;33mNo previous tag found, including all commits[0m
 ### Added
 - add release automation with Claude Code skills
 - add reset easter eggs button for testing XP
