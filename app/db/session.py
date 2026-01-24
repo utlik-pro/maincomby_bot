@@ -14,7 +14,7 @@ def create_engine() -> AsyncEngine:
         settings.database_url,
         echo=False,
         future=True,
-        connect_args={"statement_cache_size": 0}  # Required for Supabase pooler (pgbouncer)
+        connect_args={"prepared_statement_cache_size": 0}  # Required for Supabase pooler (pgbouncer)
     )
 
 
