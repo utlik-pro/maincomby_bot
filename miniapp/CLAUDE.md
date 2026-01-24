@@ -123,3 +123,33 @@ Rank thresholds: newcomer(0) → member(100) → activist(300) → enthusiast(60
 ## Path Alias
 
 `@/*` maps to `./src/*` - use `@/components/Button` instead of relative paths.
+
+## UI Rules
+
+### No Modal Windows
+**NEVER use modal/dialog windows** for screens or panels. Always use **full-screen pages** instead.
+
+Pattern for full-screen panels:
+```tsx
+<div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+    {/* Top spacer for Telegram header */}
+    <div className="h-24" />
+
+    {/* Sticky Header */}
+    <div className="sticky top-24 z-10 bg-bg border-b border-border">
+        {/* Header content */}
+    </div>
+
+    {/* Content */}
+    <div className="p-4 pb-24">
+        {/* Page content */}
+    </div>
+
+    {/* Fixed footer if needed */}
+    <div className="fixed bottom-0 left-0 right-0 p-4 bg-bg border-t border-border">
+        {/* Footer content */}
+    </div>
+</div>
+```
+
+**Exception:** Small notification popups/toasts and Telegram native confirmations (`showConfirm`, `showAlert`) are allowed.
