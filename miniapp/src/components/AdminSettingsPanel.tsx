@@ -10,6 +10,7 @@ import { LearningAdminPanel } from './LearningAdminPanel'
 import { BroadcastPanel } from './BroadcastPanel'
 import { EngagementDashboard } from './EngagementDashboard'
 import { EventAdminPanel } from './EventAdminPanel'
+import { ProfileCompletionPanel } from './ProfileCompletionPanel'
 import { Event } from '@/types'
 import { hapticFeedback, shareUrl, backButton } from '@/lib/telegram'
 
@@ -33,6 +34,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     const [showEngagement, setShowEngagement] = useState(false)
     const [showEventAdmin, setShowEventAdmin] = useState(false)
     const [showProfileModeration, setShowProfileModeration] = useState(false)
+    const [showProfileCompletion, setShowProfileCompletion] = useState(false)
     const [events, setEvents] = useState<Event[]>([])
     const [eventsLoading, setEventsLoading] = useState(false)
 
@@ -205,6 +207,25 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                                 </div>
                             </div>
                             <div className="text-pink-500">→</div>
+                        </div>
+                    </button>
+
+                    {/* Profile Completion Status */}
+                    <button
+                        onClick={() => setShowProfileCompletion(true)}
+                        className="w-full p-4 rounded-xl bg-bg border border-border hover:border-amber-500/50 transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center">
+                                    <UserCheck size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Статус профилей</div>
+                                    <div className="text-xs text-gray-400">Кто заполнил профиль / готов к PRO</div>
+                                </div>
+                            </div>
+                            <div className="text-amber-500">→</div>
                         </div>
                     </button>
 
@@ -411,6 +432,11 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
             {/* Event Admin Panel */}
             {showEventAdmin && (
                 <EventAdminPanel onClose={() => setShowEventAdmin(false)} />
+            )}
+
+            {/* Profile Completion Panel */}
+            {showProfileCompletion && (
+                <ProfileCompletionPanel onClose={() => setShowProfileCompletion(false)} />
             )}
 
         {/* Event Links Panel */}

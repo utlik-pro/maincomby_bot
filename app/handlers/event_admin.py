@@ -1743,3 +1743,126 @@ async def cmd_pending_registrations(message: Message):
         response += f"\n... и ещё {len(pending) - 20}"
 
     await message.answer(response, parse_mode="HTML")
+
+
+# ============================================
+# Profile Completion PRO Award (Test Command)
+# ============================================
+
+@router.message(Command("award_pro"))
+async def cmd_award_pro(message: Message):
+    """Проверить и начислить PRO за заполнение профиля (для тестирования)."""
+    if not await is_admin(message.from_user.id):
+        await message.reply("Только администраторы могут использовать эту команду.")
+        return
+
+    from supabase import create_client
+    import os
+    from datetime import datetime, timedelta
+
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ndpkxustvcijykzxqxrn.supabase.co")
+    SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY", "")
+
+    if not SUPABASE_KEY:
+        await message.answer("❌ Supabase не настроен")
+        return
+
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    user_id = message.from_user.id
+
+    # Получаем пользователя
+    user_resp = supabase.table("bot_users").select("*").eq("tg_user_id", user_id).execute()
+    if not user_resp.data:
+        await message.answer("❌ Пользователь не найден в базе")
+        return
+
+    user = user_resp.data[0]
+    db_user_id = user['id']
+
+    # Проверяем не получал ли уже награду
+    if user.get('profile_completion_pro_awarded_at'):
+        await message.answer(
+            f"ℹ️ Вы уже получили эту награду\n"
+            f"📅 Дата: {user['profile_completion_pro_awarded_at']}"
+        )
+        return
+
+    # Проверяем профиль
+    profile_resp = supabase.table("bot_profiles").select("bio, occupation").eq("user_id", db_user_id).execute()
+    if not profile_resp.data:
+        await message.answer("❌ Профиль не найден. Откройте Mini App и заполните профиль.")
+        return
+
+    p = profile_resp.data[0]
+    bio = p.get('bio') or ''
+    occupation = p.get('occupation') or ''
+
+    # Проверяем фото
+    photos_resp = supabase.table("profile_photos").select("id", count="exact").eq("user_id", db_user_id).execute()
+    photo_count = photos_resp.count or 0
+
+    # Формируем статус
+    status = []
+    if bio.strip():
+        status.append("✅ Bio заполнено")
+    else:
+        status.append("❌ Bio пустое")
+
+    if occupation.strip():
+        status.append("✅ Род занятий заполнен")
+    else:
+        status.append("❌ Род занятий пустой")
+
+    if photo_count > 0:
+        status.append(f"✅ Фото загружено: {photo_count}")
+    else:
+        status.append("❌ Фото не загружено (нужно через + в профиле)")
+
+    # Проверяем все условия
+    is_complete = bool(bio.strip() and occupation.strip() and photo_count > 0)
+
+    # Промо период
+    PROMO_DEADLINE = datetime(2026, 1, 25, 23, 59, 59)
+    now = datetime.utcnow()
+    is_promo = now <= PROMO_DEADLINE
+    pro_days = 7 if is_promo else 3
+    xp_reward = 500 if is_promo else 100
+
+    response = (
+        f"📋 <b>Статус профиля:</b>\n\n"
+        + "\n".join(status) +
+        f"\n\n📊 <b>Промо:</b> {'✅ Активно' if is_promo else '❌ Закончилось'}\n"
+        f"🎁 <b>Награда:</b> {pro_days} дней PRO + {xp_reward} XP\n\n"
+    )
+
+    if is_complete:
+        # Начисляем PRO
+        if user.get('subscription_tier') == 'pro' and user.get('subscription_expires_at'):
+            expires_str = user['subscription_expires_at']
+            current_expires = datetime.fromisoformat(expires_str.replace('Z', '+00:00'))
+            if current_expires > now:
+                expires_at = current_expires + timedelta(days=pro_days)
+            else:
+                expires_at = now + timedelta(days=pro_days)
+        else:
+            expires_at = now + timedelta(days=pro_days)
+
+        # Обновляем пользователя
+        new_points = (user.get('points') or 0) + xp_reward
+        supabase.table("bot_users").update({
+            "subscription_tier": "pro",
+            "subscription_expires_at": expires_at.isoformat(),
+            "profile_completion_pro_awarded_at": now.isoformat(),
+            "points": new_points
+        }).eq("id", db_user_id).execute()
+
+        response += (
+            f"🎉 <b>Награда начислена!</b>\n\n"
+            f"⭐ PRO до: {expires_at.strftime('%d.%m.%Y %H:%M')}\n"
+            f"✨ XP: {user.get('points', 0)} → {new_points}\n\n"
+            f"Откройте Mini App чтобы увидеть изменения."
+        )
+    else:
+        response += "⚠️ <b>Профиль не заполнен полностью</b>\n\nЗаполните все поля и загрузите фото."
+
+    await message.answer(response, parse_mode="HTML")

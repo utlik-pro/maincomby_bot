@@ -82,7 +82,7 @@ const PromoBanner: React.FC<PromoBannerProps> = ({ subscriptionTier, onNavigateT
             <span className="font-bold text-amber-400">PRO на 7 дней + 500 XP</span>
           </div>
           <p className="text-sm text-gray-400 mb-3">
-            Заполни профиль и добавь фото до 25 января
+            Заполни bio, род занятий и загрузи своё фото
           </p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-amber-400">

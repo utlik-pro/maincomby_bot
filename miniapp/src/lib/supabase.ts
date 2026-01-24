@@ -5527,3 +5527,115 @@ export async function batchModerateProfiles(
 
   return { success: profileIds.length, failed: 0 }
 }
+
+/**
+ * Profile completion status for admin dashboard
+ */
+export interface ProfileCompletionUser {
+  id: number
+  tg_user_id: number
+  username: string | null
+  first_name: string | null
+  subscription_tier: string
+  subscription_expires_at: string | null
+  profile_completion_pro_awarded_at: string | null
+  points: number
+  bio: string | null
+  occupation: string | null
+  photo_url: string | null
+  photo_count: number
+  status: 'ready' | 'incomplete' | 'awarded'
+}
+
+/**
+ * Get all users with their profile completion status (admin only)
+ */
+export async function getProfileCompletionStats(): Promise<ProfileCompletionUser[]> {
+  // Get all users with their profiles
+  const { data: users, error: usersError } = await getSupabase()
+    .from('bot_users')
+    .select(`
+      id,
+      tg_user_id,
+      username,
+      first_name,
+      subscription_tier,
+      subscription_expires_at,
+      profile_completion_pro_awarded_at,
+      points
+    `)
+    .eq('banned', false)
+    .order('id', { ascending: false })
+    .limit(200)
+
+  if (usersError) {
+    console.error('[getProfileCompletionStats] Users error:', usersError)
+    return []
+  }
+
+  if (!users || users.length === 0) return []
+
+  // Get all profiles
+  const userIds = users.map(u => u.id)
+  const { data: profiles } = await getSupabase()
+    .from('bot_profiles')
+    .select('user_id, bio, occupation, photo_url')
+    .in('user_id', userIds)
+
+  // Get photo counts for all users
+  const { data: photos } = await getSupabase()
+    .from('profile_photos')
+    .select('user_id')
+    .in('user_id', userIds)
+
+  // Create lookup maps
+  const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || [])
+  const photoCountMap = new Map<number, number>()
+  photos?.forEach(p => {
+    photoCountMap.set(p.user_id, (photoCountMap.get(p.user_id) || 0) + 1)
+  })
+
+  // Combine data
+  return users.map(user => {
+    const profile = profileMap.get(user.id)
+    const photoCount = photoCountMap.get(user.id) || 0
+    const hasBio = !!(profile?.bio?.trim())
+    const hasOccupation = !!(profile?.occupation?.trim())
+    const hasPhoto = photoCount > 0
+
+    let status: 'ready' | 'incomplete' | 'awarded'
+    if (user.profile_completion_pro_awarded_at) {
+      status = 'awarded'
+    } else if (hasBio && hasOccupation && hasPhoto) {
+      status = 'ready'
+    } else {
+      status = 'incomplete'
+    }
+
+    return {
+      id: user.id,
+      tg_user_id: user.tg_user_id,
+      username: user.username,
+      first_name: user.first_name,
+      subscription_tier: user.subscription_tier || 'free',
+      subscription_expires_at: user.subscription_expires_at,
+      profile_completion_pro_awarded_at: user.profile_completion_pro_awarded_at,
+      points: user.points || 0,
+      bio: profile?.bio || null,
+      occupation: profile?.occupation || null,
+      photo_url: profile?.photo_url || null,
+      photo_count: photoCount,
+      status
+    }
+  })
+}
+
+/**
+ * Send a reminder message to user to complete their profile (via bot)
+ */
+export async function sendProfileCompletionReminder(userId: number): Promise<boolean> {
+  // This would trigger a bot notification - for now just log
+  console.log('[sendProfileCompletionReminder] Would send to user:', userId)
+  // In the future, this could call an RPC function or webhook
+  return true
+}
