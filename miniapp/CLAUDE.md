@@ -8,6 +8,16 @@ MAIN Community Mini App is a Telegram Mini App for community networking, events,
 
 **Key Features:** Event management with QR check-in, Tinder-style networking/matching, XP/rank gamification system, subscription tiers (Free/Light/Pro), achievement badges.
 
+## Hosting & Deployment
+
+| Component | Platform | Auto-deploy |
+|-----------|----------|-------------|
+| **Mini App** | Vercel | Yes, from `main` branch |
+| **Bot** | **Render** (render.com) | Yes, from `main` branch |
+| **Database** | Supabase (PostgreSQL) | N/A |
+
+See root `CLAUDE.md` for bot-specific documentation.
+
 ## Commands
 
 ```bash
