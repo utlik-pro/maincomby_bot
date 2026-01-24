@@ -44,6 +44,14 @@ async def run_migrations(engine: AsyncEngine) -> None:
         # Add is_test column to bot_events for QA testing
         ("bot_events", "is_test",
          "ALTER TABLE bot_events ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT FALSE"),
+        # Smart engagement queue tracking
+        ("bot_users", "last_engagement_sent_at",
+         "ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS last_engagement_sent_at TIMESTAMP"),
+        # Onboarding tracking
+        ("bot_users", "onboarding_event_sent_at",
+         "ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS onboarding_event_sent_at TIMESTAMP"),
+        ("bot_users", "onboarding_feedback_sent_at",
+         "ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS onboarding_feedback_sent_at TIMESTAMP"),
     ]
 
     async with engine.begin() as conn:

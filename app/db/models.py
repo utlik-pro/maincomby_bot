@@ -53,6 +53,13 @@ class User(Base):
     engagement_likes_5_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     engagement_likes_10_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+    # Smart queue tracking (max 1 engagement notification per day)
+    last_engagement_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Onboarding tracking
+    onboarding_event_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    onboarding_feedback_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     posts: Mapped[list[Post]] = relationship(back_populates="author")
     roles: Mapped[list[UserRole]] = relationship(back_populates="user")
     registrations: Mapped[list["EventRegistration"]] = relationship(back_populates="user")

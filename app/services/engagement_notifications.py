@@ -1,19 +1,23 @@
 """
 Engagement Notification Service for MAIN Community Bot
-Sends automated notifications to encourage app usage:
-- Profile completion reminders
-- Networking invitations
-- Return inactive users
-- Pending likes notifications
+
+Smart Queue System - Max 1 engagement notification per day per user.
+Priority order (high to low):
+1. Likes - most important, motivates return
+2. Events - upcoming event invitation (onboarding day 3)
+3. Profile - fill profile reminder (24h)
+4. Networking - try swipes (48h)
+5. Inactive - 7d/14d without activity
+6. Feedback - how do you like the community? (7d)
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 import logging
 
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import User, UserProfile, Swipe, EngagementNotification
@@ -26,6 +30,9 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ndpkxustvcijykzxqxrn.supabase.
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY", "")
 
 logger = logging.getLogger(__name__)
+
+# Notification types in priority order
+NOTIFICATION_TYPES = ['likes', 'event_invite', 'profile', 'swipes', 'inactive', 'feedback']
 
 
 class EngagementNotificationService:
@@ -73,6 +80,453 @@ class EngagementNotificationService:
         )
         session.add(notification)
         return notification
+
+    # === SMART QUEUE - Main Entry Point ===
+
+    async def process_engagement_queue_batch(self, session: AsyncSession) -> Dict[str, int]:
+        """Process engagement notification queue for all users.
+
+        Rules:
+        - Max 1 engagement notification per day per user
+        - Skip if last_engagement_sent_at is today
+        - Check conditions by priority order
+        - Send first matching notification
+        - Update last_engagement_sent_at
+
+        Returns:
+            Dict with counts by notification type
+        """
+        now = datetime.utcnow()
+        today_start = datetime.combine(now.date(), datetime.min.time())
+
+        stats = {t: 0 for t in NOTIFICATION_TYPES}
+        stats['skipped_today'] = 0
+        stats['no_notification'] = 0
+
+        # Get users who can receive notifications:
+        # - Not banned
+        # - Bot started (can receive messages)
+        # - Haven't received engagement notification today
+        query = select(User).where(
+            and_(
+                User.banned == False,
+                User.bot_started == True,
+                User.tg_user_id.isnot(None),
+                or_(
+                    User.last_engagement_sent_at.is_(None),
+                    User.last_engagement_sent_at < today_start
+                )
+            )
+        )
+        result = await session.execute(query)
+        users = result.scalars().all()
+
+        logger.info(f"Smart queue: checking {len(users)} eligible users")
+
+        for user in users:
+            try:
+                notification_type, context = await self._get_next_notification(session, user, now)
+
+                if notification_type:
+                    success = await self._send_queued_notification(user, notification_type, context)
+
+                    if success:
+                        # Update last sent timestamp (prevents more than 1 per day)
+                        user.last_engagement_sent_at = now
+
+                        # Update specific tracking field for this notification type
+                        self._mark_notification_sent(user, notification_type, context, now)
+
+                        # Log for analytics
+                        await self._log_notification(
+                            session, user.id, f'queue_{notification_type}',
+                            delivered=True,
+                            context=context
+                        )
+                        stats[notification_type] += 1
+                else:
+                    stats['no_notification'] += 1
+
+            except Exception as e:
+                logger.error(f"Queue processing failed for user {user.id}: {e}")
+                continue
+
+        await session.commit()
+
+        total_sent = sum(stats[t] for t in NOTIFICATION_TYPES)
+        logger.info(f"Smart queue completed: {total_sent} sent - {stats}")
+
+        return stats
+
+    async def _get_next_notification(
+        self, session: AsyncSession, user: User, now: datetime
+    ) -> Tuple[Optional[str], Dict[str, Any]]:
+        """Determine which notification to send based on priority.
+
+        Priority order:
+        1. Likes - pending likes
+        2. Event invite - upcoming event (onboarding)
+        3. Profile - incomplete profile (24h)
+        4. Swipes - no swipes (48h)
+        5. Inactive - 7d/14d inactive
+        6. Feedback - user for 7 days
+
+        Returns:
+            Tuple of (notification_type, context_dict) or (None, {})
+        """
+        context: Dict[str, Any] = {}
+
+        # 1. LIKES - Check for pending likes (highest priority)
+        likes_count = await self._check_pending_likes(user)
+        if likes_count > 0:
+            # Only send if we haven't sent this tier yet
+            tier = self._get_likes_tier(likes_count, user)
+            if tier:
+                context = {'likes_count': likes_count, 'tier': tier}
+                return ('likes', context)
+
+        # 2. EVENT INVITE - Check for upcoming events (onboarding day 3+)
+        if await self._should_send_event_invite(user, now):
+            event = await self._get_upcoming_event()
+            if event:
+                context = {'event': event}
+                return ('event_invite', context)
+
+        # 3. PROFILE - Check if profile is incomplete (24h after registration)
+        if await self._should_send_profile_reminder(user, now):
+            return ('profile', {})
+
+        # 4. SWIPES - Check if user has no swipes (48h after registration)
+        if await self._should_send_swipes_invite(user, now):
+            return ('swipes', {})
+
+        # 5. INACTIVE - Check for 7d/14d inactivity
+        inactive_type = self._check_inactive_status(user, now)
+        if inactive_type:
+            if inactive_type == '7d':
+                context = {'likes_count': likes_count}
+            else:  # 14d
+                context = {'new_users_count': await self._count_new_users()}
+            return ('inactive', context)
+
+        # 6. FEEDBACK - Check if user is 7+ days old (onboarding complete)
+        if self._should_send_feedback_request(user, now):
+            return ('feedback', {})
+
+        return (None, {})
+
+    async def _send_queued_notification(
+        self, user: User, notification_type: str, context: Dict[str, Any]
+    ) -> bool:
+        """Send a notification based on type."""
+        try:
+            if notification_type == 'likes':
+                return await self.send_likes_notification(
+                    user.tg_user_id,
+                    context.get('likes_count', 1),
+                    context.get('tier', 1)
+                )
+
+            elif notification_type == 'event_invite':
+                return await self._send_event_invite(user.tg_user_id, context.get('event'))
+
+            elif notification_type == 'profile':
+                return await self.send_profile_incomplete(user.tg_user_id)
+
+            elif notification_type == 'swipes':
+                return await self.send_no_swipes(user.tg_user_id)
+
+            elif notification_type == 'inactive':
+                likes = context.get('likes_count', 0)
+                new_users = context.get('new_users_count', 50)
+                if likes > 0 or not context.get('new_users_count'):
+                    return await self.send_inactive_7d(user.tg_user_id, likes)
+                else:
+                    return await self.send_inactive_14d(user.tg_user_id, new_users)
+
+            elif notification_type == 'feedback':
+                return await self._send_feedback_request(user.tg_user_id)
+
+            return False
+        except Exception as e:
+            logger.error(f"Failed to send {notification_type} to {user.tg_user_id}: {e}")
+            return False
+
+    def _mark_notification_sent(
+        self, user: User, notification_type: str, context: Dict[str, Any], now: datetime
+    ) -> None:
+        """Mark specific tracking field when notification is sent."""
+        if notification_type == 'likes':
+            tier = context.get('tier', 1)
+            if tier == 1:
+                user.engagement_likes_1_sent_at = now
+            elif tier == 3:
+                user.engagement_likes_3_sent_at = now
+            elif tier == 5:
+                user.engagement_likes_5_sent_at = now
+            elif tier == 10:
+                user.engagement_likes_10_sent_at = now
+
+        elif notification_type == 'event_invite':
+            user.onboarding_event_sent_at = now
+
+        elif notification_type == 'profile':
+            user.engagement_profile_sent_at = now
+
+        elif notification_type == 'swipes':
+            user.engagement_swipes_sent_at = now
+
+        elif notification_type == 'inactive':
+            # Mark based on which inactive type was sent
+            if user.engagement_inactive_7d_sent_at is None:
+                user.engagement_inactive_7d_sent_at = now
+            else:
+                user.engagement_inactive_14d_sent_at = now
+
+        elif notification_type == 'feedback':
+            user.onboarding_feedback_sent_at = now
+
+    # === Queue Helper Methods ===
+
+    async def _check_pending_likes(self, user: User) -> int:
+        """Check how many pending likes the user has."""
+        supabase = self._get_supabase()
+        if not supabase:
+            return 0
+
+        try:
+            likes = supabase.table("user_swipes").select("id", count="exact").eq(
+                "swiped_id", user.id
+            ).eq("action", "like").execute()
+            return likes.count or 0
+        except Exception as e:
+            logger.warning(f"Failed to check likes for user {user.id}: {e}")
+            return 0
+
+    def _get_likes_tier(self, likes_count: int, user: User) -> Optional[int]:
+        """Get the tier for likes notification (1, 3, 5, 10).
+
+        Returns tier if we should send, None if already sent this tier.
+        """
+        if likes_count >= 10 and user.engagement_likes_10_sent_at is None:
+            return 10
+        elif likes_count >= 5 and user.engagement_likes_5_sent_at is None:
+            return 5
+        elif likes_count >= 3 and user.engagement_likes_3_sent_at is None:
+            return 3
+        elif likes_count >= 1 and user.engagement_likes_1_sent_at is None:
+            return 1
+        return None
+
+    async def _should_send_event_invite(self, user: User, now: datetime) -> bool:
+        """Check if we should send event invite (onboarding day 3+)."""
+        # Skip if already sent
+        if user.onboarding_event_sent_at is not None:
+            return False
+
+        # Only send after 3 days of registration
+        if user.first_seen_at is None:
+            return False
+
+        days_since_registration = (now - user.first_seen_at).days
+        return days_since_registration >= 3
+
+    async def _get_upcoming_event(self) -> Optional[Dict[str, Any]]:
+        """Get the nearest upcoming event."""
+        supabase = self._get_supabase()
+        if not supabase:
+            return None
+
+        try:
+            now = datetime.utcnow()
+            events = supabase.table("bot_events").select(
+                "id, title, location, date"
+            ).gte(
+                "date", now.isoformat()
+            ).eq(
+                "is_test", False
+            ).order("date").limit(1).execute()
+
+            if events.data and len(events.data) > 0:
+                return events.data[0]
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get upcoming event: {e}")
+            return None
+
+    async def _should_send_profile_reminder(self, user: User, now: datetime) -> bool:
+        """Check if we should send profile completion reminder."""
+        # Skip if already sent
+        if user.engagement_profile_sent_at is not None:
+            return False
+
+        # Only send after 24h of registration
+        if user.first_seen_at is None:
+            return False
+
+        hours_since_registration = (now - user.first_seen_at).total_seconds() / 3600
+        if hours_since_registration < 24:
+            return False
+
+        # Check if profile is actually incomplete
+        supabase = self._get_supabase()
+        if supabase:
+            try:
+                profile = supabase.table("bot_profiles").select("id, bio, occupation").eq(
+                    "user_id", user.id
+                ).execute()
+
+                if profile.data and len(profile.data) > 0:
+                    p = profile.data[0]
+                    if p.get('bio') or p.get('occupation'):
+                        # Profile is filled, don't send
+                        return False
+            except Exception as e:
+                logger.warning(f"Failed to check profile for user {user.id}: {e}")
+
+        return True
+
+    async def _should_send_swipes_invite(self, user: User, now: datetime) -> bool:
+        """Check if we should send networking/swipes invitation."""
+        # Skip if already sent
+        if user.engagement_swipes_sent_at is not None:
+            return False
+
+        # Only send after 48h of registration
+        if user.first_seen_at is None:
+            return False
+
+        hours_since_registration = (now - user.first_seen_at).total_seconds() / 3600
+        if hours_since_registration < 48:
+            return False
+
+        # Check if user has any swipes
+        supabase = self._get_supabase()
+        if supabase:
+            try:
+                swipes = supabase.table("user_swipes").select("id", count="exact").eq(
+                    "swiper_id", user.id
+                ).execute()
+
+                if swipes.count and swipes.count > 0:
+                    # Has swipes, don't send
+                    return False
+            except Exception as e:
+                logger.warning(f"Failed to check swipes for user {user.id}: {e}")
+
+        return True
+
+    def _check_inactive_status(self, user: User, now: datetime) -> Optional[str]:
+        """Check if user is inactive and which reminder to send.
+
+        Returns '7d', '14d', or None.
+        """
+        cutoff_7d = now - timedelta(days=7)
+        cutoff_14d = now - timedelta(days=14)
+
+        # Determine last activity
+        last_activity = user.last_app_open_at or user.first_seen_at
+        if not last_activity:
+            return None
+
+        # Check 14d first (if already got 7d reminder)
+        if user.engagement_inactive_7d_sent_at is not None:
+            if user.engagement_inactive_14d_sent_at is None and last_activity <= cutoff_14d:
+                return '14d'
+
+        # Check 7d
+        if user.engagement_inactive_7d_sent_at is None and last_activity <= cutoff_7d:
+            return '7d'
+
+        return None
+
+    async def _count_new_users(self) -> int:
+        """Count new users in last 2 weeks."""
+        supabase = self._get_supabase()
+        if not supabase:
+            return 50
+
+        try:
+            two_weeks_ago = datetime.utcnow() - timedelta(days=14)
+            new_users = supabase.table("bot_users").select("id", count="exact").gte(
+                "first_seen_at", two_weeks_ago.isoformat()
+            ).execute()
+            return new_users.count or 50
+        except Exception as e:
+            logger.warning(f"Failed to count new users: {e}")
+            return 50
+
+    def _should_send_feedback_request(self, user: User, now: datetime) -> bool:
+        """Check if we should send feedback request (7 days after registration)."""
+        # Skip if already sent
+        if user.onboarding_feedback_sent_at is not None:
+            return False
+
+        # Only send after 7 days of registration
+        if user.first_seen_at is None:
+            return False
+
+        days_since_registration = (now - user.first_seen_at).days
+        return days_since_registration >= 7
+
+    async def _send_event_invite(self, user_id: int, event: Optional[Dict[str, Any]]) -> bool:
+        """Send event invitation notification."""
+        try:
+            if not event:
+                return False
+
+            title = event.get('title', 'Мероприятие')
+            location = event.get('location', '')
+            date_str = event.get('date', '')
+
+            # Format date
+            try:
+                date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                formatted_date = date.strftime('%d.%m в %H:%M')
+            except:
+                formatted_date = date_str
+
+            text = (
+                f"📅 Скоро мероприятие!\n\n"
+                f"<b>{title}</b>\n"
+            )
+            if location:
+                text += f"📍 {location}\n"
+            text += f"🗓 {formatted_date}\n\n"
+            text += "Познакомься с сообществом вживую!"
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode="HTML",
+                reply_markup=self._get_miniapp_button("Зарегистрироваться →", f"event_{event.get('id', '')}")
+            )
+            logger.info(f"Sent event invite to user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send event invite to {user_id}: {e}")
+            return False
+
+    async def _send_feedback_request(self, user_id: int) -> bool:
+        """Send feedback request notification."""
+        try:
+            text = (
+                "💬 Ты с нами уже неделю!\n\n"
+                "Как тебе MAIN Community?\n"
+                "Твой feedback поможет сделать сообщество лучше."
+            )
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode="HTML",
+                reply_markup=self._get_miniapp_button("Оставить отзыв →", "feedback")
+            )
+            logger.info(f"Sent feedback request to user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send feedback request to {user_id}: {e}")
+            return False
 
     # === PROFILE INCOMPLETE ===
 

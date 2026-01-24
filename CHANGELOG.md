@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Smart Engagement Queue**: Max 1 engagement notification per day per user
+  - Priority system: Likes > Events > Profile > Swipes > Inactive > Feedback
+  - Replaces 4 separate engagement jobs with 1 unified queue
+  - New onboarding notifications: event invite (day 3), feedback request (day 7)
+  - Runs 3 times daily (10:00, 14:00, 18:00)
+
 ### Changed
 - **BREAKING**: Bot now uses Supabase PostgreSQL directly instead of SQLite
   - Requires `DATABASE_URL` environment variable (PostgreSQL connection string)
