@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { isInviteRequired, updateAppSetting, getActiveEvents } from '@/lib/supabase'
-import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw, BookOpen, Send, Gift, Bell } from 'lucide-react'
+import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw, BookOpen, Send, Gift, Bell, CalendarPlus } from 'lucide-react'
 import { UserRoleManager } from './UserRoleManager'
 import { UserManager } from './UserManager'
 import { AnalyticsPanel } from './AnalyticsPanel'
 import { LearningAdminPanel } from './LearningAdminPanel'
 import { BroadcastPanel } from './BroadcastPanel'
 import { EngagementDashboard } from './EngagementDashboard'
+import { EventAdminPanel } from './EventAdminPanel'
 import { Event } from '@/types'
 import { hapticFeedback, shareUrl } from '@/lib/telegram'
 
@@ -29,6 +30,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     const [showBroadcast, setShowBroadcast] = useState(false)
     const [showUserManager, setShowUserManager] = useState(false)
     const [showEngagement, setShowEngagement] = useState(false)
+    const [showEventAdmin, setShowEventAdmin] = useState(false)
     const [events, setEvents] = useState<Event[]>([])
     const [eventsLoading, setEventsLoading] = useState(false)
 
@@ -192,6 +194,25 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                         </div>
                     </button>
 
+                    {/* Event Admin */}
+                    <button
+                        onClick={() => setShowEventAdmin(true)}
+                        className="w-full p-4 rounded-xl bg-bg border border-border hover:border-green-500/50 transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-green-500/20 text-green-500 flex items-center justify-center">
+                                    <CalendarPlus size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Управление событиями</div>
+                                    <div className="text-xs text-gray-400">Создать и редактировать</div>
+                                </div>
+                            </div>
+                            <div className="text-green-500">→</div>
+                        </div>
+                    </button>
+
                     {/* Analytics */}
                     <button
                         onClick={() => setShowAnalytics(true)}
@@ -343,6 +364,11 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
             {/* Engagement Dashboard */}
             {showEngagement && (
                 <EngagementDashboard onClose={() => setShowEngagement(false)} />
+            )}
+
+            {/* Event Admin Panel */}
+            {showEventAdmin && (
+                <EventAdminPanel onClose={() => setShowEventAdmin(false)} />
             )}
 
             {/* Event Links Panel */}

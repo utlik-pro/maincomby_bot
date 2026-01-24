@@ -294,6 +294,8 @@ export interface Event {
   price: number
   // Link to web events table
   web_event_id?: string | null
+  // Test event - only visible to testers in TESTER_IDS
+  is_test?: boolean
 }
 
 export interface EventRegistration {

@@ -662,6 +662,68 @@ export async function getEventById(eventId: number): Promise<Event | null> {
   return data
 }
 
+/**
+ * Get all events (for admin panel)
+ */
+export async function getAllEvents(tgUserId?: number): Promise<Event[]> {
+  const userIsTester = tgUserId ? await isTester(tgUserId) : false
+
+  let query = getSupabase()
+    .from('bot_events')
+    .select('*')
+
+  // Non-testers don't see test events
+  if (!userIsTester) {
+    query = query.or('is_test.is.null,is_test.eq.false')
+  }
+
+  const { data, error } = await query.order('event_date', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Create a new event
+ */
+export async function createEvent(event: Omit<Event, 'id' | 'created_at'>): Promise<Event> {
+  const { data, error } = await getSupabase()
+    .from('bot_events')
+    .insert(event)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Update an existing event
+ */
+export async function updateEvent(eventId: number, updates: Partial<Event>): Promise<Event> {
+  const { data, error } = await getSupabase()
+    .from('bot_events')
+    .update(updates)
+    .eq('id', eventId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Delete an event
+ */
+export async function deleteEvent(eventId: number): Promise<void> {
+  const { error } = await getSupabase()
+    .from('bot_events')
+    .delete()
+    .eq('id', eventId)
+
+  if (error) throw error
+}
+
 export async function getEventRegistration(eventId: number, userId: number) {
   const { data, error } = await getSupabase()
     .from('bot_registrations')
