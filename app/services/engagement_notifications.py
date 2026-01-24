@@ -977,8 +977,14 @@ class EngagementNotificationService:
 
     # === PROFILE COMPLETION PRO REWARD ===
 
+    # Promotion deadline: January 25, 2026 23:59:59 UTC
+    PROMO_DEADLINE = datetime(2026, 1, 25, 23, 59, 59)
+
     async def award_profile_completion_pro_batch(self, session: AsyncSession) -> int:
-        """Award 3-day PRO to users with complete profile + photo.
+        """Award PRO to users with complete profile + photo.
+
+        Promotion until Jan 25, 2026 23:59: 7 days PRO + 500 XP
+        After promotion: 3 days PRO + 100 XP
 
         Conditions:
         - profile has bio and occupation filled
@@ -987,6 +993,13 @@ class EngagementNotificationService:
         """
         now = datetime.utcnow()
         awarded_count = 0
+
+        # Check if we're in promo period
+        is_promo = now <= self.PROMO_DEADLINE
+        pro_days = 7 if is_promo else 3
+        xp_reward = 500 if is_promo else 100
+
+        logger.info(f"Profile completion PRO: promo={is_promo}, days={pro_days}, xp={xp_reward}")
 
         # Get users who haven't received this reward yet
         query = select(User).where(
@@ -1030,27 +1043,35 @@ class EngagementNotificationService:
                 # All conditions met - award PRO!
                 # Calculate expiration (extend if already PRO)
                 if user.subscription_tier == 'pro' and user.subscription_expires_at and user.subscription_expires_at > now:
-                    expires_at = user.subscription_expires_at + timedelta(days=3)
+                    expires_at = user.subscription_expires_at + timedelta(days=pro_days)
                 else:
-                    expires_at = now + timedelta(days=3)
+                    expires_at = now + timedelta(days=pro_days)
 
                 user.subscription_tier = 'pro'
                 user.subscription_expires_at = expires_at
                 user.profile_completion_pro_awarded_at = now
 
+                # Award XP
+                user.points += xp_reward
+
                 # Send notification
                 if user.tg_user_id and user.bot_started:
-                    await self._send_profile_pro_reward_notification(user.tg_user_id)
+                    await self._send_profile_pro_reward_notification(user.tg_user_id, pro_days, xp_reward)
 
                 # Log for analytics
                 await self._log_notification(
                     session, user.id, 'profile_completion_pro',
                     delivered=True,
-                    context={'expires_at': expires_at.isoformat()}
+                    context={
+                        'expires_at': expires_at.isoformat(),
+                        'pro_days': pro_days,
+                        'xp_reward': xp_reward,
+                        'is_promo': is_promo
+                    }
                 )
 
                 awarded_count += 1
-                logger.info(f"Awarded 3-day PRO to user {user.id} for profile completion")
+                logger.info(f"Awarded {pro_days}-day PRO + {xp_reward} XP to user {user.id} for profile completion")
 
             except Exception as e:
                 logger.error(f"Failed to check/award PRO to user {user.id}: {e}")
@@ -1060,15 +1081,18 @@ class EngagementNotificationService:
         logger.info(f"Profile completion PRO: {awarded_count} users awarded")
         return awarded_count
 
-    async def _send_profile_pro_reward_notification(self, user_id: int) -> bool:
+    async def _send_profile_pro_reward_notification(self, user_id: int, pro_days: int = 3, xp_reward: int = 100) -> bool:
         """Send notification about profile completion PRO reward."""
         try:
             text = (
-                "🎉 <b>Поздравляем!</b>\n\n"
-                "Ты заполнил профиль и добавил фото — получи PRO на 3 дня в подарок!\n\n"
-                "✨ Безлимитные свайпы\n"
-                "👀 Смотри кто тебя лайкнул\n"
-                "⭐ 5 суперлайков в день"
+                f"🎉 <b>Поздравляем!</b>\n\n"
+                f"Ты заполнил профиль и добавил фото — получи:\n\n"
+                f"⭐ PRO подписку на {pro_days} дней\n"
+                f"✨ +{xp_reward} XP к рейтингу\n\n"
+                f"Теперь тебе доступны:\n"
+                f"• Безлимитные свайпы\n"
+                f"• Смотреть кто тебя лайкнул\n"
+                f"• 5 суперлайков в день"
             )
 
             await self.bot.send_message(
