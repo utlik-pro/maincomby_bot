@@ -342,9 +342,9 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
   // Form view (create or edit)
   if (tab === 'create' || tab === 'edit') {
     return (
-      <div className="fixed inset-0 z-50 bg-bg overflow-hidden flex flex-col">
+      <div className="fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col pt-14">
         {/* Header */}
-        <div className="p-4 flex items-center gap-3 border-b border-bg-card shrink-0">
+        <div className="p-4 flex items-center gap-3 border-b border-bg-card shrink-0 bg-bg">
           <button
             onClick={() => {
               resetForm()
@@ -681,9 +681,13 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
 
   // List view
   return (
-    <div className="fixed inset-0 z-50 bg-bg overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col">
+      {/* DEBUG BANNER - REMOVE AFTER TESTING */}
+      <div className="bg-red-500 text-white text-center py-3 font-bold text-lg shrink-0">
+        🔴 НОВАЯ ВЕРСИЯ v2 🔴
+      </div>
       {/* Header */}
-      <div className="p-4 flex items-center gap-3 border-b border-bg-card shrink-0">
+      <div className="p-4 flex items-center gap-3 border-b border-bg-card shrink-0 bg-bg-card">
         <button onClick={onClose} className="text-gray-400">
           <ArrowLeft size={24} />
         </button>
@@ -697,9 +701,9 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
             setTab('create')
             hapticFeedback.light()
           }}
-          className="w-10 h-10 rounded-xl bg-accent text-bg flex items-center justify-center"
+          className="w-12 h-12 rounded-xl bg-accent text-bg flex items-center justify-center shadow-lg"
         >
-          <Plus size={24} />
+          <Plus size={28} strokeWidth={3} />
         </button>
       </div>
 

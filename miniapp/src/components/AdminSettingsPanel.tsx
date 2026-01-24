@@ -108,6 +108,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     }
 
     return (
+        <>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
@@ -335,6 +336,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                     LOGGED AS: {user?.username} (SUPERADMIN)
                 </div>
             </div>
+        </div>
 
             {/* User Role Manager Modal */}
             {showRoleManager && (
@@ -444,6 +446,6 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                     </div>
                 </div>
             )}
-        </div>
+        </>
     )
 }
