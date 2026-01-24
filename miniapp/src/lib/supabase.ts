@@ -5412,3 +5412,118 @@ export async function getPendingPromptsCount(): Promise<number> {
 
   return count || 0
 }
+
+// ============================================
+// Admin: Profile Moderation
+// ============================================
+
+export type ProfileModerationStatus = 'pending' | 'approved' | 'rejected'
+
+interface ProfileForModeration {
+  id: number
+  user_id: number
+  photo_url: string | null
+  occupation: string | null
+  bio: string | null
+  moderation_status: ProfileModerationStatus
+  created_at: string
+  user?: {
+    id: number
+    username: string | null
+    first_name: string | null
+    last_name: string | null
+    tg_user_id: number
+  }
+}
+
+/**
+ * Get profiles for admin moderation with user info
+ */
+export async function getAllProfilesAdmin(status?: ProfileModerationStatus): Promise<ProfileForModeration[]> {
+  const supabase = getSupabase()
+
+  let query = supabase
+    .from('bot_profiles')
+    .select(`
+      id,
+      user_id,
+      photo_url,
+      occupation,
+      bio,
+      moderation_status,
+      created_at,
+      user:bot_users!user_id(
+        id,
+        username,
+        first_name,
+        last_name,
+        tg_user_id
+      )
+    `)
+    .order('created_at', { ascending: true })
+
+  if (status) {
+    query = query.eq('moderation_status', status)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[getAllProfilesAdmin] Error:', error)
+    return []
+  }
+
+  // Transform the data to flatten the user array (Supabase returns it as array)
+  return (data || []).map((profile: any) => ({
+    ...profile,
+    user: Array.isArray(profile.user) ? profile.user[0] : profile.user
+  })) as ProfileForModeration[]
+}
+
+/**
+ * Approve or reject a profile (admin only)
+ */
+export async function moderateProfileAdmin(
+  profileId: number,
+  status: 'approved' | 'rejected',
+  moderatorId: number
+): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('bot_profiles')
+    .update({
+      moderation_status: status,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', profileId)
+
+  if (error) {
+    console.error('[moderateProfileAdmin] Error:', error)
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Batch approve/reject profiles (admin only)
+ */
+export async function batchModerateProfiles(
+  profileIds: number[],
+  status: 'approved' | 'rejected',
+  moderatorId: number
+): Promise<{ success: number; failed: number }> {
+  const { error } = await getSupabase()
+    .from('bot_profiles')
+    .update({
+      moderation_status: status,
+      updated_at: new Date().toISOString()
+    })
+    .in('id', profileIds)
+
+  if (error) {
+    console.error('[batchModerateProfiles] Error:', error)
+    return { success: 0, failed: profileIds.length }
+  }
+
+  return { success: profileIds.length, failed: 0 }
+}

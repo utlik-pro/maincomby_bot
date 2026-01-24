@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { isInviteRequired, updateAppSetting, getActiveEvents } from '@/lib/supabase'
-import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw, BookOpen, Send, Gift, Bell, CalendarPlus } from 'lucide-react'
+import { Settings, X, Shield, Users, AlertCircle, UserCog, Link, Copy, Calendar, ChevronLeft, Share2, BarChart3, RotateCcw, BookOpen, Send, Gift, Bell, CalendarPlus, UserCheck } from 'lucide-react'
 import { UserRoleManager } from './UserRoleManager'
 import { UserManager } from './UserManager'
+import { ProfileModerationPanel } from './ProfileModerationPanel'
 import { AnalyticsPanel } from './AnalyticsPanel'
 import { LearningAdminPanel } from './LearningAdminPanel'
 import { BroadcastPanel } from './BroadcastPanel'
@@ -31,6 +32,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     const [showUserManager, setShowUserManager] = useState(false)
     const [showEngagement, setShowEngagement] = useState(false)
     const [showEventAdmin, setShowEventAdmin] = useState(false)
+    const [showProfileModeration, setShowProfileModeration] = useState(false)
     const [events, setEvents] = useState<Event[]>([])
     const [eventsLoading, setEventsLoading] = useState(false)
 
@@ -184,6 +186,25 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                                 </div>
                             </div>
                             <div className="text-accent">→</div>
+                        </div>
+                    </button>
+
+                    {/* Profile Moderation */}
+                    <button
+                        onClick={() => setShowProfileModeration(true)}
+                        className="w-full p-4 rounded-xl bg-bg border border-border hover:border-pink-500/50 transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-pink-500/20 text-pink-500 flex items-center justify-center">
+                                    <UserCheck size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Модерация профилей</div>
+                                    <div className="text-xs text-gray-400">Одобрить/отклонить профили для матчинга</div>
+                                </div>
+                            </div>
+                            <div className="text-pink-500">→</div>
                         </div>
                     </button>
 
@@ -355,6 +376,11 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
         {/* User Role Manager Modal */}
             {showRoleManager && (
                 <UserRoleManager onClose={() => setShowRoleManager(false)} />
+            )}
+
+            {/* Profile Moderation Panel */}
+            {showProfileModeration && (
+                <ProfileModerationPanel onClose={() => setShowProfileModeration(false)} />
             )}
 
             {/* Analytics Panel */}
