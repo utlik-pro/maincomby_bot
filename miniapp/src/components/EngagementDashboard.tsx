@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { X, Bell, TrendingUp, Users, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { getEngagementStats, type EngagementStats } from '@/lib/supabase'
+import { backButton } from '@/lib/telegram'
 import { Card } from './ui'
 
 interface EngagementDashboardProps {
@@ -32,6 +33,14 @@ const NOTIFICATION_TYPE_ICONS: Record<string, string> = {
 }
 
 export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({ onClose }) => {
+    // Telegram BackButton handler
+    useEffect(() => {
+        backButton.show(onClose)
+        return () => {
+            backButton.hide()
+        }
+    }, [onClose])
+
     const { data: stats, isLoading, error } = useQuery({
         queryKey: ['engagementStats'],
         queryFn: getEngagementStats,

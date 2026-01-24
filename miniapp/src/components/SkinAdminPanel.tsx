@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   Search,
   X,
   Check,
@@ -10,6 +9,7 @@ import {
   User,
 } from 'lucide-react'
 import { searchUsersForAdmin, getAllSkins, adminAssignSkin, createNotification } from '@/lib/supabase'
+import { backButton } from '@/lib/telegram'
 import { AvatarWithSkin, Card, Input, Button, Badge, SkinPreview } from '@/components/ui'
 import { useAppStore, useToastStore } from '@/lib/store'
 import type { AvatarSkin } from '@/types'
@@ -22,6 +22,14 @@ const SkinAdminPanel: React.FC<SkinAdminPanelProps> = ({ onClose }) => {
   const { user: adminUser } = useAppStore()
   const { addToast } = useToastStore()
   const queryClient = useQueryClient()
+
+  // Telegram BackButton handler
+  useEffect(() => {
+    backButton.show(onClose)
+    return () => {
+      backButton.hide()
+    }
+  }, [onClose])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUser, setSelectedUser] = useState<any>(null)
@@ -102,14 +110,9 @@ const SkinAdminPanel: React.FC<SkinAdminPanelProps> = ({ onClose }) => {
   return (
     <div className="min-h-screen bg-bg">
       {/* Header */}
-      <div className="p-4 flex items-center gap-3 border-b border-bg-card">
-        <button onClick={onClose} className="text-gray-400">
-          <ArrowLeft size={24} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold">Управление скинами</h1>
-          <p className="text-sm text-gray-400">Назначение скинов пользователям</p>
-        </div>
+      <div className="p-4 border-b border-bg-card">
+        <h1 className="text-xl font-bold">Управление скинами</h1>
+        <p className="text-sm text-gray-400">Назначение скинов пользователям</p>
       </div>
 
       <div className="p-4">

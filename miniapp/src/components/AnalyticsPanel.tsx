@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ChevronLeft,
   ChevronDown,
   BarChart3,
   Users,
@@ -31,6 +30,7 @@ import {
   Check
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
+import { backButton } from '@/lib/telegram'
 import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser, getEventsList, getEventRegistrationStats, EventListItem, EventRegistrationStats, getSpeakerAnalytics, SpeakerAnalytics } from '@/lib/analytics'
 import { Card, Button, Badge, Avatar } from '@/components/ui'
 import { getEventRegistrations, getEventCheckins, updateAppSetting } from '@/lib/supabase'
@@ -68,6 +68,14 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
 
   // Superadmin check
   const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
+
+  // Telegram BackButton handler
+  useEffect(() => {
+    backButton.show(onClose)
+    return () => {
+      backButton.hide()
+    }
+  }, [onClose])
 
   const { data: analytics, isLoading, error } = useQuery({
     queryKey: ['analytics'],
@@ -932,9 +940,6 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
       {/* Header */}
       <div className="sticky top-28 z-10 bg-bg border-b border-border">
         <div className="flex items-center gap-3 p-4 bg-purple-500/10">
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
-            <ChevronLeft size={24} />
-          </button>
           <h1 className="text-lg font-bold text-purple-500 flex items-center gap-2">
             <BarChart3 size={20} />
             Аналитика

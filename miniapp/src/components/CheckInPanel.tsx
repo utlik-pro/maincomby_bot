@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   Search,
   ScanLine,
   Users,
@@ -23,7 +22,7 @@ import {
 } from '@/lib/supabase'
 import { AvatarWithSkin, Card, Input, Button, Badge } from '@/components/ui'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback, showQrScanner, isQrScannerSupported } from '@/lib/telegram'
+import { hapticFeedback, showQrScanner, isQrScannerSupported, backButton } from '@/lib/telegram'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import type { Event } from '@/types'
@@ -40,6 +39,21 @@ const CheckInPanel: React.FC<CheckInPanelProps> = ({ onClose }) => {
   const queryClient = useQueryClient()
 
   const [viewMode, setViewMode] = useState<ViewMode>('events')
+
+  // Telegram BackButton handler - changes based on view mode
+  useEffect(() => {
+    const handleBack = () => {
+      if (viewMode === 'events') {
+        onClose()
+      } else if (viewMode === 'participants' || viewMode === 'scanner') {
+        setViewMode('events')
+      }
+    }
+    backButton.show(handleBack)
+    return () => {
+      backButton.hide()
+    }
+  }, [viewMode, onClose])
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [manualCode, setManualCode] = useState('')
   const [isScanning, setIsScanning] = useState(false)
@@ -143,14 +157,9 @@ const CheckInPanel: React.FC<CheckInPanelProps> = ({ onClose }) => {
     return (
       <div className="min-h-screen bg-bg">
         {/* Header */}
-        <div className="p-4 flex items-center gap-3 border-b border-bg-card">
-          <button onClick={onClose} className="text-gray-400">
-            <ArrowLeft size={24} />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold">Чек-ин участников</h1>
-            <p className="text-sm text-gray-400">Выберите мероприятие</p>
-          </div>
+        <div className="p-4 border-b border-bg-card">
+          <h1 className="text-xl font-bold">Чек-ин участников</h1>
+          <p className="text-sm text-gray-400">Выберите мероприятие</p>
         </div>
 
         <div className="p-4 space-y-3">
@@ -195,9 +204,6 @@ const CheckInPanel: React.FC<CheckInPanelProps> = ({ onClose }) => {
       <div className="min-h-screen bg-bg">
         {/* Header */}
         <div className="p-4 flex items-center gap-3 border-b border-bg-card">
-          <button onClick={() => setViewMode('events')} className="text-gray-400">
-            <ArrowLeft size={24} />
-          </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold truncate">{selectedEvent.title}</h1>
             <p className="text-sm text-gray-400">
@@ -307,14 +313,9 @@ const CheckInPanel: React.FC<CheckInPanelProps> = ({ onClose }) => {
     return (
       <div className="min-h-screen bg-bg">
         {/* Header */}
-        <div className="p-4 flex items-center gap-3 border-b border-bg-card">
-          <button onClick={() => setViewMode('participants')} className="text-gray-400">
-            <ArrowLeft size={24} />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold">Сканер билетов</h1>
-            <p className="text-sm text-gray-400">{selectedEvent.title}</p>
-          </div>
+        <div className="p-4 border-b border-bg-card">
+          <h1 className="text-xl font-bold">Сканер билетов</h1>
+          <p className="text-sm text-gray-400">{selectedEvent.title}</p>
         </div>
 
         <div className="p-4 space-y-6">

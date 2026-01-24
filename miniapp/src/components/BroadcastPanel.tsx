@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ChevronLeft,
   Send,
   History,
   FileText,
@@ -22,6 +21,7 @@ import {
   Plus
 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
+import { backButton } from '@/lib/telegram'
 import { Card, Button, Badge } from '@/components/ui'
 import {
   getBroadcasts,
@@ -111,6 +111,14 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
 
   // Superadmin check
   const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
+
+  // Telegram BackButton handler
+  useEffect(() => {
+    backButton.show(onClose)
+    return () => {
+      backButton.hide()
+    }
+  }, [onClose])
 
   // Fetch cities for dropdown
   const { data: cities = [] } = useQuery({
@@ -670,9 +678,6 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
       {/* Header */}
       <div className="sticky top-28 z-10 bg-bg border-b border-border">
         <div className="flex items-center gap-3 p-4 bg-blue-500/10">
-          <button onClick={onClose} className="text-blue-500">
-            <ChevronLeft size={24} />
-          </button>
           <h1 className="text-lg font-bold text-blue-500 flex items-center gap-2">
             <Send size={20} />
             Рассылка

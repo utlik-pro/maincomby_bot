@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Users, Shield, Award, Medal, Crown, HeartHandshake, X, Check, Loader2 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { searchUsers, updateUserRole } from '@/lib/supabase'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import { Avatar, Badge, Button, Card } from './ui'
 import { TeamRole, TEAM_BADGES } from '@/types'
 
@@ -24,6 +24,14 @@ const ROLE_OPTIONS: Array<{ value: TeamRole; label: string; icon: React.ReactNod
 export const UserRoleManager: React.FC<UserRoleManagerProps> = ({ onClose }) => {
     const { user: currentUser } = useAppStore()
     const { addToast } = useToastStore()
+
+    // Telegram BackButton handler
+    useEffect(() => {
+        backButton.show(onClose)
+        return () => {
+            backButton.hide()
+        }
+    }, [onClose])
 
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedUser, setSelectedUser] = useState<any>(null)

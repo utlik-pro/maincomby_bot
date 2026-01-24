@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, XCircle, Loader2, Eye, Sparkles } from 'lucide-react'
 import { getAllPromptsAdmin, moderatePrompt } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import type { CommunityPrompt, PromptStatus } from '@/types'
 
 interface PromptModerationPanelProps {
@@ -15,6 +15,14 @@ export const PromptModerationPanel: React.FC<PromptModerationPanelProps> = ({ on
     const { user } = useAppStore()
     const queryClient = useQueryClient()
     const [filter, setFilter] = useState<PromptStatus | 'all'>('pending')
+
+    // Telegram BackButton handler
+    useEffect(() => {
+        backButton.show(onClose)
+        return () => {
+            backButton.hide()
+        }
+    }, [onClose])
     const [selectedPrompt, setSelectedPrompt] = useState<CommunityPrompt | null>(null)
 
     const { data: prompts = [], isLoading } = useQuery({

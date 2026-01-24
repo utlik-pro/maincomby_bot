@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Users, X, Gift, Crown, Loader2 } from 'lucide-react'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { searchUsers, giftUserPro, getRecentAdminActions } from '@/lib/supabase'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import { Avatar, Card } from './ui'
 
 interface UserManagerProps {
@@ -15,6 +15,14 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
     const { user } = useAppStore()
     const { addToast } = useToastStore()
     const [activeTab, setActiveTab] = useState<'search' | 'history'>('search')
+
+    // Telegram BackButton handler
+    useEffect(() => {
+        backButton.show(onClose)
+        return () => {
+            backButton.hide()
+        }
+    }, [onClose])
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedUser, setSelectedUser] = useState<any>(null)
     const [isGifting, setIsGifting] = useState(false)

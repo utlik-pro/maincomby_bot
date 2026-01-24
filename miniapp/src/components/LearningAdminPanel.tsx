@@ -1,14 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BookOpen, ChevronLeft, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
 import {
   getAllCourses,
   getAllCourseLessons,
   toggleCourseEnabled,
   toggleLessonEnabled,
 } from '@/lib/supabase'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import { useToastStore } from '@/lib/store'
 import type { Course, Lesson } from '@/types'
 
@@ -190,6 +190,14 @@ export const LearningAdminPanel: React.FC<LearningAdminPanelProps> = ({ onClose 
   const { addToast } = useToastStore()
   const [togglingCourseId, setTogglingCourseId] = useState<string | null>(null)
 
+  // Telegram BackButton handler
+  useEffect(() => {
+    backButton.show(onClose)
+    return () => {
+      backButton.hide()
+    }
+  }, [onClose])
+
   // Fetch all courses
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ['adminCourses'],
@@ -234,18 +242,11 @@ export const LearningAdminPanel: React.FC<LearningAdminPanelProps> = ({ onClose 
       {/* Content */}
       <div className="relative w-full max-w-sm bg-bg-card rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-border flex justify-between items-center bg-accent/10">
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white"
-          >
-            <ChevronLeft size={24} />
-          </button>
+        <div className="p-4 border-b border-border flex items-center justify-center bg-accent/10">
           <h2 className="text-lg font-bold flex items-center gap-2 text-accent">
             <BookOpen size={20} />
             Управление курсами
           </h2>
-          <div className="w-6" />
         </div>
 
         {/* Courses list */}
