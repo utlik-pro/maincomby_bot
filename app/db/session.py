@@ -10,7 +10,12 @@ from .models import Base
 
 def create_engine() -> AsyncEngine:
     settings = load_settings()
-    return create_async_engine(settings.database_url, echo=False, future=True)
+    return create_async_engine(
+        settings.database_url,
+        echo=False,
+        future=True,
+        connect_args={"statement_cache_size": 0}  # Required for Supabase pooler (pgbouncer)
+    )
 
 
 def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
