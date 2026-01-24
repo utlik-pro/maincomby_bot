@@ -4410,6 +4410,16 @@ export async function getBroadcastAudience(
       return (data || []).map(u => ({ user_id: u.id, tg_user_id: u.tg_user_id }))
     }
 
+    case 'testers': {
+      // Get tester IDs from the API (cached)
+      const testerIds = await getTesterIds()
+      if (testerIds.length === 0) return []
+
+      const { data, error } = await baseQuery.in('tg_user_id', testerIds)
+      if (error) throw error
+      return (data || []).map(u => ({ user_id: u.id, tg_user_id: u.tg_user_id }))
+    }
+
     default:
       return []
   }

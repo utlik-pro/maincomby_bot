@@ -888,7 +888,7 @@ export interface LessonWithProgress extends Lesson {
 // ============================================
 
 export type BroadcastStatus = 'draft' | 'scheduled' | 'sending' | 'completed' | 'cancelled' | 'failed'
-export type BroadcastAudienceType = 'all' | 'city' | 'subscription' | 'team_role' | 'event_not_registered' | 'custom'
+export type BroadcastAudienceType = 'all' | 'city' | 'subscription' | 'team_role' | 'event_not_registered' | 'custom' | 'testers'
 export type RecipientStatus = 'pending' | 'sent' | 'delivered' | 'failed'
 
 export interface BroadcastAudienceConfig {
@@ -990,6 +990,7 @@ export const AUDIENCE_TYPE_LABELS: Record<BroadcastAudienceType, string> = {
   team_role: 'По роли в команде',
   event_not_registered: 'Не зарегистрированы на событие',
   custom: 'Выборочно',
+  testers: 'Тестировщики',
 }
 
 export const BROADCAST_STATUS_CONFIG: Record<BroadcastStatus, { label: string; color: string }> = {

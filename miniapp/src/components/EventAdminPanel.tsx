@@ -1,14 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   Calendar,
   Clock,
-  MapPin,
-  Users,
-  Link as LinkIcon,
-  Mic,
-  DollarSign,
   Plus,
   Pencil,
   Trash2,
@@ -17,14 +12,24 @@ import {
   FlaskConical,
   Loader2,
   Save,
-  X,
   AlertCircle,
   ChevronDown,
+  Megaphone,
+  Check,
 } from 'lucide-react'
-import { getAllEvents, createEvent, updateEvent, deleteEvent } from '@/lib/supabase'
+import {
+  getAllEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  createBroadcast,
+  getBroadcastAudience,
+  queueBroadcastRecipients,
+  getBroadcastById,
+} from '@/lib/supabase'
 import { useAppStore, useToastStore } from '@/lib/store'
 import { hapticFeedback } from '@/lib/telegram'
-import { Event } from '@/types'
+import { Event, BroadcastAudienceType } from '@/types'
 
 interface EventAdminPanelProps {
   onClose: () => void
@@ -67,6 +72,12 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [form, setForm] = useState(defaultEventForm)
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+
+  // Announcement states
+  const [sendAnnouncement, setSendAnnouncement] = useState(false)
+  const [announcementStatus, setAnnouncementStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [announcementStats, setAnnouncementStats] = useState<{ sent: number; failed: number } | null>(null)
+  const [announcingEventId, setAnnouncingEventId] = useState<number | null>(null)
 
   // Query events
   const { data: events = [], isLoading, refetch } = useQuery({
@@ -127,6 +138,99 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
   const resetForm = () => {
     setForm(defaultEventForm)
     setEditingEvent(null)
+    setSendAnnouncement(false)
+    setAnnouncementStatus('idle')
+    setAnnouncementStats(null)
+  }
+
+  // Format event message for announcement
+  const formatEventMessage = (event: Event): string => {
+    const date = new Date(event.event_date)
+    const dateStr = date.toLocaleDateString('ru-RU', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
+    const timeStr = date.toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+
+    let message = `📅 *${dateStr}* в *${timeStr}*\n`
+    message += `📍 ${event.city}`
+    if (event.location) message += ` • ${event.location}`
+    message += '\n\n'
+    if (event.description) message += `${event.description}\n\n`
+    if (event.speakers) message += `🎤 Спикеры: ${event.speakers}\n`
+    if (event.price > 0) message += `💰 Цена: ${event.price} BYN\n`
+    message += '\nЖдём тебя! 🚀'
+
+    return message
+  }
+
+  // Send event announcement
+  const sendEventAnnouncement = async (event: Event): Promise<{ sent: number; failed: number }> => {
+    const audienceType: BroadcastAudienceType = event.is_test ? 'testers' : 'all'
+    const testBadge = event.is_test ? '🧪 [TEST] ' : ''
+
+    // Create broadcast
+    const broadcast = await createBroadcast({
+      title: `${testBadge}🎉 ${event.title}`,
+      message: formatEventMessage(event),
+      message_type: 'markdown',
+      deep_link_screen: 'events',
+      deep_link_button_text: 'Зарегистрироваться',
+      audience_type: audienceType,
+      audience_config: {},
+      exclude_banned: true,
+      scheduled_at: null,
+      created_by: user!.id,
+    })
+
+    // Get audience and queue recipients
+    const audience = await getBroadcastAudience(audienceType, {})
+    if (audience.length === 0) {
+      return { sent: 0, failed: 0 }
+    }
+
+    await queueBroadcastRecipients(broadcast.id, audience)
+
+    // Send in batches via API
+    let hasMore = true
+    while (hasMore) {
+      const response = await fetch(`/api/send-broadcast?action=process_batch&broadcastId=${broadcast.id}`)
+      const result = await response.json()
+      hasMore = result.hasMore
+      if (hasMore) {
+        await new Promise((r) => setTimeout(r, 1500)) // Rate limit delay
+      }
+    }
+
+    // Get final stats
+    const finalBroadcast = await getBroadcastById(broadcast.id)
+    return {
+      sent: finalBroadcast?.delivered_count || 0,
+      failed: finalBroadcast?.failed_count || 0,
+    }
+  }
+
+  // Handle announcing an existing event (from list)
+  const handleAnnounceEvent = async (event: Event) => {
+    setAnnouncingEventId(event.id)
+    setAnnouncementStatus('sending')
+    hapticFeedback.medium()
+
+    try {
+      const stats = await sendEventAnnouncement(event)
+      setAnnouncementStats(stats)
+      setAnnouncementStatus('success')
+      hapticFeedback.success()
+    } catch (e) {
+      console.error('Announcement error:', e)
+      setAnnouncementStatus('error')
+      hapticFeedback.error()
+      addToast('Ошибка отправки анонса', 'error')
+    }
   }
 
   const handleEditEvent = (event: Event) => {
@@ -153,7 +257,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
     hapticFeedback.light()
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.title.trim()) {
       addToast('Введите название', 'error')
       return
@@ -186,7 +290,35 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
     if (editingEvent) {
       updateMutation.mutate({ id: editingEvent.id, data: eventData })
     } else {
-      createMutation.mutate(eventData)
+      // Create event and optionally send announcement
+      try {
+        const newEvent = await createEvent(eventData)
+        hapticFeedback.success()
+        addToast('Событие создано', 'success')
+
+        queryClient.invalidateQueries({ queryKey: ['allEvents'] })
+        queryClient.invalidateQueries({ queryKey: ['activeEvents'] })
+
+        // Send announcement if checkbox is checked
+        if (sendAnnouncement) {
+          setAnnouncementStatus('sending')
+          try {
+            const stats = await sendEventAnnouncement(newEvent)
+            setAnnouncementStats(stats)
+            setAnnouncementStatus('success')
+          } catch (e) {
+            console.error('Announcement error:', e)
+            setAnnouncementStatus('error')
+            addToast('Событие создано, но ошибка отправки анонса', 'error')
+          }
+        } else {
+          resetForm()
+          setTab('list')
+        }
+      } catch (error: any) {
+        hapticFeedback.error()
+        addToast(error.message || 'Ошибка создания', 'error')
+      }
     }
   }
 
@@ -205,7 +337,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
     }
   }
 
-  const isPending = createMutation.isPending || updateMutation.isPending
+  const isPending = createMutation.isPending || updateMutation.isPending || announcementStatus === 'sending'
 
   // Form view (create or edit)
   if (tab === 'create' || tab === 'edit') {
@@ -450,6 +582,34 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                 <ToggleLeft size={28} className="text-gray-500" />
               )}
             </button>
+
+            {/* Send Announcement (only for new events) */}
+            {!editingEvent && (
+              <button
+                type="button"
+                onClick={() => setSendAnnouncement(!sendAnnouncement)}
+                className={`w-full p-4 rounded-xl border flex items-center justify-between ${
+                  sendAnnouncement
+                    ? 'bg-blue-500/10 border-blue-500/50'
+                    : 'bg-bg-card border-border'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Megaphone size={20} className={sendAnnouncement ? 'text-blue-500' : 'text-gray-400'} />
+                  <div className="text-left">
+                    <div className="font-medium">Отправить анонс</div>
+                    <div className="text-xs text-gray-400">
+                      {form.is_test ? 'Только тестировщикам' : 'Всем пользователям'}
+                    </div>
+                  </div>
+                </div>
+                {sendAnnouncement ? (
+                  <ToggleRight size={28} className="text-blue-500" />
+                ) : (
+                  <ToggleLeft size={28} className="text-gray-500" />
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -465,9 +625,56 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
             ) : (
               <Save size={20} />
             )}
-            {editingEvent ? 'Сохранить' : 'Создать событие'}
+            {announcementStatus === 'sending'
+              ? 'Отправка анонса...'
+              : editingEvent
+                ? 'Сохранить'
+                : 'Создать событие'}
           </button>
         </div>
+
+        {/* Announcement Success Modal */}
+        {announcementStatus === 'success' && announcementStats && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/80"
+              onClick={() => {
+                setAnnouncementStatus('idle')
+                resetForm()
+                setTab('list')
+              }}
+            />
+            <div className="relative bg-bg-card p-6 rounded-2xl text-center max-w-sm w-full">
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check size={32} className="text-green-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Анонс отправлен!</h3>
+              <p className="text-gray-400 text-sm mb-4">Событие создано и анонс разослан</p>
+              <div className="space-y-2 text-sm bg-bg rounded-xl p-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Доставлено:</span>
+                  <span className="text-green-400 font-semibold">{announcementStats.sent}</span>
+                </div>
+                {announcementStats.failed > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Ошибки:</span>
+                    <span className="text-red-400 font-semibold">{announcementStats.failed}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setAnnouncementStatus('idle')
+                  resetForm()
+                  setTab('list')
+                }}
+                className="mt-4 w-full py-3 bg-accent text-bg rounded-xl font-bold"
+              >
+                Готово
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -569,6 +776,18 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                   Изменить
                 </button>
                 <button
+                  onClick={() => handleAnnounceEvent(event)}
+                  disabled={announcingEventId === event.id && announcementStatus === 'sending'}
+                  className="py-2 px-3 rounded-lg text-sm flex items-center justify-center bg-blue-500/20 text-blue-500"
+                  title="Анонсировать"
+                >
+                  {announcingEventId === event.id && announcementStatus === 'sending' ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Megaphone size={18} />
+                  )}
+                </button>
+                <button
                   onClick={() => handleToggleActive(event)}
                   disabled={updateMutation.isPending}
                   className={`py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2 ${
@@ -599,6 +818,48 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
           ))
         )}
       </div>
+
+      {/* Announcement Success Modal (for list view) */}
+      {announcementStatus === 'success' && announcementStats && announcingEventId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/80"
+            onClick={() => {
+              setAnnouncementStatus('idle')
+              setAnnouncementStats(null)
+              setAnnouncingEventId(null)
+            }}
+          />
+          <div className="relative bg-bg-card p-6 rounded-2xl text-center max-w-sm w-full">
+            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check size={32} className="text-green-500" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Анонс отправлен!</h3>
+            <div className="space-y-2 text-sm bg-bg rounded-xl p-4">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Доставлено:</span>
+                <span className="text-green-400 font-semibold">{announcementStats.sent}</span>
+              </div>
+              {announcementStats.failed > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Ошибки:</span>
+                  <span className="text-red-400 font-semibold">{announcementStats.failed}</span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setAnnouncementStatus('idle')
+                setAnnouncementStats(null)
+                setAnnouncingEventId(null)
+              }}
+              className="mt-4 w-full py-3 bg-accent text-bg rounded-xl font-bold"
+            >
+              Готово
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
