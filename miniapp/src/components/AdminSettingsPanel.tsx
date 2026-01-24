@@ -126,10 +126,10 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
         <>
         <div className="fixed inset-0 z-50 bg-bg overflow-y-auto">
             {/* Top spacer for Telegram header */}
-            <div className="h-14" />
+            <div className="h-24" />
 
             {/* Sticky Header */}
-            <div className="sticky top-14 z-10 bg-bg border-b border-border">
+            <div className="sticky top-24 z-10 bg-bg border-b border-border">
                 <div className="p-4 bg-red-500/10">
                     <h2 className="text-lg font-bold flex items-center gap-2 text-red-500">
                         <Shield size={20} />
@@ -391,10 +391,10 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
         {showEventLinks && (
             <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
                 {/* Top spacer */}
-                <div className="h-14" />
+                <div className="h-24" />
 
                 {/* Sticky Header */}
-                <div className="sticky top-14 z-10 bg-bg border-b border-border">
+                <div className="sticky top-24 z-10 bg-bg border-b border-border">
                     <div className="p-4 bg-blue-500/10">
                         <h2 className="text-lg font-bold flex items-center gap-2 text-blue-500">
                             <Link size={20} />

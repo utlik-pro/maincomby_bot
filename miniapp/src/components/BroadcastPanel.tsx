@@ -673,10 +673,10 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
       {/* Spacer for Telegram header */}
-      <div className="h-14" />
+      <div className="h-24" />
 
       {/* Header */}
-      <div className="sticky top-14 z-10 bg-bg border-b border-border">
+      <div className="sticky top-24 z-10 bg-bg border-b border-border">
         <div className="flex items-center gap-3 p-4 bg-blue-500/10">
           <h1 className="text-lg font-bold text-blue-500 flex items-center gap-2">
             <Send size={20} />

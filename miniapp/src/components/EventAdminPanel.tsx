@@ -353,10 +353,10 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
     return (
       <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
         {/* Top spacer for Telegram header */}
-        <div className="h-14" />
+        <div className="h-24" />
 
         {/* Sticky Header */}
-        <div className="sticky top-14 z-10 bg-bg border-b border-border">
+        <div className="sticky top-24 z-10 bg-bg border-b border-border">
           <div className="p-4 bg-green-500/10">
             <h1 className="text-xl font-bold text-green-500">
               {editingEvent ? 'Редактирование' : 'Новое событие'}
