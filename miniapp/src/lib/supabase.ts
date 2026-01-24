@@ -2668,6 +2668,34 @@ export async function getNewBacklogCount(): Promise<number> {
 // ============================================
 
 /**
+ * Sync bot_profiles.photo_url with the first available profile photo.
+ * If no photos exist, keeps the current photo_url (Telegram avatar).
+ * Call this after any photo upload/delete operation.
+ */
+export async function syncProfilePhotoUrl(userId: number): Promise<void> {
+  const supabase = getSupabase()
+
+  // Get the first photo by position
+  const { data: photos } = await supabase
+    .from('profile_photos')
+    .select('photo_url, position')
+    .eq('user_id', userId)
+    .order('position', { ascending: true })
+    .limit(1)
+
+  if (photos && photos.length > 0) {
+    // Update profile with the first available photo
+    await supabase
+      .from('bot_profiles')
+      .update({ photo_url: photos[0].photo_url })
+      .eq('user_id', userId)
+
+    console.log(`[syncProfilePhotoUrl] Updated user ${userId} photo_url to position ${photos[0].position}`)
+  }
+  // If no photos, keep the existing photo_url (Telegram avatar fallback)
+}
+
+/**
  * Upload a profile photo to Supabase Storage
  */
 export async function uploadProfilePhoto(
@@ -2743,13 +2771,8 @@ export async function uploadProfilePhoto(
     return { success: false, error: `БД: ${errorMsg}` }
   }
 
-  // Update profile photo_url if this is the primary photo
-  if (position === 0) {
-    await supabase
-      .from('bot_profiles')
-      .update({ photo_url: publicUrl })
-      .eq('user_id', userId)
-  }
+  // Always sync profile photo_url with the first available photo
+  await syncProfilePhotoUrl(userId)
 
   return { success: true, photo: photo as ProfilePhoto }
 }
@@ -2803,15 +2826,13 @@ export async function deleteProfilePhoto(photoId: string): Promise<boolean> {
     return false
   }
 
-  // If was primary, promote next photo and update profile
+  // Sync profile photo_url with first available photo (or keep Telegram avatar if none)
+  await syncProfilePhotoUrl(photo.user_id)
+
+  // If was primary, promote next photo
   if (photo.is_primary) {
     const remaining = await getProfilePhotos(photo.user_id)
     const newPrimary = remaining[0]
-
-    await supabase
-      .from('bot_profiles')
-      .update({ photo_url: newPrimary?.photo_url || null })
-      .eq('user_id', photo.user_id)
 
     if (newPrimary) {
       await supabase
