@@ -236,6 +236,44 @@ export const useAppStore = create<AppState>()(
   )
 )
 
+// Navigation Stack for admin screens
+export type AdminScreen =
+  | { type: 'admin-menu' }
+  | { type: 'event-admin'; subview?: 'list' | 'create' | 'edit'; eventId?: number }
+  | { type: 'broadcast' }
+  | { type: 'analytics' }
+  | { type: 'user-manager' }
+  | { type: 'role-manager' }
+  | { type: 'learning-admin' }
+  | { type: 'engagement' }
+  | { type: 'event-links' }
+
+interface NavigationState {
+  adminStack: AdminScreen[]
+  pushAdmin: (screen: AdminScreen) => void
+  popAdmin: () => void
+  clearAdmin: () => void
+  replaceAdmin: (screen: AdminScreen) => void
+}
+
+export const useNavigationStore = create<NavigationState>((set, get) => ({
+  adminStack: [],
+
+  pushAdmin: (screen) => set((state) => ({
+    adminStack: [...state.adminStack, screen]
+  })),
+
+  popAdmin: () => set((state) => ({
+    adminStack: state.adminStack.slice(0, -1)
+  })),
+
+  clearAdmin: () => set({ adminStack: [] }),
+
+  replaceAdmin: (screen) => set((state) => ({
+    adminStack: [...state.adminStack.slice(0, -1), screen]
+  })),
+}))
+
 // Toast notifications store
 interface ToastState {
   toasts: Array<{

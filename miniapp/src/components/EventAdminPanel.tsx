@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   Calendar,
   Clock,
   Plus,
@@ -28,7 +27,7 @@ import {
   getBroadcastById,
 } from '@/lib/supabase'
 import { useAppStore, useToastStore } from '@/lib/store'
-import { hapticFeedback } from '@/lib/telegram'
+import { hapticFeedback, backButton } from '@/lib/telegram'
 import { Event, BroadcastAudienceType } from '@/types'
 
 interface EventAdminPanelProps {
@@ -79,8 +78,26 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
   const [announcementStats, setAnnouncementStats] = useState<{ sent: number; failed: number } | null>(null)
   const [announcingEventId, setAnnouncingEventId] = useState<number | null>(null)
 
+  // Telegram BackButton handler
+  useEffect(() => {
+    const handleBack = () => {
+      if (tab === 'create' || tab === 'edit') {
+        resetForm()
+        setTab('list')
+      } else {
+        onClose()
+      }
+    }
+
+    backButton.show(handleBack)
+
+    return () => {
+      backButton.hide()
+    }
+  }, [tab, onClose])
+
   // Query events
-  const { data: events = [], isLoading, refetch } = useQuery({
+  const { data: events = [], isLoading } = useQuery({
     queryKey: ['allEvents', user?.tg_user_id],
     queryFn: () => getAllEvents(user?.tg_user_id),
   })
@@ -173,7 +190,6 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
     const audienceType: BroadcastAudienceType = event.is_test ? 'testers' : 'all'
     const testBadge = event.is_test ? '🧪 [TEST] ' : ''
 
-    // Create broadcast
     const broadcast = await createBroadcast({
       title: `${testBadge}🎉 ${event.title}`,
       message: formatEventMessage(event),
@@ -187,7 +203,6 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
       created_by: user!.id,
     })
 
-    // Get audience and queue recipients
     const audience = await getBroadcastAudience(audienceType, {})
     if (audience.length === 0) {
       return { sent: 0, failed: 0 }
@@ -195,18 +210,16 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
 
     await queueBroadcastRecipients(broadcast.id, audience)
 
-    // Send in batches via API
     let hasMore = true
     while (hasMore) {
       const response = await fetch(`/api/send-broadcast?action=process_batch&broadcastId=${broadcast.id}`)
       const result = await response.json()
       hasMore = result.hasMore
       if (hasMore) {
-        await new Promise((r) => setTimeout(r, 1500)) // Rate limit delay
+        await new Promise((r) => setTimeout(r, 1500))
       }
     }
 
-    // Get final stats
     const finalBroadcast = await getBroadcastById(broadcast.id)
     return {
       sent: finalBroadcast?.delivered_count || 0,
@@ -214,7 +227,6 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
     }
   }
 
-  // Handle announcing an existing event (from list)
   const handleAnnounceEvent = async (event: Event) => {
     setAnnouncingEventId(event.id)
     setAnnouncementStatus('sending')
@@ -267,7 +279,6 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
       return
     }
 
-    // Combine date and time
     const eventDateTime = new Date(`${form.event_date}T${form.event_time}:00`)
 
     const eventData: Omit<Event, 'id' | 'created_at'> = {
@@ -290,7 +301,6 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
     if (editingEvent) {
       updateMutation.mutate({ id: editingEvent.id, data: eventData })
     } else {
-      // Create event and optionally send announcement
       try {
         const newEvent = await createEvent(eventData)
         hapticFeedback.success()
@@ -299,7 +309,6 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
         queryClient.invalidateQueries({ queryKey: ['allEvents'] })
         queryClient.invalidateQueries({ queryKey: ['activeEvents'] })
 
-        // Send announcement if checkbox is checked
         if (sendAnnouncement) {
           setAnnouncementStatus('sending')
           try {
@@ -342,18 +351,9 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
   // Form view (create or edit)
   if (tab === 'create' || tab === 'edit') {
     return (
-      <div className="fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col pt-14">
+      <div className="fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-4 flex items-center gap-3 border-b border-bg-card shrink-0 bg-bg">
-          <button
-            onClick={() => {
-              resetForm()
-              setTab('list')
-            }}
-            className="text-gray-400"
-          >
-            <ArrowLeft size={24} />
-          </button>
+        <div className="p-4 flex items-center gap-3 border-b border-border shrink-0 bg-bg">
           <div className="flex-1">
             <h1 className="text-xl font-bold">
               {editingEvent ? 'Редактирование' : 'Новое событие'}
@@ -423,9 +423,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                   className="w-full px-4 py-3 bg-bg-card border border-border rounded-xl focus:border-accent outline-none appearance-none"
                 >
                   {CITIES.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
+                    <option key={city} value={city}>{city}</option>
                   ))}
                 </select>
                 <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -440,9 +438,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                   className="w-full px-4 py-3 bg-bg-card border border-border rounded-xl focus:border-accent outline-none appearance-none"
                 >
                   {EVENT_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
+                    <option key={type.value} value={type.value}>{type.label}</option>
                   ))}
                 </select>
                 <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -540,9 +536,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
               type="button"
               onClick={() => setForm({ ...form, is_test: !form.is_test })}
               className={`w-full p-4 rounded-xl border flex items-center justify-between ${
-                form.is_test
-                  ? 'bg-yellow-500/10 border-yellow-500/50'
-                  : 'bg-bg-card border-border'
+                form.is_test ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-bg-card border-border'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -552,11 +546,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                   <div className="text-xs text-gray-400">Видно только тестировщикам</div>
                 </div>
               </div>
-              {form.is_test ? (
-                <ToggleRight size={28} className="text-yellow-500" />
-              ) : (
-                <ToggleLeft size={28} className="text-gray-500" />
-              )}
+              {form.is_test ? <ToggleRight size={28} className="text-yellow-500" /> : <ToggleLeft size={28} className="text-gray-500" />}
             </button>
 
             {/* Is Active */}
@@ -564,9 +554,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
               type="button"
               onClick={() => setForm({ ...form, is_active: !form.is_active })}
               className={`w-full p-4 rounded-xl border flex items-center justify-between ${
-                form.is_active
-                  ? 'bg-green-500/10 border-green-500/50'
-                  : 'bg-bg-card border-border'
+                form.is_active ? 'bg-green-500/10 border-green-500/50' : 'bg-bg-card border-border'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -576,11 +564,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                   <div className="text-xs text-gray-400">Событие видно пользователям</div>
                 </div>
               </div>
-              {form.is_active ? (
-                <ToggleRight size={28} className="text-green-500" />
-              ) : (
-                <ToggleLeft size={28} className="text-gray-500" />
-              )}
+              {form.is_active ? <ToggleRight size={28} className="text-green-500" /> : <ToggleLeft size={28} className="text-gray-500" />}
             </button>
 
             {/* Send Announcement (only for new events) */}
@@ -589,9 +573,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                 type="button"
                 onClick={() => setSendAnnouncement(!sendAnnouncement)}
                 className={`w-full p-4 rounded-xl border flex items-center justify-between ${
-                  sendAnnouncement
-                    ? 'bg-blue-500/10 border-blue-500/50'
-                    : 'bg-bg-card border-border'
+                  sendAnnouncement ? 'bg-blue-500/10 border-blue-500/50' : 'bg-bg-card border-border'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -603,47 +585,28 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                     </div>
                   </div>
                 </div>
-                {sendAnnouncement ? (
-                  <ToggleRight size={28} className="text-blue-500" />
-                ) : (
-                  <ToggleLeft size={28} className="text-gray-500" />
-                )}
+                {sendAnnouncement ? <ToggleRight size={28} className="text-blue-500" /> : <ToggleLeft size={28} className="text-gray-500" />}
               </button>
             )}
           </div>
         </div>
 
         {/* Bottom Action */}
-        <div className="p-4 border-t border-bg-card shrink-0">
+        <div className="p-4 border-t border-border shrink-0 bg-bg">
           <button
             onClick={handleSubmit}
             disabled={isPending}
             className="w-full py-4 bg-accent text-bg font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isPending ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <Save size={20} />
-            )}
-            {announcementStatus === 'sending'
-              ? 'Отправка анонса...'
-              : editingEvent
-                ? 'Сохранить'
-                : 'Создать событие'}
+            {isPending ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+            {announcementStatus === 'sending' ? 'Отправка анонса...' : editingEvent ? 'Сохранить' : 'Создать событие'}
           </button>
         </div>
 
         {/* Announcement Success Modal */}
         {announcementStatus === 'success' && announcementStats && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div
-              className="absolute inset-0 bg-black/80"
-              onClick={() => {
-                setAnnouncementStatus('idle')
-                resetForm()
-                setTab('list')
-              }}
-            />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80" onClick={() => { setAnnouncementStatus('idle'); resetForm(); setTab('list') }} />
             <div className="relative bg-bg-card p-6 rounded-2xl text-center max-w-sm w-full">
               <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check size={32} className="text-green-500" />
@@ -663,11 +626,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                 )}
               </div>
               <button
-                onClick={() => {
-                  setAnnouncementStatus('idle')
-                  resetForm()
-                  setTab('list')
-                }}
+                onClick={() => { setAnnouncementStatus('idle'); resetForm(); setTab('list') }}
                 className="mt-4 w-full py-3 bg-accent text-bg rounded-xl font-bold"
               >
                 Готово
@@ -682,25 +641,14 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
   // List view
   return (
     <div className="fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col">
-      {/* DEBUG BANNER - REMOVE AFTER TESTING */}
-      <div className="bg-red-500 text-white text-center py-3 font-bold text-lg shrink-0">
-        🔴 НОВАЯ ВЕРСИЯ v2 🔴
-      </div>
       {/* Header */}
-      <div className="p-4 flex items-center gap-3 border-b border-bg-card shrink-0 bg-bg-card">
-        <button onClick={onClose} className="text-gray-400">
-          <ArrowLeft size={24} />
-        </button>
+      <div className="p-4 flex items-center gap-3 border-b border-border shrink-0 bg-bg">
         <div className="flex-1">
           <h1 className="text-xl font-bold">Управление событиями</h1>
           <p className="text-sm text-gray-400">{events.length} событий</p>
         </div>
         <button
-          onClick={() => {
-            resetForm()
-            setTab('create')
-            hapticFeedback.light()
-          }}
+          onClick={() => { resetForm(); setTab('create'); hapticFeedback.light() }}
           className="w-12 h-12 rounded-xl bg-accent text-bg flex items-center justify-center shadow-lg"
         >
           <Plus size={28} strokeWidth={3} />
@@ -717,13 +665,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
           <div className="text-center py-12 text-gray-400">
             <Calendar size={48} className="mx-auto mb-4 opacity-50" />
             <p>Нет событий</p>
-            <button
-              onClick={() => {
-                resetForm()
-                setTab('create')
-              }}
-              className="mt-4 text-accent"
-            >
+            <button onClick={() => { resetForm(); setTab('create') }} className="mt-4 text-accent">
               Создать первое
             </button>
           </div>
@@ -731,41 +673,29 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
           events.map((event) => (
             <div
               key={event.id}
-              className={`p-4 rounded-xl bg-bg-card border ${
-                !event.is_active ? 'border-gray-700 opacity-60' : 'border-border'
-              }`}
+              className={`p-4 rounded-xl bg-bg-card border ${!event.is_active ? 'border-gray-700 opacity-60' : 'border-border'}`}
             >
               <div className="flex items-start gap-3">
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                    event.is_test
-                      ? 'bg-yellow-500/20 text-yellow-500'
-                      : 'bg-accent/20 text-accent'
-                  }`}
-                >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                  event.is_test ? 'bg-yellow-500/20 text-yellow-500' : 'bg-accent/20 text-accent'
+                }`}>
                   {event.is_test ? <FlaskConical size={24} /> : <Calendar size={24} />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold truncate">{event.title}</span>
                     {event.is_test && (
-                      <span className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">
-                        TEST
-                      </span>
+                      <span className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">TEST</span>
                     )}
                   </div>
                   <div className="text-sm text-gray-400 flex items-center gap-2 mt-1">
                     <Clock size={14} />
                     {new Date(event.event_date).toLocaleDateString('ru-RU', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
+                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
                     })}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {event.city}
-                    {event.location && ` • ${event.location}`}
+                    {event.city}{event.location && ` • ${event.location}`}
                   </div>
                 </div>
               </div>
@@ -776,8 +706,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                   onClick={() => handleEditEvent(event)}
                   className="flex-1 py-2 px-3 bg-bg rounded-lg text-sm flex items-center justify-center gap-2 text-gray-300 hover:bg-gray-700/50"
                 >
-                  <Pencil size={16} />
-                  Изменить
+                  <Pencil size={16} /> Изменить
                 </button>
                 <button
                   onClick={() => handleAnnounceEvent(event)}
@@ -795,9 +724,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                   onClick={() => handleToggleActive(event)}
                   disabled={updateMutation.isPending}
                   className={`py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2 ${
-                    event.is_active
-                      ? 'bg-green-500/20 text-green-500'
-                      : 'bg-gray-700/50 text-gray-400'
+                    event.is_active ? 'bg-green-500/20 text-green-500' : 'bg-gray-700/50 text-gray-400'
                   }`}
                 >
                   {event.is_active ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
@@ -806,16 +733,10 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
                   onClick={() => handleDelete(event.id)}
                   disabled={deleteMutation.isPending}
                   className={`py-2 px-3 rounded-lg text-sm flex items-center justify-center ${
-                    deleteConfirm === event.id
-                      ? 'bg-red-500 text-white'
-                      : 'bg-red-500/20 text-red-500'
+                    deleteConfirm === event.id ? 'bg-red-500 text-white' : 'bg-red-500/20 text-red-500'
                   }`}
                 >
-                  {deleteConfirm === event.id ? (
-                    <AlertCircle size={18} />
-                  ) : (
-                    <Trash2 size={18} />
-                  )}
+                  {deleteConfirm === event.id ? <AlertCircle size={18} /> : <Trash2 size={18} />}
                 </button>
               </div>
             </div>
@@ -823,17 +744,10 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
         )}
       </div>
 
-      {/* Announcement Success Modal (for list view) */}
+      {/* Announcement Success Modal */}
       {announcementStatus === 'success' && announcementStats && announcingEventId && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/80"
-            onClick={() => {
-              setAnnouncementStatus('idle')
-              setAnnouncementStats(null)
-              setAnnouncingEventId(null)
-            }}
-          />
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80" onClick={() => { setAnnouncementStatus('idle'); setAnnouncementStats(null); setAnnouncingEventId(null) }} />
           <div className="relative bg-bg-card p-6 rounded-2xl text-center max-w-sm w-full">
             <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Check size={32} className="text-green-500" />
@@ -852,11 +766,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
               )}
             </div>
             <button
-              onClick={() => {
-                setAnnouncementStatus('idle')
-                setAnnouncementStats(null)
-                setAnnouncingEventId(null)
-              }}
+              onClick={() => { setAnnouncementStatus('idle'); setAnnouncementStats(null); setAnnouncingEventId(null) }}
               className="mt-4 w-full py-3 bg-accent text-bg rounded-xl font-bold"
             >
               Готово
