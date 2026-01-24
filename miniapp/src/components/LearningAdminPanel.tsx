@@ -234,10 +234,10 @@ export const LearningAdminPanel: React.FC<LearningAdminPanelProps> = ({ onClose 
   return (
     <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
       {/* Top spacer for Telegram header */}
-      <div className="h-28" />
+      <div className="h-14" />
 
       {/* Sticky Header */}
-      <div className="sticky top-28 z-10 bg-bg border-b border-border">
+      <div className="sticky top-14 z-10 bg-bg border-b border-border">
         <div className="p-4 bg-accent/10">
           <h2 className="text-lg font-bold flex items-center gap-2 text-accent">
             <BookOpen size={20} />

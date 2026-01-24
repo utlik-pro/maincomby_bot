@@ -353,10 +353,10 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
     return (
       <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
         {/* Top spacer for Telegram header */}
-        <div className="h-28" />
+        <div className="h-14" />
 
         {/* Sticky Header */}
-        <div className="sticky top-28 z-10 bg-bg border-b border-border">
+        <div className="sticky top-14 z-10 bg-bg border-b border-border">
           <div className="p-4 bg-green-500/10">
             <h1 className="text-xl font-bold text-green-500">
               {editingEvent ? 'Редактирование' : 'Новое событие'}
@@ -648,10 +648,10 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
   return (
     <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
       {/* Top spacer for Telegram header */}
-      <div className="h-28" />
+      <div className="h-14" />
 
       {/* Sticky Header */}
-      <div className="sticky top-28 z-10 bg-bg border-b border-border">
+      <div className="sticky top-14 z-10 bg-bg border-b border-border">
         <div className="p-4 flex items-center gap-3 bg-green-500/10">
           <div className="flex-1">
             <h1 className="text-xl font-bold text-green-500">Управление событиями</h1>
