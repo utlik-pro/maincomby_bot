@@ -486,6 +486,152 @@ async def main() -> None:
         )
         await cmd_pending_registrations(fake_msg)
 
+    @dp.message(F.text == "/trigger_reminders")
+    async def cmd_trigger_reminders(message: Message):
+        """Ручной запуск всех notification jobs (только для админов)."""
+        from .config import load_settings
+        settings = load_settings()
+        if message.from_user.id not in settings.admin_ids:
+            return
+
+        await message.answer("⏳ Запускаю все notification jobs...")
+
+        results = []
+
+        # 1. Event reminders (24h)
+        try:
+            from .services.notifications import get_notification_service
+            service = get_notification_service()
+            if service:
+                async with session_factory() as session:
+                    count = await service.send_event_reminders_batch(session)
+                    results.append(f"📅 Event reminders (24ч): {count} отправлено")
+            else:
+                results.append("❌ Event reminders: service not initialized")
+        except Exception as e:
+            results.append(f"❌ Event reminders: {e}")
+
+        # 2. Event starting soon (1h)
+        try:
+            from .services.notifications import get_notification_service
+            service = get_notification_service()
+            if service:
+                async with session_factory() as session:
+                    count = await service.send_event_starting_soon_batch(session)
+                    results.append(f"⏰ Starting soon (1ч): {count} отправлено")
+            else:
+                results.append("❌ Starting soon: service not initialized")
+        except Exception as e:
+            results.append(f"❌ Starting soon: {e}")
+
+        # 3. Ticket reminders
+        try:
+            from .services.notifications import get_notification_service
+            service = get_notification_service()
+            if service:
+                async with session_factory() as session:
+                    count = await service.send_ticket_reminders_batch(session)
+                    results.append(f"🎫 Ticket reminders: {count} отправлено")
+            else:
+                results.append("❌ Ticket reminders: service not initialized")
+        except Exception as e:
+            results.append(f"❌ Ticket reminders: {e}")
+
+        # 4. Engagement - profile incomplete
+        try:
+            from .services.engagement_notifications import get_engagement_service
+            eng_service = get_engagement_service()
+            if eng_service:
+                async with session_factory() as session:
+                    count = await eng_service.send_profile_incomplete_batch(session)
+                    results.append(f"👤 Profile incomplete: {count} отправлено")
+            else:
+                results.append("❌ Profile incomplete: service not initialized")
+        except Exception as e:
+            results.append(f"❌ Profile incomplete: {e}")
+
+        # 5. Engagement - no swipes
+        try:
+            from .services.engagement_notifications import get_engagement_service
+            eng_service = get_engagement_service()
+            if eng_service:
+                async with session_factory() as session:
+                    count = await eng_service.send_no_swipes_batch(session)
+                    results.append(f"💕 No swipes: {count} отправлено")
+            else:
+                results.append("❌ No swipes: service not initialized")
+        except Exception as e:
+            results.append(f"❌ No swipes: {e}")
+
+        # 6. Engagement - pending likes
+        try:
+            from .services.engagement_notifications import get_engagement_service
+            eng_service = get_engagement_service()
+            if eng_service:
+                async with session_factory() as session:
+                    count = await eng_service.send_pending_likes_batch(session)
+                    results.append(f"❤️ Pending likes: {count} отправлено")
+            else:
+                results.append("❌ Pending likes: service not initialized")
+        except Exception as e:
+            results.append(f"❌ Pending likes: {e}")
+
+        # 7. Check upcoming events in window
+        try:
+            from datetime import datetime, timedelta
+            from sqlalchemy import select, and_
+            from .db.models import Event
+
+            async with session_factory() as session:
+                minsk_offset = timedelta(hours=3)
+                now_utc = datetime.utcnow()
+                now_minsk = now_utc + minsk_offset
+
+                # Events in 24h window
+                start_24h = now_minsk + timedelta(hours=23)
+                end_24h = now_minsk + timedelta(hours=25)
+
+                events_query = select(Event).where(
+                    and_(
+                        Event.event_date >= start_24h,
+                        Event.event_date <= end_24h,
+                        Event.is_active == True
+                    )
+                )
+                events_result = await session.execute(events_query)
+                events_24h = events_result.scalars().all()
+
+                # Events in 1h window
+                start_1h = now_minsk + timedelta(minutes=45)
+                end_1h = now_minsk + timedelta(minutes=75)
+
+                events_1h_query = select(Event).where(
+                    and_(
+                        Event.event_date >= start_1h,
+                        Event.event_date <= end_1h,
+                        Event.is_active == True
+                    )
+                )
+                events_1h_result = await session.execute(events_1h_query)
+                events_1h = events_1h_result.scalars().all()
+
+                results.append(f"\n📊 <b>События в окнах:</b>")
+                results.append(f"   24ч окно ({start_24h.strftime('%H:%M')}-{end_24h.strftime('%H:%M')}): {len(events_24h)} событий")
+                results.append(f"   1ч окно ({start_1h.strftime('%H:%M')}-{end_1h.strftime('%H:%M')}): {len(events_1h)} событий")
+
+                if events_24h:
+                    for ev in events_24h[:3]:
+                        results.append(f"   • {ev.title} @ {ev.event_date.strftime('%d.%m %H:%M')}")
+
+        except Exception as e:
+            results.append(f"❌ Check events: {e}")
+
+        await message.answer(
+            "🔔 <b>Результаты ручного запуска</b>\n\n" +
+            "\n".join(results),
+            parse_mode="HTML"
+        )
+
     @dp.message(F.text == "/test_notifications")
     async def cmd_test_notifications(message: Message):
         """Диагностика системы уведомлений (только для админов)."""
