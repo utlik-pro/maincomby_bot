@@ -5663,7 +5663,7 @@ export async function checkAndAwardProfileCompletion(userId: number): Promise<{
   // 1. Get user data
   const { data: user, error: userError } = await supabase
     .from('bot_users')
-    .select('id, subscription_tier, subscription_expires_at, profile_completion_pro_awarded_at, points')
+    .select('id, tg_user_id, subscription_tier, subscription_expires_at, profile_completion_pro_awarded_at, points')
     .eq('id', userId)
     .single()
 
@@ -5740,6 +5740,20 @@ export async function checkAndAwardProfileCompletion(userId: number): Promise<{
   }
 
   console.log(`[checkAndAwardProfileCompletion] Awarded ${proDays} days PRO + ${xpReward} XP to user ${userId}`)
+
+  // 8. Send push notification to Telegram bot
+  if (user.tg_user_id) {
+    const expiresDate = expiresAt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+    await sendPushNotification(
+      user.tg_user_id,
+      {
+        type: 'system',
+        title: '🎉 Ты получил PRO!',
+        message: `За заполненный профиль ты получаешь:\n\n⭐ PRO на ${proDays} дней (до ${expiresDate})\n✨ +${xpReward} XP\n\nТеперь у тебя безлимитные свайпы и доступ ко всем функциям!`
+      },
+      { screen: 'profile', buttonText: 'Открыть профиль' }
+    )
+  }
 
   return {
     awarded: true,
