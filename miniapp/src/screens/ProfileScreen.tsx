@@ -1039,7 +1039,7 @@ const ProfileScreen: React.FC = () => {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => openTelegramLink(`https://t.me/${member.username}`)}
+                          onClick={() => openTelegramLink(`https://t.me/${(member.username || '').replace(/^@/, '').trim()}`)}
                         >
                           <ExternalLink size={14} />
                         </Button>

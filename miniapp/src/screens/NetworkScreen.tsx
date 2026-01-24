@@ -534,8 +534,10 @@ const NetworkScreen: React.FC = () => {
 
     // Open Telegram chat
     hapticFeedback.light()
-    if (matchUser?.username) {
-      openTelegramLink(`https://t.me/${matchUser.username}`)
+    // Clean username - remove @ prefix if present, trim whitespace
+    const cleanUsername = (matchUser?.username || '').replace(/^@/, '').trim()
+    if (cleanUsername) {
+      openTelegramLink(`https://t.me/${cleanUsername}`)
     } else if (matchUser?.tg_user_id) {
       // Fallback to user ID if no username
       openTelegramLink(`tg://user?id=${matchUser.tg_user_id}`)

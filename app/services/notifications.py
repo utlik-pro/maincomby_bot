@@ -179,10 +179,17 @@ class NotificationService:
             )
 
             # Add button to open chat with matched user
+            # Clean username - remove @ prefix if present, strip whitespace
+            username = (matched_user.username or "").lstrip("@").strip()
+            if username:
+                chat_url = f"https://t.me/{username}"
+            else:
+                chat_url = f"tg://user?id={matched_user.tg_user_id}"
+
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(
                     text=f"Написать {name}",
-                    url=f"https://t.me/{matched_user.username}" if matched_user.username else f"tg://user?id={matched_user.tg_user_id}"
+                    url=chat_url
                 )],
                 [InlineKeyboardButton(
                     text="Открыть приложение",

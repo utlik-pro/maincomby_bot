@@ -23,8 +23,11 @@ export const ProGiftModal: React.FC<ProGiftModalProps> = ({
 }) => {
     const handleThankYou = () => {
         hapticFeedback.success()
-        // Open chat with admin
-        openTelegramLink(`https://t.me/${adminUsername}`)
+        // Open chat with admin - clean username (remove @ prefix if present)
+        const cleanUsername = (adminUsername || '').replace(/^@/, '').trim()
+        if (cleanUsername) {
+            openTelegramLink(`https://t.me/${cleanUsername}`)
+        }
         onClose()
     }
 

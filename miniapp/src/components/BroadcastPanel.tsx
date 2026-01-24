@@ -782,12 +782,12 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
                           </div>
                           {recipient.user?.username ? (
                             <a
-                              href={`https://t.me/${recipient.user.username}`}
+                              href={`https://t.me/${(recipient.user.username || '').replace(/^@/, '').trim()}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-accent text-xs hover:underline"
                             >
-                              @{recipient.user.username}
+                              @{(recipient.user.username || '').replace(/^@/, '')}
                             </a>
                           ) : (
                             <span className="text-gray-600 text-xs">без username</span>
