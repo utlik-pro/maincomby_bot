@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -19,6 +19,7 @@ import {
   Heart,
   GraduationCap,
   Sparkles,
+  Clock,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Avatar, AvatarWithSkin, Badge, Card, Progress } from '@/components/ui'
@@ -32,6 +33,79 @@ import EventAnnouncementModal from '@/components/EventAnnouncementModal'
 import { SubscriptionBadge } from '@/components/SubscriptionBadge'
 import { useTenantBlocks } from '@/hooks/useTenantBlocks'
 import { DynamicBlockList } from '@/components/blocks'
+
+// Promo Banner Component - shows countdown timer for profile completion promo
+const PROMO_DEADLINE = new Date('2026-01-25T23:59:59')
+
+interface PromoBannerProps {
+  subscriptionTier?: string
+  onNavigateToProfile: () => void
+}
+
+const PromoBanner: React.FC<PromoBannerProps> = ({ subscriptionTier, onNavigateToProfile }) => {
+  const [timeLeft, setTimeLeft] = useState<string>('')
+  const [isExpired, setIsExpired] = useState(false)
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = new Date()
+      const diff = PROMO_DEADLINE.getTime() - now.getTime()
+
+      if (diff <= 0) {
+        setIsExpired(true)
+        return
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+      setTimeLeft(`${hours}ч ${minutes}м ${seconds}с`)
+    }
+
+    updateTimer()
+    const timer = setInterval(updateTimer, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Don't show if user already has PRO or promo expired
+  if (subscriptionTier === 'pro' || isExpired) {
+    return null
+  }
+
+  return (
+    <div className="px-4 mb-6">
+      <Card className="bg-gradient-to-r from-amber-500/20 to-orange-500/10 border border-amber-500/30 overflow-hidden relative">
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🎁</span>
+            <span className="font-bold text-amber-400">PRO на 7 дней + 500 XP</span>
+          </div>
+          <p className="text-sm text-gray-400 mb-3">
+            Заполни профиль и добавь фото до 25 января
+          </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-amber-400">
+              <Clock size={16} />
+              <span className="font-mono text-sm">{timeLeft}</span>
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onNavigateToProfile}
+              className="bg-amber-500 text-black px-4 py-2 rounded-xl text-sm font-semibold"
+            >
+              Заполнить →
+            </motion.button>
+          </div>
+        </div>
+        {/* Decorative background */}
+        <div className="absolute -right-4 -bottom-4 opacity-10">
+          <Gift size={80} className="text-amber-400" />
+        </div>
+      </Card>
+    </div>
+  )
+}
 
 // Legacy fallback - Avatar ring styles based on role/tier (used when skin system not available)
 const getLegacyAvatarRing = (teamRole?: string | null, tier?: string) => {
@@ -231,6 +305,7 @@ const HomeScreen: React.FC = () => {
           {/* Subscription tier badge - tap 6 times for easter egg */}
           <SubscriptionBadge
             tier={getSubscriptionTier()}
+            expiresAt={user?.subscription_expires_at}
             onClick={handleLogoTap}
           />
           <motion.button
@@ -260,6 +335,12 @@ const HomeScreen: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* Promo Banner - PRO for Profile Completion */}
+      <PromoBanner
+        subscriptionTier={user?.subscription_tier}
+        onNavigateToProfile={() => setActiveTab('profile')}
+      />
 
       {/* Daily Streak Card - временно отключен */}
       {/* {streakStatus && (
