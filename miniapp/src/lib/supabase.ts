@@ -223,6 +223,7 @@ export async function getApprovedProfiles(excludeUserId: number, city?: string) 
       )
     `)
     .eq('is_visible', true)
+    .eq('moderation_status', 'approved')
     .neq('user_id', excludeUserId)
 
   if (city) {
@@ -2925,6 +2926,7 @@ export async function getApprovedProfilesWithPhotos(
       photos:profile_photos(*)
     `)
     .eq('is_visible', true)
+    .eq('moderation_status', 'approved')
     .neq('user_id', excludeUserId)
 
   if (city) {
@@ -2947,6 +2949,7 @@ export async function getApprovedProfilesWithPhotos(
         )
       `)
       .eq('is_visible', true)
+      .eq('moderation_status', 'approved')
       .neq('user_id', excludeUserId)
 
     if (city) {
@@ -5566,7 +5569,6 @@ export async function getProfileCompletionStats(): Promise<ProfileCompletionUser
     `)
     .eq('banned', false)
     .order('id', { ascending: false })
-    .limit(200)
 
   if (usersError) {
     console.error('[getProfileCompletionStats] Users error:', usersError)
@@ -5638,4 +5640,112 @@ export async function sendProfileCompletionReminder(userId: number): Promise<boo
   console.log('[sendProfileCompletionReminder] Would send to user:', userId)
   // In the future, this could call an RPC function or webhook
   return true
+}
+
+/**
+ * Check if user's profile is complete and award PRO subscription if eligible.
+ * Called automatically when user saves their profile.
+ *
+ * Promotion period until Jan 25, 2026 23:59: 7 days PRO + 500 XP
+ * After promotion: 3 days PRO + 100 XP
+ *
+ * @returns null if not eligible, or reward details if awarded
+ */
+export async function checkAndAwardProfileCompletion(userId: number): Promise<{
+  awarded: boolean
+  proDays: number
+  xpReward: number
+  newPoints: number
+  expiresAt: string
+} | null> {
+  const supabase = getSupabase()
+
+  // 1. Get user data
+  const { data: user, error: userError } = await supabase
+    .from('bot_users')
+    .select('id, subscription_tier, subscription_expires_at, profile_completion_pro_awarded_at, points')
+    .eq('id', userId)
+    .single()
+
+  if (userError || !user) {
+    console.error('[checkAndAwardProfileCompletion] User not found:', userError)
+    return null
+  }
+
+  // 2. Check if already awarded
+  if (user.profile_completion_pro_awarded_at) {
+    console.log('[checkAndAwardProfileCompletion] Already awarded to user:', userId)
+    return null
+  }
+
+  // 3. Check profile completion (bio + occupation)
+  const { data: profile } = await supabase
+    .from('bot_profiles')
+    .select('bio, occupation')
+    .eq('user_id', userId)
+    .single()
+
+  if (!profile || !profile.bio?.trim() || !profile.occupation?.trim()) {
+    console.log('[checkAndAwardProfileCompletion] Profile incomplete for user:', userId)
+    return null
+  }
+
+  // 4. Check for photos in profile_photos table
+  const { count: photoCount } = await supabase
+    .from('profile_photos')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+
+  if (!photoCount || photoCount === 0) {
+    console.log('[checkAndAwardProfileCompletion] No photos for user:', userId)
+    return null
+  }
+
+  // 5. Calculate reward based on promo period
+  const PROMO_DEADLINE = new Date('2026-01-25T23:59:59Z')
+  const now = new Date()
+  const isPromo = now <= PROMO_DEADLINE
+  const proDays = isPromo ? 7 : 3
+  const xpReward = isPromo ? 500 : 100
+
+  // 6. Calculate expiration date (extend if already PRO)
+  let expiresAt: Date
+  if (user.subscription_tier === 'pro' && user.subscription_expires_at) {
+    const currentExpires = new Date(user.subscription_expires_at)
+    if (currentExpires > now) {
+      expiresAt = new Date(currentExpires.getTime() + proDays * 24 * 60 * 60 * 1000)
+    } else {
+      expiresAt = new Date(now.getTime() + proDays * 24 * 60 * 60 * 1000)
+    }
+  } else {
+    expiresAt = new Date(now.getTime() + proDays * 24 * 60 * 60 * 1000)
+  }
+
+  const newPoints = (user.points || 0) + xpReward
+
+  // 7. Update user with PRO subscription
+  const { error: updateError } = await supabase
+    .from('bot_users')
+    .update({
+      subscription_tier: 'pro',
+      subscription_expires_at: expiresAt.toISOString(),
+      profile_completion_pro_awarded_at: now.toISOString(),
+      points: newPoints
+    })
+    .eq('id', userId)
+
+  if (updateError) {
+    console.error('[checkAndAwardProfileCompletion] Update failed:', updateError)
+    return null
+  }
+
+  console.log(`[checkAndAwardProfileCompletion] Awarded ${proDays} days PRO + ${xpReward} XP to user ${userId}`)
+
+  return {
+    awarded: true,
+    proDays,
+    xpReward,
+    newPoints,
+    expiresAt: expiresAt.toISOString()
+  }
 }

@@ -46,7 +46,7 @@ import {
 import { useAppStore, useToastStore } from '@/lib/store'
 import { APP_VERSION } from '@/lib/version'
 import { hapticFeedback, openTelegramLink, isHomeScreenSupported, addToHomeScreen, requestNotificationPermission, checkNotificationPermission, isCloudNotificationsSupported, backButton, shareUrl } from '@/lib/telegram'
-import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto, addXP, hasReceivedXPBonus, checkProfileCompletionRewards, trackShare } from '@/lib/supabase'
+import { updateProfile, createProfile, updateProfileVisibility, getUnreadNotificationsCount, getTeamMembers, getUserBadges, getUserCompany, getUserLinks, getUserStats, getUserAvailableSkins, setUserActiveSkin, getUserById, getProfilePhotos, uploadProfilePhoto, deleteProfilePhoto, addXP, hasReceivedXPBonus, checkProfileCompletionRewards, trackShare, checkAndAwardProfileCompletion } from '@/lib/supabase'
 import { Avatar, AvatarWithSkin, Badge, Button, Card, Input, SkinPreview } from '@/components/ui'
 import { Crown as CrownIcon, Star as StarIcon, Shield as ShieldIcon, Gift as GiftIcon, Smartphone as SmartphoneIcon, MessageCircle as MessageCircleIcon, MoreVertical, Edit3 as Edit3Icon, Settings as SettingsIcon, LogOut, Bell as BellIcon, Users as UsersIcon, Eye, EyeOff as EyeOffIcon, Lock, Unlock, Zap, Trophy as TrophyIcon, Heart as HeartIcon, MapPin as MapPinIcon, Share as ShareIcon, Copy, Check as CheckIcon, X as XIcon, Search as SearchIcon, Dumbbell as DumbbellIcon, Palette as PaletteIcon, Diamond as DiamondIcon, HeartHandshake as HeartHandshakeIcon, Mic2 as Mic2Icon, Ticket as TicketIcon, BookOpen as BookOpenIcon, ChevronRight as ChevronRightIcon } from '@/components/Icons'
 import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
@@ -433,10 +433,27 @@ const ProfileScreen: React.FC = () => {
           } else {
             addToast(`Профиль обновлён! +${totalXP} XP`, 'xp', totalXP)
           }
-          return // Don't show regular success toast
         }
       } catch (e) {
         console.warn('Failed to check/award profile completion XP:', e)
+      }
+
+      // Check and award PRO for complete profile (bio + occupation + photo)
+      try {
+        const proReward = await checkAndAwardProfileCompletion(user.id)
+        if (proReward?.awarded) {
+          // Update local user state
+          setUser({
+            ...user,
+            subscription_tier: 'pro',
+            subscription_expires_at: proReward.expiresAt,
+            points: proReward.newPoints
+          })
+          addToast(`🎉 PRO на ${proReward.proDays} дней + ${proReward.xpReward} XP!`, 'success')
+          return // Don't show regular success toast
+        }
+      } catch (e) {
+        console.warn('Failed to check/award profile completion PRO:', e)
       }
 
       addToast('Профиль сохранён!', 'success')
@@ -468,6 +485,25 @@ const ProfileScreen: React.FC = () => {
           setProfile({ ...profile!, photo_url: result.photo.photo_url })
         }
         hapticFeedback.success()
+
+        // Check and award PRO for complete profile (bio + occupation + photo)
+        try {
+          const proReward = await checkAndAwardProfileCompletion(user.id)
+          if (proReward?.awarded) {
+            // Update local user state
+            setUser({
+              ...user,
+              subscription_tier: 'pro',
+              subscription_expires_at: proReward.expiresAt,
+              points: proReward.newPoints
+            })
+            addToast(`🎉 PRO на ${proReward.proDays} дней + ${proReward.xpReward} XP!`, 'success')
+            return // Don't show regular success toast
+          }
+        } catch (e) {
+          console.warn('Failed to check/award profile completion PRO:', e)
+        }
+
         addToast('Фото загружено!', 'success')
       } else {
         hapticFeedback.error()
