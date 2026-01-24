@@ -975,6 +975,114 @@ class EngagementNotificationService:
             logger.error(f"Failed to send pending likes batch: {e}")
             return 0
 
+    # === PROFILE COMPLETION PRO REWARD ===
+
+    async def award_profile_completion_pro_batch(self, session: AsyncSession) -> int:
+        """Award 3-day PRO to users with complete profile + photo.
+
+        Conditions:
+        - profile has bio and occupation filled
+        - has at least 1 photo in profile_photos
+        - hasn't received this reward yet (profile_completion_pro_awarded_at is NULL)
+        """
+        now = datetime.utcnow()
+        awarded_count = 0
+
+        # Get users who haven't received this reward yet
+        query = select(User).where(
+            and_(
+                User.banned == False,
+                User.profile_completion_pro_awarded_at.is_(None)
+            )
+        )
+        result = await session.execute(query)
+        users = result.scalars().all()
+
+        supabase = self._get_supabase()
+        if not supabase:
+            logger.warning("Supabase not available for profile completion PRO")
+            return 0
+
+        logger.info(f"Checking {len(users)} users for profile completion PRO reward")
+
+        for user in users:
+            try:
+                # Check profile completion (bio + occupation)
+                profile = supabase.table("bot_profiles").select("bio, occupation").eq(
+                    "user_id", user.id
+                ).execute()
+
+                if not profile.data or len(profile.data) == 0:
+                    continue  # No profile
+
+                p = profile.data[0]
+                if not p.get('bio') or not p.get('occupation'):
+                    continue  # Profile not complete
+
+                # Check for photos
+                photos = supabase.table("profile_photos").select("id", count="exact").eq(
+                    "user_id", user.id
+                ).execute()
+
+                if not photos.count or photos.count == 0:
+                    continue  # No photos
+
+                # All conditions met - award PRO!
+                # Calculate expiration (extend if already PRO)
+                if user.subscription_tier == 'pro' and user.subscription_expires_at and user.subscription_expires_at > now:
+                    expires_at = user.subscription_expires_at + timedelta(days=3)
+                else:
+                    expires_at = now + timedelta(days=3)
+
+                user.subscription_tier = 'pro'
+                user.subscription_expires_at = expires_at
+                user.profile_completion_pro_awarded_at = now
+
+                # Send notification
+                if user.tg_user_id and user.bot_started:
+                    await self._send_profile_pro_reward_notification(user.tg_user_id)
+
+                # Log for analytics
+                await self._log_notification(
+                    session, user.id, 'profile_completion_pro',
+                    delivered=True,
+                    context={'expires_at': expires_at.isoformat()}
+                )
+
+                awarded_count += 1
+                logger.info(f"Awarded 3-day PRO to user {user.id} for profile completion")
+
+            except Exception as e:
+                logger.error(f"Failed to check/award PRO to user {user.id}: {e}")
+                continue
+
+        await session.commit()
+        logger.info(f"Profile completion PRO: {awarded_count} users awarded")
+        return awarded_count
+
+    async def _send_profile_pro_reward_notification(self, user_id: int) -> bool:
+        """Send notification about profile completion PRO reward."""
+        try:
+            text = (
+                "🎉 <b>Поздравляем!</b>\n\n"
+                "Ты заполнил профиль и добавил фото — получи PRO на 3 дня в подарок!\n\n"
+                "✨ Безлимитные свайпы\n"
+                "👀 Смотри кто тебя лайкнул\n"
+                "⭐ 5 суперлайков в день"
+            )
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode="HTML",
+                reply_markup=self._get_miniapp_button("Открыть →", "network")
+            )
+            logger.info(f"Sent profile PRO reward notification to user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send profile PRO reward notification to {user_id}: {e}")
+            return False
+
 
 # Singleton instance
 engagement_service: Optional[EngagementNotificationService] = None

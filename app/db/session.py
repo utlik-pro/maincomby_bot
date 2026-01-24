@@ -52,6 +52,9 @@ async def run_migrations(engine: AsyncEngine) -> None:
          "ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS onboarding_event_sent_at TIMESTAMP"),
         ("bot_users", "onboarding_feedback_sent_at",
          "ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS onboarding_feedback_sent_at TIMESTAMP"),
+        # Profile completion PRO reward tracking
+        ("bot_users", "profile_completion_pro_awarded_at",
+         "ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS profile_completion_pro_awarded_at TIMESTAMP"),
     ]
 
     async with engine.begin() as conn:

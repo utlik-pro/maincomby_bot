@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Profile Completion PRO Reward**: 3-day PRO for users with complete profile + photo
+  - Conditions: bio + occupation + at least 1 photo
+  - Automatic daily check at 11:00
+  - Push notification about the reward
 - **Smart Engagement Queue**: Max 1 engagement notification per day per user
   - Priority system: Likes > Events > Profile > Swipes > Inactive > Feedback
   - Replaces 4 separate engagement jobs with 1 unified queue

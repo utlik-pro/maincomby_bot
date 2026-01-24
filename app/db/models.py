@@ -60,6 +60,9 @@ class User(Base):
     onboarding_event_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     onboarding_feedback_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+    # Profile completion PRO reward (3-day PRO for filled profile + photo)
+    profile_completion_pro_awarded_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     posts: Mapped[list[Post]] = relationship(back_populates="author")
     roles: Mapped[list[UserRole]] = relationship(back_populates="user")
     registrations: Mapped[list["EventRegistration"]] = relationship(back_populates="user")

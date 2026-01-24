@@ -109,6 +109,25 @@ async def process_engagement_queue_job():
         logger.error(f"Engagement queue job failed: {e}")
 
 
+# === PROFILE COMPLETION PRO REWARD JOB ===
+
+async def award_profile_completion_pro_job():
+    """Award 3-day PRO to users with complete profile + photo.
+
+    Runs daily at 11:00.
+    Conditions: bio + occupation + at least 1 photo.
+    """
+    try:
+        from app.services.engagement_notifications import get_engagement_service
+        service = get_engagement_service()
+        if service:
+            async with async_session_maker() as session:
+                count = await service.award_profile_completion_pro_batch(session)
+                logger.info(f"Profile completion PRO job completed: {count} awarded")
+    except Exception as e:
+        logger.error(f"Profile completion PRO job failed: {e}")
+
+
 def setup_scheduled_jobs(scheduler: AsyncIOScheduler):
     """Setup all scheduled jobs"""
     # Send event reminders every hour (checks for events in 24h window)
@@ -164,6 +183,17 @@ def setup_scheduled_jobs(scheduler: AsyncIOScheduler):
         replace_existing=True
     )
 
-    logger.info("Scheduled jobs configured: event_reminders (hourly), event_starting_soon (every 15 min), review_requests (22:30 daily), ticket_reminders (18:30 Minsk), engagement_queue (10:00/14:00/18:00)")
+    # === PROFILE COMPLETION PRO REWARD ===
+    # Award 3-day PRO to users who completed profile + added photo
+    scheduler.add_job(
+        award_profile_completion_pro_job,
+        'cron',
+        hour=11,  # 11:00 daily
+        minute=0,
+        id='profile_completion_pro',
+        replace_existing=True
+    )
+
+    logger.info("Scheduled jobs configured: event_reminders (hourly), event_starting_soon (every 15 min), review_requests (22:30 daily), ticket_reminders (18:30 Minsk), engagement_queue (10:00/14:00/18:00), profile_completion_pro (11:00)")
 
 
