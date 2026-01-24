@@ -54,30 +54,32 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
   const expirationText = tier !== 'free' ? formatExpirationDate(expiresAt) : null
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
-      onClick={onClick}
-      className={`h-10 px-3 rounded-xl ${styles.bg} flex flex-col items-center justify-center gap-0 relative`}
-    >
-      {styles.glow && (
-        <div className="absolute inset-0 rounded-xl bg-amber-500/20 blur-md" />
-      )}
-      <div className="flex items-center gap-1.5 relative z-10">
-        <Crown
-          size={14}
-          className={`${styles.color}`}
-          fill={styles.fill}
-          strokeWidth={tier === 'free' ? 2 : 1.5}
-        />
-        <span className={`${styles.color} text-sm font-medium`}>
-          {styles.label}
-        </span>
-      </div>
+    <div className="flex flex-col items-center gap-0.5">
+      <motion.button
+        whileTap={{ scale: 0.9 }}
+        onClick={onClick}
+        className={`h-8 px-3 rounded-xl ${styles.bg} flex items-center justify-center relative`}
+      >
+        {styles.glow && (
+          <div className="absolute inset-0 rounded-xl bg-amber-500/20 blur-md" />
+        )}
+        <div className="flex items-center gap-1.5 relative z-10">
+          <Crown
+            size={14}
+            className={`${styles.color}`}
+            fill={styles.fill}
+            strokeWidth={tier === 'free' ? 2 : 1.5}
+          />
+          <span className={`${styles.color} text-sm font-medium`}>
+            {styles.label}
+          </span>
+        </div>
+      </motion.button>
       {expirationText && (
-        <span className="text-[10px] text-gray-500 relative z-10 -mt-0.5">
+        <span className="text-[10px] text-gray-500">
           {expirationText}
         </span>
       )}
-    </motion.button>
+    </div>
   )
 }
