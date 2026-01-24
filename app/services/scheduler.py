@@ -1,16 +1,40 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.db.database import async_session_maker
 
 logger = logging.getLogger(__name__)
 
+# Global scheduler instance for access from diagnostic commands
+_scheduler: Optional[AsyncIOScheduler] = None
+
 
 def create_scheduler() -> AsyncIOScheduler:
-    scheduler = AsyncIOScheduler()
-    return scheduler
+    global _scheduler
+    _scheduler = AsyncIOScheduler()
+    return _scheduler
+
+
+def get_scheduler() -> Optional[AsyncIOScheduler]:
+    """Get the scheduler instance for status checks."""
+    return _scheduler
+
+
+def get_jobs_status() -> list[dict]:
+    """Get status of all scheduled jobs."""
+    if not _scheduler:
+        return []
+    return [
+        {
+            "id": job.id,
+            "next_run": str(job.next_run_time) if job.next_run_time else "Not scheduled",
+            "trigger": str(job.trigger)
+        }
+        for job in _scheduler.get_jobs()
+    ]
 
 
 async def send_event_reminders_job():

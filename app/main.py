@@ -486,6 +486,73 @@ async def main() -> None:
         )
         await cmd_pending_registrations(fake_msg)
 
+    @dp.message(F.text == "/test_notifications")
+    async def cmd_test_notifications(message: Message):
+        """Диагностика системы уведомлений (только для админов)."""
+        from .config import load_settings
+        settings = load_settings()
+        if message.from_user.id not in settings.admin_ids:
+            return
+
+        status_lines = []
+
+        # 1. Проверить NotificationService
+        from .services.notifications import get_notification_service
+        notif_service = get_notification_service()
+        if notif_service:
+            status_lines.append("✅ NotificationService: OK")
+            # Попробовать отправить тестовое сообщение
+            try:
+                await notif_service.bot.send_message(
+                    chat_id=message.from_user.id,
+                    text="🔔 Тестовое уведомление работает!"
+                )
+                status_lines.append("✅ Bot.send_message: OK")
+            except Exception as e:
+                status_lines.append(f"❌ Bot.send_message: {e}")
+        else:
+            status_lines.append("❌ NotificationService: NOT INITIALIZED")
+
+        # 2. Проверить EngagementService
+        from .services.engagement_notifications import get_engagement_service
+        eng_service = get_engagement_service()
+        if eng_service:
+            status_lines.append("✅ EngagementService: OK")
+        else:
+            status_lines.append("❌ EngagementService: NOT INITIALIZED")
+
+        # 3. Проверить Scheduler
+        from .services.scheduler import get_scheduler, get_jobs_status
+        sched = get_scheduler()
+        if sched and sched.running:
+            status_lines.append("✅ Scheduler: RUNNING")
+            jobs = get_jobs_status()
+            if jobs:
+                status_lines.append(f"   Jobs: {len(jobs)} активных")
+                for job in jobs[:5]:  # Показать первые 5
+                    status_lines.append(f"   • {job['id']}: {job['next_run']}")
+        elif sched:
+            status_lines.append("⚠️ Scheduler: NOT RUNNING")
+        else:
+            status_lines.append("❌ Scheduler: NOT INITIALIZED")
+
+        # 4. Проверить Database
+        try:
+            from .db.database import async_session_maker
+            async with async_session_maker() as session:
+                # Простой запрос для проверки
+                from sqlalchemy import text
+                await session.execute(text("SELECT 1"))
+                status_lines.append("✅ Database session: OK")
+        except Exception as e:
+            status_lines.append(f"❌ Database session: {e}")
+
+        await message.answer(
+            "🔧 <b>Диагностика уведомлений</b>\n\n" +
+            "\n".join(status_lines),
+            parse_mode="HTML"
+        )
+
     @dp.message(F.text == "/help")
     async def cmd_help(message: Message):
         from .config import load_settings
