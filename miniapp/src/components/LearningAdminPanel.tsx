@@ -232,25 +232,22 @@ export const LearningAdminPanel: React.FC<LearningAdminPanelProps> = ({ onClose 
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+      {/* Top spacer for Telegram header */}
+      <div className="h-28" />
 
-      {/* Content */}
-      <div className="relative w-full max-w-sm bg-bg-card rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-border flex items-center justify-center bg-accent/10">
+      {/* Sticky Header */}
+      <div className="sticky top-28 z-10 bg-bg border-b border-border">
+        <div className="p-4 bg-accent/10">
           <h2 className="text-lg font-bold flex items-center gap-2 text-accent">
             <BookOpen size={20} />
             Управление курсами
           </h2>
         </div>
+      </div>
 
-        {/* Courses list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {/* Courses list */}
+      <div className="p-4 space-y-3">
           {isLoading ? (
             <div className="text-center text-gray-400 py-8">
               Загрузка курсов...
@@ -271,11 +268,13 @@ export const LearningAdminPanel: React.FC<LearningAdminPanelProps> = ({ onClose 
           )}
         </div>
 
-        {/* Footer hint */}
-        <div className="p-4 bg-bg border-t border-border text-center text-xs text-gray-500">
-          Выключенные курсы и уроки не видны пользователям
-        </div>
+      {/* Footer hint */}
+      <div className="p-4 text-center text-xs text-gray-500">
+        Выключенные курсы и уроки не видны пользователям
       </div>
+
+      {/* Bottom spacer for navigation */}
+      <div className="h-20" />
     </div>
   )
 }

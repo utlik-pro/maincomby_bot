@@ -351,11 +351,14 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
   // Form view (create or edit)
   if (tab === 'create' || tab === 'edit') {
     return (
-      <div className="fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="p-4 flex items-center gap-3 border-b border-border shrink-0 bg-bg">
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">
+      <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+        {/* Top spacer for Telegram header */}
+        <div className="h-28" />
+
+        {/* Sticky Header */}
+        <div className="sticky top-28 z-10 bg-bg border-b border-border">
+          <div className="p-4 bg-green-500/10">
+            <h1 className="text-xl font-bold text-green-500">
               {editingEvent ? 'Редактирование' : 'Новое событие'}
             </h1>
             {editingEvent && (
@@ -365,7 +368,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
         </div>
 
         {/* Form */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="p-4 space-y-4">
           {/* Title */}
           <div>
             <label className="block text-sm text-gray-400 mb-1">Название *</label>
@@ -592,7 +595,7 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
         </div>
 
         {/* Bottom Action */}
-        <div className="p-4 border-t border-border shrink-0 bg-bg">
+        <div className="p-4">
           <button
             onClick={handleSubmit}
             disabled={isPending}
@@ -602,6 +605,9 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
             {announcementStatus === 'sending' ? 'Отправка анонса...' : editingEvent ? 'Сохранить' : 'Создать событие'}
           </button>
         </div>
+
+        {/* Bottom spacer for navigation */}
+        <div className="h-20" />
 
         {/* Announcement Success Modal */}
         {announcementStatus === 'success' && announcementStats && (
@@ -640,23 +646,28 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
 
   // List view
   return (
-    <div className="fixed inset-0 z-[60] bg-bg overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="p-4 flex items-center gap-3 border-b border-border shrink-0 bg-bg">
-        <div className="flex-1">
-          <h1 className="text-xl font-bold">Управление событиями</h1>
-          <p className="text-sm text-gray-400">{events.length} событий</p>
+    <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+      {/* Top spacer for Telegram header */}
+      <div className="h-28" />
+
+      {/* Sticky Header */}
+      <div className="sticky top-28 z-10 bg-bg border-b border-border">
+        <div className="p-4 flex items-center gap-3 bg-green-500/10">
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-green-500">Управление событиями</h1>
+            <p className="text-sm text-gray-400">{events.length} событий</p>
+          </div>
+          <button
+            onClick={() => { resetForm(); setTab('create'); hapticFeedback.light() }}
+            className="w-12 h-12 rounded-xl bg-accent text-bg flex items-center justify-center shadow-lg"
+          >
+            <Plus size={28} strokeWidth={3} />
+          </button>
         </div>
-        <button
-          onClick={() => { resetForm(); setTab('create'); hapticFeedback.light() }}
-          className="w-12 h-12 rounded-xl bg-accent text-bg flex items-center justify-center shadow-lg"
-        >
-          <Plus size={28} strokeWidth={3} />
-        </button>
       </div>
 
       {/* Events List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="p-4 space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="animate-spin text-accent" size={32} />
@@ -743,6 +754,9 @@ export const EventAdminPanel: React.FC<EventAdminPanelProps> = ({ onClose }) => 
           ))
         )}
       </div>
+
+      {/* Bottom spacer for navigation */}
+      <div className="h-20" />
 
       {/* Announcement Success Modal */}
       {announcementStatus === 'success' && announcementStats && announcingEventId && (

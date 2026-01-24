@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
 import { X, Bell, TrendingUp, Users, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { getEngagementStats, type EngagementStats } from '@/lib/supabase'
 import { backButton } from '@/lib/telegram'
@@ -60,28 +59,22 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({ onClos
         : '0.0'
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-bg-card w-full max-w-lg rounded-2xl border border-border flex flex-col max-h-[85vh] overflow-hidden shadow-2xl"
-            >
-                {/* Header */}
-                <div className="p-4 border-b border-border bg-accent/10">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold flex items-center gap-2 text-accent">
-                            <Bell size={20} />
-                            Engagement Аналитика
-                        </h2>
-                        <button onClick={onClose} className="text-gray-400 hover:text-white">
-                            <X size={24} />
-                        </button>
-                    </div>
-                </div>
+        <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+            {/* Top spacer for Telegram header */}
+            <div className="h-28" />
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Sticky Header */}
+            <div className="sticky top-28 z-10 bg-bg border-b border-border">
+                <div className="p-4 bg-green-500/10">
+                    <h2 className="text-lg font-bold flex items-center gap-2 text-green-500">
+                        <Bell size={20} />
+                        Engagement Аналитика
+                    </h2>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 space-y-4">
                     {isLoading ? (
                         <div className="text-center py-12">
                             <Loader2 size={32} className="mx-auto animate-spin text-accent" />
@@ -201,11 +194,13 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({ onClos
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 bg-bg border-t border-border text-center text-xs text-gray-600 font-mono">
-                    ADMIN ONLY • Auto-refresh 1min
-                </div>
-            </motion.div>
+            {/* Footer */}
+            <div className="p-4 text-center text-xs text-gray-600 font-mono">
+                ADMIN ONLY • Auto-refresh 1min
+            </div>
+
+            {/* Bottom spacer for navigation */}
+            <div className="h-20" />
         </div>
     )
 }

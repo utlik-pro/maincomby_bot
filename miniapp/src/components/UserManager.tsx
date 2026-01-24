@@ -80,30 +80,25 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
     }
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-bg-card w-full max-w-md rounded-2xl border border-border flex flex-col max-h-[80vh] overflow-hidden shadow-2xl"
-            >
-                {/* Header with Tabs */}
-                <div className="p-4 border-b border-border bg-accent/10">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-bold flex items-center gap-2 text-accent">
-                            <Users size={20} />
-                            Управление пользователями
-                        </h2>
-                        <button onClick={onClose} className="text-gray-400 hover:text-white">
-                            <X size={24} />
-                        </button>
-                    </div>
+        <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+            {/* Top spacer for Telegram header */}
+            <div className="h-28" />
 
+            {/* Sticky Header with Tabs */}
+            <div className="sticky top-28 z-10 bg-bg border-b border-border">
+                <div className="p-4 bg-yellow-500/10">
+                    <h2 className="text-lg font-bold flex items-center gap-2 text-yellow-500">
+                        <Gift size={20} />
+                        Подарить PRO
+                    </h2>
+                </div>
+
+                <div className="p-3">
                     <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
                         <button
                             onClick={() => setActiveTab('search')}
                             className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'search'
-                                ? 'bg-accent text-black shadow-lg'
+                                ? 'bg-yellow-500 text-black shadow-lg'
                                 : 'text-gray-400 hover:text-white'
                                 }`}
                         >
@@ -112,7 +107,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
                         <button
                             onClick={() => setActiveTab('history')}
                             className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'history'
-                                ? 'bg-accent text-black shadow-lg'
+                                ? 'bg-yellow-500 text-black shadow-lg'
                                 : 'text-gray-400 hover:text-white'
                                 }`}
                         >
@@ -120,9 +115,10 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {/* Content based on tab */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {/* Content based on tab */}
+            <div className="p-4 space-y-3">
                     {activeTab === 'search' ? (
                         <>
                             <div className="mb-4 relative">
@@ -286,11 +282,13 @@ export const UserManager: React.FC<UserManagerProps> = ({ onClose }) => {
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 bg-bg border-t border-border text-center text-xs text-gray-600 font-mono">
-                    SUPERADMIN ONLY • {activeTab === 'history' ? 'Auto-refresh 5s' : 'User Manager'}
-                </div>
-            </motion.div>
+            {/* Footer */}
+            <div className="p-4 text-center text-xs text-gray-600 font-mono">
+                SUPERADMIN ONLY • {activeTab === 'history' ? 'Auto-refresh 5s' : 'Подарить PRO'}
+            </div>
+
+            {/* Bottom spacer for navigation */}
+            <div className="h-20" />
         </div>
     )
 }

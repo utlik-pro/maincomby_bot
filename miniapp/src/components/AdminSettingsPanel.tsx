@@ -10,7 +10,7 @@ import { BroadcastPanel } from './BroadcastPanel'
 import { EngagementDashboard } from './EngagementDashboard'
 import { EventAdminPanel } from './EventAdminPanel'
 import { Event } from '@/types'
-import { hapticFeedback, shareUrl } from '@/lib/telegram'
+import { hapticFeedback, shareUrl, backButton } from '@/lib/telegram'
 
 interface AdminSettingsPanelProps {
     onClose: () => void
@@ -40,6 +40,21 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     useEffect(() => {
         loadSettings()
     }, [])
+
+    // Telegram BackButton handler
+    useEffect(() => {
+        const handleBack = () => {
+            if (showEventLinks) {
+                setShowEventLinks(false)
+            } else {
+                onClose()
+            }
+        }
+        backButton.show(handleBack)
+        return () => {
+            backButton.hide()
+        }
+    }, [showEventLinks, onClose])
 
     const loadSettings = async () => {
         setIsLoading(true)
@@ -109,26 +124,22 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
 
     return (
         <>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                onClick={onClose}
-            />
+        <div className="fixed inset-0 z-50 bg-bg overflow-y-auto">
+            {/* Top spacer for Telegram header */}
+            <div className="h-28" />
 
-            {/* Content */}
-            <div className="relative w-full max-w-sm bg-bg-card rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[85vh] flex flex-col">
-                <div className="p-4 border-b border-border flex justify-between items-center bg-red-500/10 shrink-0">
+            {/* Sticky Header */}
+            <div className="sticky top-28 z-10 bg-bg border-b border-border">
+                <div className="p-4 bg-red-500/10">
                     <h2 className="text-lg font-bold flex items-center gap-2 text-red-500">
                         <Shield size={20} />
                         Admin Control
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">
-                        <X size={24} />
-                    </button>
                 </div>
+            </div>
 
-                <div className="p-4 space-y-4 overflow-y-auto flex-1">
+            {/* Content */}
+            <div className="p-4 space-y-4">
                     <div className="p-4 rounded-xl bg-bg border border-border">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
@@ -332,13 +343,16 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                     </button>
                 </div>
 
-                <div className="p-4 bg-bg border-t border-border text-center text-xs text-gray-600 font-mono shrink-0">
-                    LOGGED AS: {user?.username} (SUPERADMIN)
-                </div>
+            {/* Footer info */}
+            <div className="p-4 text-center text-xs text-gray-600 font-mono">
+                LOGGED AS: {user?.username} (SUPERADMIN)
             </div>
+
+            {/* Bottom spacer for navigation */}
+            <div className="h-20" />
         </div>
 
-            {/* User Role Manager Modal */}
+        {/* User Role Manager Modal */}
             {showRoleManager && (
                 <UserRoleManager onClose={() => setShowRoleManager(false)} />
             )}
@@ -373,79 +387,76 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
                 <EventAdminPanel onClose={() => setShowEventAdmin(false)} />
             )}
 
-            {/* Event Links Panel */}
-            {showEventLinks && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                    <div
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                        onClick={() => setShowEventLinks(false)}
-                    />
-                    <div className="relative w-full max-w-sm bg-bg-card rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col">
-                        <div className="p-4 border-b border-border flex justify-between items-center bg-blue-500/10">
-                            <button
-                                onClick={() => setShowEventLinks(false)}
-                                className="text-gray-400 hover:text-white"
-                            >
-                                <ChevronLeft size={24} />
-                            </button>
-                            <h2 className="text-lg font-bold flex items-center gap-2 text-blue-500">
-                                <Link size={20} />
-                                Ссылки на события
-                            </h2>
-                            <div className="w-6" />
-                        </div>
+        {/* Event Links Panel */}
+        {showEventLinks && (
+            <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+                {/* Top spacer */}
+                <div className="h-28" />
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                            {eventsLoading ? (
-                                <div className="text-center text-gray-400 py-8">Загрузка...</div>
-                            ) : events.length === 0 ? (
-                                <div className="text-center text-gray-400 py-8">Нет активных событий</div>
-                            ) : (
-                                events.map((event) => (
-                                    <div
-                                        key={event.id}
-                                        className="p-3 rounded-xl bg-bg border border-border"
-                                    >
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-semibold truncate">{event.title}</div>
-                                                <div className="text-xs text-gray-400 flex items-center gap-1 mt-1">
-                                                    <Calendar size={12} />
-                                                    {new Date(event.event_date).toLocaleDateString('ru-RU', {
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => copyEventLink(event.id, event.title)}
-                                                    className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-700/50 text-gray-300 flex items-center justify-center active:scale-95 transition-transform"
-                                                    title="Скопировать"
-                                                >
-                                                    <Copy size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => shareEventLink(event.id, event.title)}
-                                                    className="flex-shrink-0 w-10 h-10 rounded-lg bg-accent/20 text-accent flex items-center justify-center active:scale-95 transition-transform"
-                                                    title="Поделиться"
-                                                >
-                                                    <Share2 size={18} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="mt-2 text-xs text-gray-500 font-mono break-all">
-                                            t.me/maincomapp_bot?startapp=event_{event.id}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                {/* Sticky Header */}
+                <div className="sticky top-28 z-10 bg-bg border-b border-border">
+                    <div className="p-4 bg-blue-500/10">
+                        <h2 className="text-lg font-bold flex items-center gap-2 text-blue-500">
+                            <Link size={20} />
+                            Ссылки на события
+                        </h2>
                     </div>
                 </div>
-            )}
+
+                {/* Content */}
+                <div className="p-4 space-y-3">
+                    {eventsLoading ? (
+                        <div className="text-center text-gray-400 py-8">Загрузка...</div>
+                    ) : events.length === 0 ? (
+                        <div className="text-center text-gray-400 py-8">Нет активных событий</div>
+                    ) : (
+                        events.map((event) => (
+                            <div
+                                key={event.id}
+                                className="p-3 rounded-xl bg-bg-card border border-border"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-semibold truncate">{event.title}</div>
+                                        <div className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                            <Calendar size={12} />
+                                            {new Date(event.event_date).toLocaleDateString('ru-RU', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => copyEventLink(event.id, event.title)}
+                                            className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-700/50 text-gray-300 flex items-center justify-center active:scale-95 transition-transform"
+                                            title="Скопировать"
+                                        >
+                                            <Copy size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => shareEventLink(event.id, event.title)}
+                                            className="flex-shrink-0 w-10 h-10 rounded-lg bg-accent/20 text-accent flex items-center justify-center active:scale-95 transition-transform"
+                                            title="Поделиться"
+                                        >
+                                            <Share2 size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="mt-2 text-xs text-gray-500 font-mono break-all">
+                                    t.me/maincomapp_bot?startapp=event_{event.id}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Bottom spacer */}
+                <div className="h-20" />
+            </div>
+        )}
         </>
     )
 }

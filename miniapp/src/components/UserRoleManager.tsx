@@ -87,48 +87,36 @@ export const UserRoleManager: React.FC<UserRoleManagerProps> = ({ onClose }) => 
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                onClick={onClose}
-            />
+        <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+            {/* Top spacer for Telegram header */}
+            <div className="h-28" />
 
-            {/* Content */}
-            <motion.div
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="relative w-full max-w-lg bg-bg-card rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
-            >
-                {/* Header */}
-                <div className="p-4 border-b border-border flex justify-between items-center bg-accent/10">
+            {/* Sticky Header */}
+            <div className="sticky top-28 z-10 bg-bg border-b border-border">
+                <div className="p-4 bg-accent/10">
                     <h2 className="text-lg font-bold flex items-center gap-2 text-accent">
                         <Users size={20} />
                         Управление ролями
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">
-                        <X size={24} />
-                    </button>
                 </div>
 
                 {/* Search */}
-                <div className="p-4 border-b border-border">
+                <div className="p-4 border-t border-border">
                     <div className="relative">
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Поиск по имени или @username..."
-                            className="w-full bg-bg rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-accent"
+                            className="w-full bg-bg-card rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-accent"
                         />
                         <Search className="absolute left-3 top-3.5 text-gray-500" size={18} />
                     </div>
                 </div>
+            </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {/* Content */}
+            <div className="p-4 space-y-3">
                     {searchQuery.length < 2 ? (
                         <div className="text-center py-12 text-gray-400">
                             <Search size={48} className="mx-auto mb-3 opacity-50" />
@@ -227,11 +215,13 @@ export const UserRoleManager: React.FC<UserRoleManagerProps> = ({ onClose }) => 
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 bg-bg border-t border-border text-center text-xs text-gray-600 font-mono">
-                    ADMIN ONLY • {searchResults?.length || 0} результатов
-                </div>
-            </motion.div>
+            {/* Footer */}
+            <div className="p-4 text-center text-xs text-gray-600 font-mono">
+                ADMIN ONLY • {searchResults?.length || 0} результатов
+            </div>
+
+            {/* Bottom spacer for navigation */}
+            <div className="h-20" />
         </div>
     )
 }
