@@ -977,8 +977,8 @@ class EngagementNotificationService:
 
     # === PROFILE COMPLETION PRO REWARD ===
 
-    # Promotion deadline: January 25, 2026 23:59:59 UTC
-    PROMO_DEADLINE = datetime(2026, 1, 25, 23, 59, 59)
+    # Promotion deadline: January 31, 2026 23:59:59 UTC
+    PROMO_DEADLINE = datetime(2026, 1, 31, 23, 59, 59)
 
     async def award_profile_completion_pro_batch(self, session: AsyncSession) -> int:
         """Award PRO to users with complete profile + photo.
@@ -1082,7 +1082,7 @@ class EngagementNotificationService:
         return awarded_count
 
     async def _send_profile_pro_reward_notification(self, user_id: int, pro_days: int = 3, xp_reward: int = 100) -> bool:
-        """Send notification about profile completion PRO reward."""
+        """Send notification about profile completion PRO reward with invite CTA."""
         try:
             text = (
                 f"🎉 <b>Поздравляем!</b>\n\n"
@@ -1101,7 +1101,25 @@ class EngagementNotificationService:
                 parse_mode="HTML",
                 reply_markup=self._get_miniapp_button("Открыть →", "network")
             )
-            logger.info(f"Sent profile PRO reward notification to user {user_id}")
+
+            # Send follow-up message with invite CTA
+            await asyncio.sleep(1)
+            invite_text = (
+                "👥 <b>Приглашай друзей — получай бонусы!</b>\n\n"
+                "За каждого приглашённого друга:\n"
+                "✨ Ты получишь <b>+1000 XP</b>\n"
+                "✨ Друг получит <b>+1000 XP</b> и <b>3 дня PRO</b>\n\n"
+                "Твои инвайт-коды ждут в разделе «Пригласить» в приложении!"
+            )
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=invite_text,
+                parse_mode="HTML",
+                reply_markup=self._get_miniapp_button("Пригласить друзей", "invites")
+            )
+
+            logger.info(f"Sent profile PRO reward notification + invite CTA to user {user_id}")
             return True
         except Exception as e:
             logger.error(f"Failed to send profile PRO reward notification to {user_id}: {e}")

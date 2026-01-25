@@ -1463,7 +1463,7 @@ export async function useInviteAndCreateUser(
       invite_code_used: code,
       invites_remaining: 5, // Give 5 invites to new user
       subscription_tier: 'free',
-      points: 50 // +50 XP for joining
+      points: 1000 // +1000 XP for joining via invite (promo until Jan 31)
     })
     .select()
     .single()
@@ -1488,23 +1488,37 @@ export async function useInviteAndCreateUser(
   // 4. Create 5 invites for new user
   await supabase.rpc('create_user_invites', { p_user_id: newUser.id, p_count: 5 })
 
-  // 5. Reward inviter (+50 XP)
+  // 5. Reward inviter (+1000 XP - promo until Jan 31)
   try {
-    const newInviterPoints = await addXP(invite.inviter_id, 50, 'FRIEND_INVITE')
+    const newInviterPoints = await addXP(invite.inviter_id, 1000, 'FRIEND_INVITE')
     console.log(`[Referral] Inviter ${invite.inviter_id} rewarded, new points: ${newInviterPoints}`)
   } catch (e) {
     console.error(`[Referral] Failed to reward inviter ${invite.inviter_id}:`, e)
     // Don't fail the whole operation - user was still created successfully
   }
 
-  // 6. Reward new user (already got 50 points, but let's log transaction)
+  // 6. Reward new user (already got 1000 points, but let's log transaction)
   await supabase
     .from('xp_transactions')
     .insert({
       user_id: newUser.id,
-      amount: 50,
+      amount: 1000,
       reason: 'INVITE_ACCEPTED'
     })
+
+  // 6.5 Grant 3 days PRO to invitee (promo until Jan 31)
+  const REFERRAL_PROMO_DEADLINE = new Date('2026-01-31T23:59:59Z')
+  if (new Date() <= REFERRAL_PROMO_DEADLINE) {
+    const proExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+    await supabase
+      .from('bot_users')
+      .update({
+        subscription_tier: 'pro',
+        subscription_expires_at: proExpiresAt.toISOString()
+      })
+      .eq('id', newUser.id)
+    console.log(`[Referral] Granted 3 days PRO to invitee ${newUser.id}, expires: ${proExpiresAt.toISOString()}`)
+  }
 
   // 7. Initialize profile for new user
   try {
@@ -5710,8 +5724,8 @@ export async function checkAndAwardProfileCompletion(userId: number): Promise<{
     return null
   }
 
-  // 5. Calculate reward based on promo period
-  const PROMO_DEADLINE = new Date('2026-01-25T23:59:59Z')
+  // 5. Calculate reward based on promo period (extended to Jan 31)
+  const PROMO_DEADLINE = new Date('2026-01-31T23:59:59Z')
   const now = new Date()
   const isPromo = now <= PROMO_DEADLINE
   const proDays = isPromo ? 7 : 3

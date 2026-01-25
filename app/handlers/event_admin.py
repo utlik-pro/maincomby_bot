@@ -1821,8 +1821,8 @@ async def cmd_award_pro(message: Message):
     # Проверяем все условия
     is_complete = bool(bio.strip() and occupation.strip() and photo_count > 0)
 
-    # Промо период
-    PROMO_DEADLINE = datetime(2026, 1, 25, 23, 59, 59)
+    # Промо период (продлён до 31 января)
+    PROMO_DEADLINE = datetime(2026, 1, 31, 23, 59, 59)
     now = datetime.utcnow()
     is_promo = now <= PROMO_DEADLINE
     pro_days = 7 if is_promo else 3

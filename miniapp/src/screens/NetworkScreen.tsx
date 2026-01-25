@@ -933,7 +933,7 @@ const NetworkScreen: React.FC = () => {
 
         {(activeTab === 'matches' || activeTab === 'likes') && (
           <div className="h-full w-full flex flex-col px-4">
-            <div className="flex-1 overflow-y-auto pb-safe custom-scrollbar">
+            <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar">
               {activeTab === 'matches' ? (
                 matches && matches.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3 pt-2">

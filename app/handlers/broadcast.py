@@ -14,7 +14,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, FSInputFile
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_
 
 from ..db.models import EventRegistration, User, Event
 from ..config import load_settings
@@ -584,4 +584,113 @@ async def cmd_broadcast_city(message: Message, bot: Bot):
     logger.info(
         f"City broadcast completed for {city_name} (event {event_id}): "
         f"{success_count} success, {blocked_count} blocked, {failed_count} failed"
+    )
+
+
+@router.message(Command("broadcast_promo"))
+async def cmd_broadcast_promo(message: Message, bot: Bot):
+    """
+    Рассылка промо-сообщения пользователям без PRO подписки.
+
+    Использование: /broadcast_promo
+
+    Фильтрует пользователей:
+    - subscription_tier = 'free' ИЛИ NULL
+    - subscription_tier = 'pro' И subscription_expires_at < сейчас (истекший PRO)
+    """
+    if not await is_admin(message.from_user.id):
+        await message.reply("❌ Только администраторы могут использовать эту команду.")
+        return
+
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+    async with get_session() as session:
+        now = datetime.utcnow()
+        # Get users without active PRO subscription
+        query = (
+            select(User)
+            .where(
+                and_(
+                    User.banned == False,
+                    User.bot_started == True,
+                    or_(
+                        User.subscription_tier == 'free',
+                        User.subscription_tier.is_(None),
+                        and_(
+                            User.subscription_tier == 'pro',
+                            User.subscription_expires_at < now
+                        )
+                    )
+                )
+            )
+        )
+
+        result = await session.execute(query)
+        users = result.scalars().all()
+
+    if not users:
+        await message.reply("❌ Не найдено пользователей без PRO для рассылки.")
+        return
+
+    # Promo message text
+    promo_text = (
+        "🎁 <b>Получи PRO бесплатно!</b>\n\n"
+        "До 31 января заполни профиль и получи:\n"
+        "⭐ <b>7 дней PRO</b> подписки\n"
+        "✨ <b>+500 XP</b> к рейтингу\n\n"
+        "Условия простые:\n"
+        "1️⃣ Заполни bio и род занятий\n"
+        "2️⃣ Загрузи хотя бы 1 фото\n\n"
+        "После этого PRO активируется автоматически!"
+    )
+
+    # Create inline button to open Mini App
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📱 Заполнить профиль",
+            url="https://t.me/maincomapp_bot/app?startapp=profile"
+        )]
+    ])
+
+    status_message = await message.answer(
+        f"🚀 Начинаю рассылку промо пользователям без PRO...\n"
+        f"👥 Всего получателей: {len(users)}"
+    )
+
+    success_count = 0
+    blocked_count = 0
+    failed_count = 0
+
+    for user in users:
+        try:
+            await bot.send_message(
+                chat_id=user.tg_user_id,
+                text=promo_text,
+                parse_mode="HTML",
+                reply_markup=keyboard
+            )
+            success_count += 1
+            await asyncio.sleep(0.05)  # Anti-flood
+
+        except Exception as e:
+            error_message = str(e).lower()
+            if "blocked" in error_message or "bot was blocked" in error_message:
+                blocked_count += 1
+            else:
+                failed_count += 1
+                logger.error(f"Failed to send promo to user {user.tg_user_id}: {e}")
+
+    report = (
+        f"✅ <b>Промо-рассылка завершена!</b>\n\n"
+        f"📊 Результаты:\n"
+        f"👥 Всего без PRO: {len(users)}\n"
+        f"✅ Успешно: {success_count}\n"
+        f"🚫 Заблокировали бота: {blocked_count}\n"
+        f"❌ Ошибки: {failed_count}"
+    )
+
+    await status_message.edit_text(report, parse_mode="HTML")
+
+    logger.info(
+        f"Promo broadcast completed: {success_count} success, {blocked_count} blocked, {failed_count} failed"
     )
