@@ -612,7 +612,6 @@ async def cmd_broadcast_promo(message: Message, bot: Bot):
             .where(
                 and_(
                     User.banned == False,
-                    User.bot_started == True,
                     or_(
                         User.subscription_tier == 'free',
                         User.subscription_tier.is_(None),
