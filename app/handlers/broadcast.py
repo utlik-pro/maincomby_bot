@@ -606,12 +606,13 @@ async def cmd_broadcast_promo(message: Message, bot: Bot):
 
     async with get_session() as session:
         now = datetime.utcnow()
-        # Get users without active PRO subscription
+        # Get users without active PRO subscription who have interacted with bot
         query = (
             select(User)
             .where(
                 and_(
                     User.banned == False,
+                    User.bot_started == True,  # Only users who pressed /start
                     or_(
                         User.subscription_tier == 'free',
                         User.subscription_tier.is_(None),
