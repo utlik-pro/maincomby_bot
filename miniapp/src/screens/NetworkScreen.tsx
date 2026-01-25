@@ -36,6 +36,7 @@ import {
   getIncomingLikes,
   deleteSwipe,
   incrementDailySuperlikes,
+  getUserById,
 } from '@/lib/supabase'
 import { XP_REWARDS, SUBSCRIPTION_LIMITS } from '@/types'
 import { AvatarWithSkin, Button, Card, EmptyState, Skeleton } from '@/components/ui'
@@ -326,8 +327,18 @@ const NetworkScreen: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['matches'] })
         } else {
           // Not a mutual like - notify the user they received a like
-          const targetTgId = currentProfile.user?.tg_user_id
-          console.log('[Swipe] Sending like notification to tg_user_id:', targetTgId, 'profile user_id:', currentProfile.profile.user_id)
+          let targetTgId = currentProfile.user?.tg_user_id
+
+          // Fallback: if tg_user_id not in profile data, fetch it directly
+          if (!targetTgId && currentProfile.profile.user_id) {
+            try {
+              const targetUser = await getUserById(currentProfile.profile.user_id)
+              targetTgId = targetUser?.tg_user_id
+              console.log('[Swipe] Fetched tg_user_id fallback:', targetTgId)
+            } catch (e) {
+              console.warn('[Swipe] Failed to fetch user for notification:', e)
+            }
+          }
 
           if (targetTgId) {
             const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Участник'
