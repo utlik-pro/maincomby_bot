@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { setCorsHeaders } from './_lib/cors'
 import { applyRateLimit, RATE_LIMITS } from './_lib/rate-limiter'
 
-const BOT_TOKEN = process.env.BOT_TOKEN || ''
+const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || ''
 
 type NotificationType = 'match' | 'event' | 'achievement' | 'reminder' | 'system'
 
