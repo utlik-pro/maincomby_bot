@@ -326,15 +326,25 @@ const NetworkScreen: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['matches'] })
         } else {
           // Not a mutual like - notify the user they received a like
-          if (currentProfile.user?.tg_user_id) {
+          const targetTgId = currentProfile.user?.tg_user_id
+          console.log('[Swipe] Sending like notification to tg_user_id:', targetTgId, 'profile user_id:', currentProfile.profile.user_id)
+
+          if (targetTgId) {
             const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Участник'
-            callEdgeFunction('send-notification', {
-              userTgId: currentProfile.user.tg_user_id,
-              type: 'match',
-              title: '❤️ Новый лайк!',
-              message: `${myName} хочет познакомиться! Открой Нетворкинг, чтобы ответить.`,
-              deepLink: { screen: 'network', buttonText: 'Открыть Нетворкинг' }
-            }).catch(console.error)
+            try {
+              const result = await callEdgeFunction('send-notification', {
+                userTgId: targetTgId,
+                type: 'match',
+                title: '❤️ Новый лайк!',
+                message: `${myName} хочет познакомиться! Открой Нетворкинг, чтобы ответить.`,
+                deepLink: { screen: 'network', buttonText: 'Открыть Нетворкинг' }
+              })
+              console.log('[Swipe] Notification result:', result)
+            } catch (notifyError) {
+              console.error('[Swipe] Failed to send like notification:', notifyError)
+            }
+          } else {
+            console.warn('[Swipe] Cannot send notification - tg_user_id missing for user:', currentProfile.profile.user_id)
           }
         }
       }
