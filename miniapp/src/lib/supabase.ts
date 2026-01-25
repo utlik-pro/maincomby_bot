@@ -3794,6 +3794,64 @@ export async function getEngagementStats(): Promise<EngagementStats | null> {
   }
 }
 
+// Get PRO subscription statistics
+export interface ProStats {
+  activePro: number
+  expiredPro: number
+  proFromProfile: number
+  proFromReferral: number
+  proProfileToday: number
+  proProfileWeek: number
+  recentProUsers: Array<{
+    id: number
+    username: string | null
+    first_name: string | null
+    subscription_tier: string
+    subscription_expires_at: string | null
+    profile_completion_pro_awarded_at: string | null
+  }>
+}
+
+export async function getProStats(): Promise<ProStats | null> {
+  const supabase = getSupabase()
+  try {
+    // Get summary stats from view
+    const { data: summary, error: summaryError } = await supabase
+      .from('pro_stats_summary')
+      .select('*')
+      .single()
+
+    if (summaryError) {
+      console.warn('[Supabase] Failed to get PRO stats summary:', summaryError)
+    }
+
+    // Get recent PRO users (awarded via profile completion)
+    const { data: recentUsers, error: usersError } = await supabase
+      .from('bot_users')
+      .select('id, username, first_name, subscription_tier, subscription_expires_at, profile_completion_pro_awarded_at')
+      .not('profile_completion_pro_awarded_at', 'is', null)
+      .order('profile_completion_pro_awarded_at', { ascending: false })
+      .limit(20)
+
+    if (usersError) {
+      console.warn('[Supabase] Failed to get recent PRO users:', usersError)
+    }
+
+    return {
+      activePro: summary?.active_pro || 0,
+      expiredPro: summary?.expired_pro || 0,
+      proFromProfile: summary?.pro_from_profile || 0,
+      proFromReferral: summary?.pro_from_referral || 0,
+      proProfileToday: summary?.pro_profile_today || 0,
+      proProfileWeek: summary?.pro_profile_week || 0,
+      recentProUsers: recentUsers || []
+    }
+  } catch (e) {
+    console.warn('[Supabase] Failed to get PRO stats:', e)
+    return null
+  }
+}
+
 // Start a new session for user
 export async function startSession(userId: number): Promise<number | null> {
   const supabase = getSupabase()

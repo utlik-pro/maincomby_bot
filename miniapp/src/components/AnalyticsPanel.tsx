@@ -33,7 +33,7 @@ import { useAppStore } from '@/lib/store'
 import { backButton } from '@/lib/telegram'
 import { getAllAnalytics, AllAnalytics, TopUser, TopReferrer, getUsersByRole, getSessionStats, getOnlineUsers, getTopUsersByTime, SessionStats, OnlineUser, TopTimeUser, getEventsList, getEventRegistrationStats, EventListItem, EventRegistrationStats, getSpeakerAnalytics, SpeakerAnalytics } from '@/lib/analytics'
 import { Card, Button, Badge, Avatar } from '@/components/ui'
-import { getEventRegistrations, getEventCheckins, updateAppSetting } from '@/lib/supabase'
+import { getEventRegistrations, getEventCheckins, updateAppSetting, getProStats, ProStats } from '@/lib/supabase'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
@@ -129,6 +129,15 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
     queryFn: getSpeakerAnalytics,
     enabled: isSuperAdmin && activeTab === 'speakers',
     staleTime: 60000,
+  })
+
+  // PRO stats query
+  const { data: proStats, isLoading: isLoadingProStats } = useQuery({
+    queryKey: ['proStats'],
+    queryFn: getProStats,
+    enabled: isSuperAdmin && activeTab === 'subscriptions',
+    staleTime: 30000,
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   })
 
   // Leads query (for modal)
@@ -541,6 +550,113 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
             />
           </div>
         </Card>
+
+        {/* PRO Statistics Section */}
+        {isLoadingProStats ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 size={24} className="animate-spin text-accent" />
+          </div>
+        ) : proStats && (
+          <>
+            <Card className="p-4 bg-accent/5 border-accent/30">
+              <div className="flex items-center gap-2 mb-3">
+                <Crown size={18} className="text-accent" />
+                <span className="font-semibold">PRO Statistics</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-bg rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-green-500">{proStats.activePro}</div>
+                  <div className="text-xs text-gray-400">Активных PRO</div>
+                </div>
+                <div className="bg-bg rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-gray-500">{proStats.expiredPro}</div>
+                  <div className="text-xs text-gray-400">Истекших</div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Gift size={18} className="text-purple-500" />
+                <span className="font-semibold">Источники PRO</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <div className="flex items-center gap-2">
+                    <UserCheck size={16} className="text-green-500" />
+                    <span className="text-sm">За профиль</span>
+                  </div>
+                  <div className="font-bold text-green-500">{proStats.proFromProfile}</div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <div className="flex items-center gap-2">
+                    <Share2 size={16} className="text-blue-500" />
+                    <span className="text-sm">За реферал</span>
+                  </div>
+                  <div className="font-bold text-blue-500">{proStats.proFromReferral}</div>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <CreditCard size={16} className="text-accent" />
+                    <span className="text-sm">Покупки</span>
+                  </div>
+                  <div className="font-bold text-accent">{data.subscriptions.pro - proStats.proFromProfile}</div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp size={18} className="text-green-500" />
+                <span className="font-semibold">Динамика (профиль)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-bg rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-green-500">{proStats.proProfileToday}</div>
+                  <div className="text-xs text-gray-400">Сегодня</div>
+                </div>
+                <div className="bg-bg rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-blue-500">{proStats.proProfileWeek}</div>
+                  <div className="text-xs text-gray-400">За неделю</div>
+                </div>
+              </div>
+            </Card>
+
+            {proStats.recentProUsers.length > 0 && (
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock size={18} className="text-purple-500" />
+                  <span className="font-semibold">Недавно получили PRO</span>
+                </div>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {proStats.recentProUsers.map((u, index) => (
+                    <div key={u.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                      <div className="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate text-sm">{u.first_name || 'User'}</div>
+                        <div className="text-xs text-gray-500">@{u.username || 'no_username'}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-gray-400">
+                          {u.profile_completion_pro_awarded_at
+                            ? format(new Date(u.profile_completion_pro_awarded_at), 'dd.MM HH:mm', { locale: ru })
+                            : '—'}
+                        </div>
+                        {u.subscription_expires_at && (
+                          <div className="text-[10px] text-gray-500">
+                            до {format(new Date(u.subscription_expires_at), 'dd.MM', { locale: ru })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </>
+        )}
       </div>
     )
   }
