@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.13'
+export const APP_VERSION = '1.1.14'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 17
+export const CURRENT_APP_VERSION = 18
 
 export interface ReleaseHighlight {
   title: string
@@ -29,23 +29,23 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.13',
-  date: '2026-01-23',
-  summary: 'Исправления и улучшения v1.1.13',
+  version: '1.1.14',
+  date: '2026-01-25',
+  summary: 'Исправления и улучшения v1.1.14',
   highlights: [
-    { title: 'disable vertical swipes g...', description: 'Подробнее в changelog' },
-    { title: 'enable fullscreen mode fo...', description: 'Подробнее в changelog' },
-    { title: 'add mandatory policy cons...', description: 'Подробнее в changelog' },
+    { title: 'add Telegram push notific...', description: 'Подробнее в changelog' },
+    { title: 'auto-award PRO when profi...', description: 'Подробнее в changelog' },
+    { title: 'add profile completion te...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'disable vertical swipes globally at app init',
-    'enable fullscreen mode for legal screens',
-    'add mandatory policy consent screen per Belarus Law №99-З',
+    'add Telegram push notification when PRO awarded for profile completion',
+    'auto-award PRO when profile is complete',
+    'add profile completion testing tools and admin panel',
   ],
   fixes: [
-    'make check-in more robust by removing .select().single()',
-    'add JS-based pull-to-refresh prevention for iOS WebView',
-    'aggressive overscroll prevention on all elements',
+    'support both BOT_TOKEN and TELEGRAM_BOT_TOKEN env vars',
+    'sanitize Telegram usernames in links to prevent broken URLs',
+    'sync profile photo_url with first uploaded photo',
   ],
 }
 

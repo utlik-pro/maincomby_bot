@@ -7,24 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.14] - 2026-01-25
+
+[0;34mGenerating changelog from v1.1.13 to HEAD[0m
 ### Added
-- **Profile Completion PRO Reward**: 3-day PRO for users with complete profile + photo
-  - Conditions: bio + occupation + at least 1 photo
-  - Automatic daily check at 11:00
-  - Push notification about the reward
-- **Smart Engagement Queue**: Max 1 engagement notification per day per user
-  - Priority system: Likes > Events > Profile > Swipes > Inactive > Feedback
-  - Replaces 4 separate engagement jobs with 1 unified queue
-  - New onboarding notifications: event invite (day 3), feedback request (day 7)
-  - Runs 3 times daily (10:00, 14:00, 18:00)
+- add Telegram push notification when PRO awarded for profile completion
+- auto-award PRO when profile is complete
+- add profile completion testing tools and admin panel
+- add profile moderation panel for admin
+- add promo banner with countdown timer + PRO expiration date
+- add promo for profile completion (7 days PRO + 500 XP until Jan 25)
+- add 3-day PRO reward for profile completion + photo
+- add smart engagement queue - max 1 notification per day
+- migrate bot from SQLite to Supabase PostgreSQL
+- add /engagement_stats command for engagement diagnostics
+- add /trigger_reminders command for manual job execution
+- add /test_notifications diagnostic command
+- add event announcement system with testers targeting
+- add event admin panel for creating/editing events in Mini App
+- add tester system for QA testing
+
+### Fixed
+- support both BOT_TOKEN and TELEGRAM_BOT_TOKEN env vars
+- sanitize Telegram usernames in links to prevent broken URLs
+- sync profile photo_url with first uploaded photo
+- move PRO expiration date below badge instead of inside
+- adjust admin panel top spacer from 56px to 96px for Telegram header
+- reduce top spacer from h-28 to h-14 in admin panels
+- use correct asyncpg param for pgbouncer compatibility
+- disable asyncpg statement cache for Supabase pooler
+- EventAdminPanel z-index and stacking context issues
 
 ### Changed
-- **BREAKING**: Bot now uses Supabase PostgreSQL directly instead of SQLite
-  - Requires `DATABASE_URL` environment variable (PostgreSQL connection string)
-  - Removed SQLite fallback - bot will fail if DATABASE_URL is not set
-  - SupabaseSync no longer pushes data (bot writes directly to PostgreSQL)
-  - Fixed: Notifications were showing 0 because SQLite was empty
-
+- change ProfileModerationPanel to full-screen layout
+- convert admin panels to full-screen pages with safe areas
+- integrate Telegram BackButton in all admin panels
+- use Telegram BackButton for EventAdminPanel navigation
 ## [1.1.13] - 2026-01-23
 
 [0;34mGenerating changelog from v1.1.12 to HEAD[0m

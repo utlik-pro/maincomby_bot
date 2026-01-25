@@ -5,6 +5,139 @@
   "repository": "https://github.com/maincomby/maincomby_bot",
   "releases": [
     {
+      "version": "1.1.14",
+      "date": "2026-01-25",
+      "tag": "v1.1.14",
+      "type": "patch",
+      "summary": "\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f v1.1.14",
+      "highlights": [
+        "add Telegram push notification when PRO awarded fo...",
+        "auto-award PRO when profile is complete",
+        "add profile completion testing tools and admin pan...",
+        "add profile moderation panel for admin",
+        "add promo banner with countdown timer + PRO expira..."
+      ],
+      "features": [
+        {
+          "description": "add Telegram push notification when PRO awarded for profile completion",
+          "scope": "all"
+        },
+        {
+          "description": "auto-award PRO when profile is complete",
+          "scope": "all"
+        },
+        {
+          "description": "add profile completion testing tools and admin panel",
+          "scope": "all"
+        },
+        {
+          "description": "add profile moderation panel for admin",
+          "scope": "all"
+        },
+        {
+          "description": "add promo banner with countdown timer + PRO expiration date",
+          "scope": "all"
+        },
+        {
+          "description": "add promo for profile completion (7 days PRO + 500 XP until Jan 25)",
+          "scope": "all"
+        },
+        {
+          "description": "add 3-day PRO reward for profile completion + photo",
+          "scope": "all"
+        },
+        {
+          "description": "add smart engagement queue - max 1 notification per day",
+          "scope": "all"
+        },
+        {
+          "description": "migrate bot from SQLite to Supabase PostgreSQL",
+          "scope": "all"
+        },
+        {
+          "description": "add /engagement_stats command for engagement diagnostics",
+          "scope": "all"
+        },
+        {
+          "description": "add /trigger_reminders command for manual job execution",
+          "scope": "all"
+        },
+        {
+          "description": "add /test_notifications diagnostic command",
+          "scope": "all"
+        },
+        {
+          "description": "add event announcement system with testers targeting",
+          "scope": "all"
+        },
+        {
+          "description": "add event admin panel for creating/editing events in Mini App",
+          "scope": "all"
+        },
+        {
+          "description": "add tester system for QA testing",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "support both BOT_TOKEN and TELEGRAM_BOT_TOKEN env vars",
+          "scope": "all"
+        },
+        {
+          "description": "sanitize Telegram usernames in links to prevent broken URLs",
+          "scope": "all"
+        },
+        {
+          "description": "sync profile photo_url with first uploaded photo",
+          "scope": "all"
+        },
+        {
+          "description": "move PRO expiration date below badge instead of inside",
+          "scope": "all"
+        },
+        {
+          "description": "adjust admin panel top spacer from 56px to 96px for Telegram header",
+          "scope": "all"
+        },
+        {
+          "description": "reduce top spacer from h-28 to h-14 in admin panels",
+          "scope": "all"
+        },
+        {
+          "description": "use correct asyncpg param for pgbouncer compatibility",
+          "scope": "all"
+        },
+        {
+          "description": "disable asyncpg statement cache for Supabase pooler",
+          "scope": "all"
+        },
+        {
+          "description": "EventAdminPanel z-index and stacking context issues",
+          "scope": "all"
+        }
+      ],
+      "improvements": [
+        {
+          "description": "change ProfileModerationPanel to full-screen layout",
+          "scope": "all"
+        },
+        {
+          "description": "convert admin panels to full-screen pages with safe areas",
+          "scope": "all"
+        },
+        {
+          "description": "integrate Telegram BackButton in all admin panels",
+          "scope": "all"
+        },
+        {
+          "description": "use Telegram BackButton for EventAdminPanel navigation",
+          "scope": "all"
+        }
+      ],
+      "breaking": []
+    },
+    {
       "version": "1.1.13",
       "date": "2026-01-23",
       "tag": "v1.1.13",
