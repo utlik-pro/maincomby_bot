@@ -5,6 +5,46 @@
   "repository": "https://github.com/maincomby/maincomby_bot",
   "releases": [
     {
+      "version": "1.1.15",
+      "date": "2026-01-26",
+      "tag": "v1.1.15",
+      "type": "patch",
+      "summary": "\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f v1.1.15",
+      "highlights": [
+        "add PRO Statistics section to admin analytics"
+      ],
+      "features": [
+        {
+          "description": "add PRO Statistics section to admin analytics",
+          "scope": "all"
+        }
+      ],
+      "fixes": [
+        {
+          "description": "filter broadcast_promo to only users who started bot",
+          "scope": "all"
+        },
+        {
+          "description": "remove bot_started check from broadcast_promo query",
+          "scope": "all"
+        },
+        {
+          "description": "add bottom padding to contacts/matches view to prevent overlap with navigation",
+          "scope": "all"
+        },
+        {
+          "description": "disable profile recycling - only show unswiped profiles",
+          "scope": "all"
+        },
+        {
+          "description": "add fallback to fetch tg_user_id for like notifications",
+          "scope": "all"
+        }
+      ],
+      "improvements": [],
+      "breaking": []
+    },
+    {
       "version": "1.1.14",
       "date": "2026-01-25",
       "tag": "v1.1.14",

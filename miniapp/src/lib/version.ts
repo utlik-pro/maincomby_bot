@@ -5,12 +5,12 @@
  * Do not edit version values manually.
  */
 
-export const APP_VERSION = '1.1.14'
+export const APP_VERSION = '1.1.15'
 export const APP_NAME = 'MAIN Community'
 
 // Increment this number to trigger "What's New" modal for all users
 // This works similarly to CURRENT_ONBOARDING_VERSION in store.ts
-export const CURRENT_APP_VERSION = 18
+export const CURRENT_APP_VERSION = 19
 
 export interface ReleaseHighlight {
   title: string
@@ -29,23 +29,19 @@ export interface ReleaseNote {
 // Latest release information for "What's New" modal
 // NOTE: This is updated automatically by release.sh
 export const LATEST_RELEASE: ReleaseNote = {
-  version: '1.1.14',
-  date: '2026-01-25',
-  summary: 'Исправления и улучшения v1.1.14',
+  version: '1.1.15',
+  date: '2026-01-26',
+  summary: 'Исправления и улучшения v1.1.15',
   highlights: [
-    { title: 'add Telegram push notific...', description: 'Подробнее в changelog' },
-    { title: 'auto-award PRO when profi...', description: 'Подробнее в changelog' },
-    { title: 'add profile completion te...', description: 'Подробнее в changelog' },
+    { title: 'add PRO Statistics sectio...', description: 'Подробнее в changelog' },
   ],
   features: [
-    'add Telegram push notification when PRO awarded for profile completion',
-    'auto-award PRO when profile is complete',
-    'add profile completion testing tools and admin panel',
+    'add PRO Statistics section to admin analytics',
   ],
   fixes: [
-    'support both BOT_TOKEN and TELEGRAM_BOT_TOKEN env vars',
-    'sanitize Telegram usernames in links to prevent broken URLs',
-    'sync profile photo_url with first uploaded photo',
+    'filter broadcast_promo to only users who started bot',
+    'remove bot_started check from broadcast_promo query',
+    'add bottom padding to contacts/matches view to prevent overlap with navigation',
   ],
 }
 

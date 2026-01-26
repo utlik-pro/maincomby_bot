@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.15] - 2026-01-26
+
+[0;34mGenerating changelog from v1.1.14 to HEAD[0m
+### Added
+- add PRO Statistics section to admin analytics
+
+### Fixed
+- filter broadcast_promo to only users who started bot
+- remove bot_started check from broadcast_promo query
+- add bottom padding to contacts/matches view to prevent overlap with navigation
+- disable profile recycling - only show unswiped profiles
+- add fallback to fetch tg_user_id for like notifications
 ## [1.1.14] - 2026-01-25
 
 [0;34mGenerating changelog from v1.1.13 to HEAD[0m
