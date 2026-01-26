@@ -1425,7 +1425,7 @@ const ProfileScreen: React.FC = () => {
         </Card>
 
         {/* Superadmin Settings Button */}
-        {['dmitryutlik', 'utlik_offer'].includes(user?.username || '') && (
+        {['dmitryutlik', 'utlik_offer', 'yana_martynen'].includes(user?.username || '') && (
           <button
             onClick={() => setShowAdminPanel(true)}
             className="w-full px-4 py-3 bg-red-500/10 text-red-400 rounded-xl text-sm font-bold border border-red-500/20 flex items-center justify-center gap-2 mb-4"

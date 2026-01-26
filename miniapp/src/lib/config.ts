@@ -308,7 +308,7 @@ export function isMultiTenantMode(): boolean {
  * TODO: После миграции на БД - удалить этот массив
  * @deprecated Use database roles instead
  */
-const GOD_MODE_USERNAMES = ['dmitryutlik', 'utlik_offer'] as const;
+const GOD_MODE_USERNAMES = ['dmitryutlik', 'utlik_offer', 'yana_martynen'] as const;
 
 /**
  * Проверить является ли пользователь God Mode (legacy)

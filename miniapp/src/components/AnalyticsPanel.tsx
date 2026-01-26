@@ -67,7 +67,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ onClose }) => {
   const [showCheckinsModal, setShowCheckinsModal] = useState(false)
 
   // Superadmin check
-  const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
+  const isSuperAdmin = ['dmitryutlik', 'utlik_offer', 'yana_martynen'].includes(user?.username || '')
 
   // Telegram BackButton handler
   useEffect(() => {

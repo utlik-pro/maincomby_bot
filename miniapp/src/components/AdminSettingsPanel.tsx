@@ -39,7 +39,7 @@ export const AdminSettingsPanel: React.FC<AdminSettingsPanelProps> = ({ onClose 
     const [eventsLoading, setEventsLoading] = useState(false)
 
     // Verify superadmin status
-    const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
+    const isSuperAdmin = ['dmitryutlik', 'utlik_offer', 'yana_martynen'].includes(user?.username || '')
 
     useEffect(() => {
         loadSettings()

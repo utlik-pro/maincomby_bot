@@ -110,7 +110,7 @@ export const BroadcastPanel: React.FC<BroadcastPanelProps> = ({ onClose }) => {
   const [recipientFilter, setRecipientFilter] = useState<'all' | 'delivered' | 'failed'>('all')
 
   // Superadmin check
-  const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(user?.username || '')
+  const isSuperAdmin = ['dmitryutlik', 'utlik_offer', 'yana_martynen'].includes(user?.username || '')
 
   // Telegram BackButton handler
   useEffect(() => {

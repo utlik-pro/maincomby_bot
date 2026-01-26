@@ -38,7 +38,7 @@ export const UserRoleManager: React.FC<UserRoleManagerProps> = ({ onClose }) => 
     const [isUpdating, setIsUpdating] = useState(false)
 
     // Verify superadmin status
-    const isSuperAdmin = ['dmitryutlik', 'utlik_offer'].includes(currentUser?.username || '')
+    const isSuperAdmin = ['dmitryutlik', 'utlik_offer', 'yana_martynen'].includes(currentUser?.username || '')
 
     // Search users
     const { data: searchResults, isLoading } = useQuery({
