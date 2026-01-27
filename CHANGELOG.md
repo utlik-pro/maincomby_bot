@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.16] - 2026-01-27
+
+[0;34mGenerating changelog from v1.1.15 to HEAD[0m
+### Added
+- add yana_martynen as superadmin
 ## [1.1.15] - 2026-01-26
 
 [0;34mGenerating changelog from v1.1.14 to HEAD[0m

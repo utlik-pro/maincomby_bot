@@ -5,6 +5,25 @@
   "repository": "https://github.com/maincomby/maincomby_bot",
   "releases": [
     {
+      "version": "1.1.16",
+      "date": "2026-01-27",
+      "tag": "v1.1.16",
+      "type": "patch",
+      "summary": "\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f v1.1.16",
+      "highlights": [
+        "add yana_martynen as superadmin"
+      ],
+      "features": [
+        {
+          "description": "add yana_martynen as superadmin",
+          "scope": "all"
+        }
+      ],
+      "fixes": [],
+      "improvements": [],
+      "breaking": []
+    },
+    {
       "version": "1.1.15",
       "date": "2026-01-26",
       "tag": "v1.1.15",
